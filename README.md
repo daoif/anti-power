@@ -1,6 +1,6 @@
 # Antigravity Power 增强补丁
 
-[![版本](https://img.shields.io/badge/版本-v1.0.0-blue.svg)](https://github.com/daoif/anti-power/releases)
+[![版本](https://img.shields.io/badge/版本-v1.1.0-blue.svg)](https://github.com/daoif/anti-power/releases)
 [![Antigravity](https://img.shields.io/badge/支持_Antigravity-v1.13.3-green.svg)](https://codeium.com/antigravity)
 
 > **Antigravity AI IDE** 侧边栏补丁。
@@ -15,6 +15,17 @@
 
 - 📝 代码块自动转换为 Markdown 格式（带语言标识）
 - 📊 自动将表格转为 Markdown
+
+### 3. 数学公式渲染
+自动渲染 AI 回复中的 LaTeX 公式。
+- 📐 支持行内公式 `$...$` 和块级公式 `$$...$$`
+- 🔢 自动加载 KaTeX 或 MathJax 引擎
+- 📎 复制时自动还原为 LaTeX 源码
+
+### 4. 内容区域悬浮复制
+每个内容区域右上角新增悬浮复制按钮：
+- 鼠标悬停时显示
+- ⚡ 复制按钮与反馈按钮分开
 
 ## 📥 下载安装
 
@@ -76,6 +87,7 @@ C:\Program Files\Antigravity\resources\app\extensions\antigravity\
 
 | 补丁版本 | 支持的 Antigravity 版本 | 发布日期 |
 |---------|------------------------|----------|
+| v1.1.0  | v1.13.3                | 2026-01-13 |
 | v1.0.0  | v1.13.3                | 2026-01-13 |
 
 ## ⚠️ 注意事项
@@ -96,3 +108,7 @@ MIT License
 ## 🤝 贡献
 
 欢迎通过 Issue 或 Pull Request 分享补丁、样式优化、功能改进和使用技巧。
+
+## 🙏 致谢
+
+- [@mikessslxxx](https://github.com/mikessslxxx) - v1.1.0 数学公式渲染、代码重构与优化
