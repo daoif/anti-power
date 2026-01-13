@@ -639,19 +639,10 @@
 
             // === Mermaid 图表渲染 ===
 
-            // 渲染 Mermaid 图表
-            const renderMermaid = async (codeBlockContainer) => {
-                // 检查是否已渲染
-                if (codeBlockContainer.getAttribute(MERMAID_ATTR) === '1') return;
-
-                // 检查是否是 mermaid 代码块
-                const classStr = codeBlockContainer.className || '';
-                const classString = typeof classStr === 'string' ? classStr : (classStr.baseVal || '');
-                if (!classString.includes('language-mermaid')) return;
-
-                // 提取 Mermaid 源码
+            // 提取 Mermaid 源码
+            const extractMermaidSource = (codeBlockContainer) => {
                 const codeBlock = codeBlockContainer.querySelector('.code-block');
-                if (!codeBlock) return;
+                if (!codeBlock) return '';
 
                 const lines = codeBlock.querySelectorAll('.line-content');
                 let source = '';
@@ -659,11 +650,33 @@
                     source += line.textContent;
                     if (idx < lines.length - 1) source += '\n';
                 });
+                return source.trim();
+            };
 
-                if (!source.trim()) return;
+            // 渲染 Mermaid 图表（原地渲染方案，与数学公式对齐）
+            const renderMermaid = async (codeBlockContainer) => {
+                // 检查是否是 mermaid 代码块
+                const classStr = codeBlockContainer.className || '';
+                const classString = typeof classStr === 'string' ? classStr : (classStr.baseVal || '');
+                if (!classString.includes('language-mermaid')) return;
 
-                // 标记为已处理（防止重复渲染）
-                codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
+                // 先提取源码（类似 captureRawText）
+                const source = extractMermaidSource(codeBlockContainer);
+                if (!source) return;
+
+                // 获取之前保存的源码（如果有）
+                const previousSource = codeBlockContainer[MERMAID_SOURCE_PROP] || '';
+
+                // 检查是否需要渲染：未渲染过 OR 内容发生变化
+                const isRendered = codeBlockContainer.getAttribute(MERMAID_ATTR) === '1';
+                const contentChanged = previousSource && previousSource !== source;
+
+                if (isRendered && !contentChanged) {
+                    return; // 已渲染且内容未变化，跳过
+                }
+
+                // 保存当前源码（用于后续变化检测）
+                codeBlockContainer[MERMAID_SOURCE_PROP] = source;
 
                 try {
                     await ensureMermaid();
@@ -678,40 +691,55 @@
                     // 渲染 Mermaid
                     const { svg } = await window.mermaid.render(id, source);
 
-                    // 创建容器
-                    const container = document.createElement('div');
-                    container.className = 'cascade-mermaid-container';
+                    // 查找或创建渲染容器（原地渲染：保留原代码块，在其后插入渲染结果）
+                    let container = codeBlockContainer.nextElementSibling;
+                    if (!container || !container.classList.contains('cascade-mermaid-container')) {
+                        // 首次渲染：创建容器并插入
+                        container = document.createElement('div');
+                        container.className = 'cascade-mermaid-container';
+                        codeBlockContainer.insertAdjacentElement('afterend', container);
+
+                        // 隐藏原代码块（保留在 DOM 中以便持续监测变化）
+                        codeBlockContainer.style.display = 'none';
+
+                        // 添加复制按钮
+                        const copyBtn = document.createElement('button');
+                        copyBtn.type = 'button';
+                        copyBtn.className = 'cascade-mermaid-copy';
+                        copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
+                        copyBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // 从原代码块获取最新源码
+                            const mermaidSource = codeBlockContainer[MERMAID_SOURCE_PROP] || '';
+                            const text = '```mermaid\n' + mermaidSource + '\n```';
+                            const ok = await writeClipboard(text);
+                            if (!ok) return;
+
+                            copyBtn.innerHTML = `<span>Copied!</span>${CHECK_ICON_SVG}`;
+                            copyBtn.classList.add('copied');
+                            setTimeout(() => {
+                                copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
+                                copyBtn.classList.remove('copied');
+                            }, 1200);
+                        });
+                        container.appendChild(copyBtn);
+                    }
+
+                    // 更新渲染内容（保留复制按钮）
+                    const copyBtn = container.querySelector('.cascade-mermaid-copy');
                     container.innerHTML = svg;
-                    container[MERMAID_SOURCE_PROP] = source; // 保存源码用于复制
+                    if (copyBtn) {
+                        container.appendChild(copyBtn);
+                    }
 
-                    // 添加复制按钮
-                    const copyBtn = document.createElement('button');
-                    copyBtn.type = 'button';
-                    copyBtn.className = 'cascade-mermaid-copy';
-                    copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
-                    copyBtn.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const text = '```mermaid\n' + source + '\n```';
-                        const ok = await writeClipboard(text);
-                        if (!ok) return;
-
-                        copyBtn.innerHTML = `<span>Copied!</span>${CHECK_ICON_SVG}`;
-                        copyBtn.classList.add('copied');
-                        setTimeout(() => {
-                            copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
-                            copyBtn.classList.remove('copied');
-                        }, 1200);
-                    });
-                    container.appendChild(copyBtn);
-
-                    // 替换原代码块
-                    codeBlockContainer.replaceWith(container);
+                    // 渲染成功后才标记原代码块（与数学公式对齐）
+                    codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
 
                 } catch (error) {
                     console.error('[Cascade] Mermaid 渲染失败:', error);
-                    // 渲染失败时移除标记，允许重试
-                    codeBlockContainer.removeAttribute(MERMAID_ATTR);
+                    // 渲染失败时清除源码缓存，允许重试
+                    delete codeBlockContainer[MERMAID_SOURCE_PROP];
                 }
             };
 
