@@ -1,0 +1,264 @@
+<!doctype html>
+<html>
+
+<head>
+  <style>
+    #react-app #chat table tbody {
+      color: var(--codeium-text-color) !important;
+    }
+
+    /* Match the native Good and Bad buttons */
+    .custom-copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: opacity 0.1s, transform 0.1s;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .custom-copy-btn:hover {
+      opacity: 1;
+    }
+
+    .custom-copy-btn span {
+      opacity: 0.7;
+    }
+
+    .custom-copy-btn svg {
+      height: 1rem;
+      width: 1rem;
+    }
+
+    .custom-copy-btn.copied {
+      opacity: 1;
+      color: #22c55e;
+    }
+  </style>
+</head>
+
+<body style="margin: 0">
+  <div id="react-app" class="react-app-container"></div>
+
+  <script>
+    const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+    </svg>`;
+
+    const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>`;
+
+    function extractFormattedContent(element) {
+      let result = '';
+
+      const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+
+      let currentNode;
+      let skipUntilEndOfCodeBlock = null;
+
+      while (currentNode = walker.nextNode()) {
+        // Skip descendants of code blocks already emitted as Markdown
+        if (skipUntilEndOfCodeBlock && skipUntilEndOfCodeBlock.contains(currentNode)) {
+          continue;
+        }
+        skipUntilEndOfCodeBlock = null;
+
+        if (currentNode.nodeType === Node.TEXT_NODE) {
+          const parent = currentNode.parentElement;
+          if (parent) {
+            if (parent.closest('[class*="language-"]')) {
+              continue;
+            }
+            // The opacity-60 class identifies a code block's language label
+            const parentClasses = parent.className || '';
+            const parentClassStr = typeof parentClasses === 'string' ? parentClasses : (parentClasses.baseVal || '');
+            if (parentClassStr.includes('opacity-60') && parent.closest('pre')?.previousElementSibling) {
+              continue;
+            }
+            // Check for bare language labels near a code block
+            const textContent = currentNode.textContent.trim();
+            const commonLangs = ['xml', 'html', 'css', 'javascript', 'typescript', 'python', 'java', 'json', 'bash', 'shell', 'sql', 'yaml', 'markdown', 'go', 'rust', 'c', 'cpp', 'csharp', 'php', 'ruby', 'swift', 'kotlin'];
+            if (commonLangs.includes(textContent.toLowerCase()) && parent.closest('pre')?.parentElement?.querySelector('[class*="language-"]')) {
+              continue;
+            }
+          }
+          result += currentNode.textContent;
+        } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
+          const classStr = currentNode.className || '';
+          // Read SVGAnimatedString.baseVal for SVG class names
+          const classString = typeof classStr === 'string' ? classStr : (classStr.baseVal || '');
+          const langMatch = classString.match(/language-(\w+)/);
+
+          if (currentNode.tagName === 'TABLE') {
+            result += '\n' + extractTable(currentNode) + '\n';
+            skipUntilEndOfCodeBlock = currentNode;
+            continue;
+          }
+
+          if (langMatch) {
+            const lang = langMatch[1];
+            const codeBlock = currentNode.querySelector('.code-block');
+            if (codeBlock) {
+              const lines = codeBlock.querySelectorAll('.line-content');
+              let codeContent = '';
+              lines.forEach((line, idx) => {
+                codeContent += line.textContent;
+                if (idx < lines.length - 1) codeContent += '\n';
+              });
+              result += '\n```' + lang + '\n' + codeContent + '\n```\n';
+              skipUntilEndOfCodeBlock = currentNode;
+            }
+          }
+
+          // Unlabeled code blocks use the highlighted-code aria-label prefix
+          const ariaLabel = currentNode.getAttribute('aria-label') || '';
+          if (ariaLabel.startsWith('highlighted-code') && !langMatch) {
+            const codeBlock = currentNode.querySelector('.code-block');
+            if (codeBlock) {
+              const lines = codeBlock.querySelectorAll('.line-content');
+              let codeContent = '';
+              lines.forEach((line, idx) => {
+                codeContent += line.textContent;
+                if (idx < lines.length - 1) codeContent += '\n';
+              });
+              result += '\n```\n' + codeContent + '\n```\n';
+              skipUntilEndOfCodeBlock = currentNode;
+            }
+          }
+        }
+      }
+
+      return result.trim();
+    }
+
+    function extractTable(tableEl) {
+      let markdown = '';
+      const rows = tableEl.querySelectorAll('tr');
+
+      rows.forEach((row, rowIdx) => {
+        const cells = row.querySelectorAll('th, td');
+        const cellContents = [];
+
+        cells.forEach(cell => {
+          // Keep each table cell on a single Markdown line
+          let cellText = cell.innerText || cell.textContent;
+          cellText = cellText.trim().replace(/\n/g, ' ');
+          cellContents.push(cellText);
+        });
+
+        markdown += '| ' + cellContents.join(' | ') + ' |\n';
+
+        // Add the Markdown delimiter row after a table header
+        if (rowIdx === 0 && row.querySelector('th')) {
+          markdown += '| ' + cellContents.map(() => '---').join(' | ') + ' |\n';
+        }
+      });
+
+      return markdown;
+    }
+
+    function addCopyButtons() {
+      const feedbackContainers = document.querySelectorAll('[data-tooltip-id^="up-"]');
+
+      feedbackContainers.forEach(goodBtn => {
+        const parentContainer = goodBtn.parentElement;
+        if (!parentContainer || parentContainer.querySelector('.custom-copy-btn')) {
+          return;
+        }
+
+        let messageContainer = parentContainer;
+        for (let i = 0; i < 10; i++) {
+          messageContainer = messageContainer.parentElement;
+          if (!messageContainer) break;
+        }
+
+        const copyBtn = document.createElement('div');
+        copyBtn.className = 'custom-copy-btn';
+        copyBtn.innerHTML = `<span>Copy</span>${copyIconSVG}`;
+
+        copyBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+
+          let content = '';
+          let searchNode = parentContainer;
+
+          // Search ancestor containers for the final response
+          for (let i = 0; i < 20; i++) {
+            searchNode = searchNode.parentElement;
+            if (!searchNode) break;
+
+            const proseElements = searchNode.querySelectorAll('.prose.prose-sm');
+            if (proseElements.length > 0) {
+              // The final response is the last prose element
+              const lastProse = proseElements[proseElements.length - 1];
+              content = extractFormattedContent(lastProse);
+              break;
+            }
+          }
+
+          if (!content) {
+            console.error('未找到消息内容');
+            return;
+          }
+
+          try {
+            // Fall back to execCommand because the webview lacks the Clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = content.trim();
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            if (!successful) {
+              throw new Error('execCommand copy 失败');
+            }
+
+            copyBtn.innerHTML = `<span>Copied!</span>${checkIconSVG}`;
+            copyBtn.classList.add('copied');
+
+            setTimeout(() => {
+              copyBtn.innerHTML = `<span>Copy</span>${copyIconSVG}`;
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          } catch (err) {
+            console.error('复制失败:', err);
+          }
+        });
+
+        parentContainer.insertBefore(copyBtn, goodBtn);
+      });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+      // Wait for React to finish rendering before scanning
+      setTimeout(addCopyButtons, 100);
+    });
+
+    // Wait for the React root before attaching the observer
+    const waitForApp = setInterval(() => {
+      const app = document.getElementById('react-app');
+      if (app && app.children.length > 0) {
+        clearInterval(waitForApp);
+        observer.observe(app, {
+          childList: true,
+          subtree: true
+        });
+        addCopyButtons();
+      }
+    }, 500);
+  </script>
+</body>
+
+</html>
