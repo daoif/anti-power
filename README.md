@@ -1,9 +1,12 @@
 # Antigravity Power 增强补丁
 
-[![版本](https://img.shields.io/badge/版本-v1.2.0-blue.svg)](https://github.com/daoif/anti-power/releases)
+[![版本](https://img.shields.io/badge/版本-v1.2.1-blue.svg)](https://github.com/daoif/anti-power/releases)
 [![Antigravity](https://img.shields.io/badge/支持_Antigravity-v1.13.3-green.svg)](https://codeium.com/antigravity)
+[![开源协议](https://img.shields.io/badge/协议-MIT-orange.svg)](LICENSE)
 
-针对 **Antigravity AI IDE** 的增强补丁，提供 **一键复制** + **数学公式渲染** + **Mermaid 图表渲染** + **表格颜色修复** 等功能。
+> 🚀 针对 **Antigravity AI IDE** 的增强补丁，让你的 AI 对话体验更上一层楼！
+
+---
 
 ## 🎯 项目愿景
 
@@ -13,33 +16,71 @@ Antigravity 是一款优秀的 AI IDE，但在日常使用中难免会遇到一�
 
 **欢迎提交你的增强方案！** 无论是样式优化、功能增强还是使用技巧，都可以通过 Issue 或 Pull Request 分享给大家。
 
+---
 ## ✨ 功能特性
 
-### 1. 表格颜色修复
-修复深色主题下 AI 返回的表格文字颜色与背景融为一体、无法阅读的问题。
+| 功能 | 描述 |
+|------|------|
+| 🎨 **Mermaid 渲染** | 自动渲染流程图、时序图、类图等，支持深色主题 |
+| 📐 **数学公式渲染** | 支持 `$...$` 行内公式和 `$$...$$` 块级公式 |
+| 📋 **一键复制** | Copy 按钮复制 AI 返回内容，自动转 Markdown |
+| 🎯 **表格颜色修复** | 修复深色主题下表格文字不可见问题 |
+| 👆 **悬浮复制按钮** | 内容区域右上角悬浮按钮，不影响阅读 |
 
-### 2. 一键复制按钮
-为 AI 的返回内容添加 **Copy** 按钮，支持：
-- 📋 复制最终返回结果（自动忽略中间思考过程）
-- 📝 代码块自动转换为 Markdown 格式（带语言标识）
+### 复制功能亮点
+
+- 📝 代码块自动带语言标识（如 ` ```python `）
 - 📊 表格自动转换为 Markdown 表格格式
+- 🧠 智能忽略 AI 中间思考过程，只复制最终结果
+- 📎 公式和 Mermaid 自动还原为源码
 
-### 3. 数学公式渲染 🆕
-自动渲染 AI 返回内容中的 LaTeX 数学公式：
-- 📐 支持行内公式 `$...$` 和块级公式 `$$...$$`
-- 🔢 自动加载 KaTeX 或 MathJax 引擎
-- 📎 复制时自动还原为 LaTeX 源码
+---
 
-### 4. 内容区域悬浮复制 🆕
-每个内容区域右上角新增悬浮复制按钮：
-- 👆 鼠标悬停时显示，不影响阅读
-- ⚡ 独立于反馈按钮，复制更便捷
+## 📸 效果展示
 
-### 5. Mermaid 流程图渲染 🆕
-自动渲染 AI 返回的 Mermaid 图表：
-- 📊 支持流程图、时序图、类图等多种图表类型
-- 🎨 自动适配深色主题配色
-- 📋 复制时自动还原为 Mermaid 源码
+### 🎨 Mermaid 流程图渲染
+
+原版 Antigravity 只能显示 Mermaid 源代码，安装补丁后可以直接渲染为精美的流程图：
+
+![Mermaid 增强效果](docs/images/5.png)
+
+<details>
+<summary>👀 查看原版效果（点击展开）</summary>
+
+![Mermaid 原版效果](docs/images/6.png)
+
+</details>
+
+---
+
+### 📐 数学公式渲染
+
+原版只能显示 LaTeX 源码，补丁启用后自动渲染为标准数学公式：
+
+![公式增强效果](docs/images/3.png)
+
+<details>
+<summary>👀 查看原版效果（点击展开）</summary>
+
+![公式原版效果](docs/images/4.png)
+
+</details>
+
+---
+
+### 📋 一键复制 & 表格优化
+
+新增 **Copy** 按钮，一键复制 AI 返回内容为 Markdown 格式，同时修复表格颜色问题：
+
+![复制按钮展示](docs/images/2.png)
+
+复制后的内容自动转换为规范的 Markdown 格式，可直接粘贴到其他编辑器：
+
+![复制内容展示](docs/images/1.png)
+
+---
+
+
 
 ## 📥 下载安装
 
@@ -51,12 +92,13 @@ Antigravity 是一款优秀的 AI IDE，但在日常使用中难免会遇到一�
 
 下载本仓库的 `cascade-panel.html` 文件。
 
+---
+
 ## 🔧 安装步骤
 
 ### 步骤一：找到 Antigravity 安装目录
 
-<details>
-<summary><b>Windows</b></summary>
+#### 📁 Windows
 
 1. 在桌面上右键点击 **Antigravity** 快捷方式
 2. 选择 **"属性 (Properties)"**
@@ -68,10 +110,8 @@ Antigravity 是一款优秀的 AI IDE，但在日常使用中难免会遇到一�
 C:\Program Files\Antigravity\resources\app\extensions\antigravity\
 ```
 
-</details>
-
 <details>
-<summary><b>macOS</b></summary>
+<summary><b>📁 macOS</b></summary>
 
 1. 打开 **"应用程序 (Applications)"** 文件夹
 2. 右键点击 **Antigravity.app**
@@ -97,19 +137,26 @@ C:\Program Files\Antigravity\resources\app\extensions\antigravity\
 
 **完全关闭** Antigravity 后重新启动，即可看到增强效果。
 
+---
+
 ## 📋 版本信息
 
-| 补丁版本 | 支持的 Antigravity 版本 | 发布日期 |
-|---------|------------------------|----------|
-| v1.2.0  | v1.13.3                | 2026-01-13 |
-| v1.1.0  | v1.13.3                | 2026-01-13 |
-| v1.0.0  | v1.13.3                | 2026-01-13 |
+| 补丁版本 | 支持的 Antigravity 版本 | 发布日期 | 更新内容 |
+|---------|------------------------|----------|----------|
+| v1.2.1  | v1.13.3                | 2026-01-13 | Bug 修复 |
+| v1.2.0  | v1.13.3                | 2026-01-13 | Mermaid 渲染 |
+| v1.1.0  | v1.13.3                | 2026-01-13 | 数学公式渲染 |
+| v1.0.0  | v1.13.3                | 2026-01-13 | 一键复制、表格修复 |
+
+---
 
 ## ⚠️ 注意事项
 
 - **更新覆盖**：Antigravity 官方更新后，此修改可能会被覆盖，需要重新应用补丁
 - **版本兼容**：建议在使用前确认 Antigravity 版本号与支持版本一致
 - **备份习惯**：每次替换前请务必备份原文件，以便需要时恢复
+
+---
 
 ## 📚 参考资料
 
@@ -118,13 +165,7 @@ C:\Program Files\Antigravity\resources\app\extensions\antigravity\
 - 📺 **视频教程**：[Antigravity 完美深色主题修改指南](https://www.bilibili.com/video/BV1vTrgBXEA1)
 - 📖 **图文教程**：[表格文字看不清的终极解决方案](https://dpit.lib00.com/zh/content/1192/antigravity-perfect-dark-theme-modification-guide-fix-invisible-table-text)
 
-## 📄 开源协议
-
-MIT License
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
+---
 
 ## 🙏 致谢
 
@@ -134,4 +175,18 @@ MIT License
 
 ---
 
-> 💡 如果这个项目对你有帮助，欢迎 Star ⭐
+## 📄 开源协议
+
+MIT License
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+<p align="center">
+  💡 如果这个项目对你有帮助，欢迎 Star ⭐
+</p>
