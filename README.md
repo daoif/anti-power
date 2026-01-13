@@ -3,7 +3,7 @@
 [![版本](https://img.shields.io/badge/版本-v1.2.0-blue.svg)](https://github.com/daoif/anti-power/releases)
 [![Antigravity](https://img.shields.io/badge/支持_Antigravity-v1.13.3-green.svg)](https://codeium.com/antigravity)
 
-针对 **Antigravity AI IDE** 的增强补丁，优化深色主题下的使用体验。
+针对 **Antigravity AI IDE** 的增强补丁，提供 **一键复制** + **数学公式渲染** + **Mermaid 图表渲染** + **表格颜色修复** 等功能。
 
 ## 🎯 项目愿景
 
