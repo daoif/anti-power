@@ -607,15 +607,9 @@
 
             // Mermaid rendering
 
-            const renderMermaid = async (codeBlockContainer) => {
-                if (codeBlockContainer.getAttribute(MERMAID_ATTR) === '1') return;
-
-                const classStr = codeBlockContainer.className || '';
-                const classString = typeof classStr === 'string' ? classStr : (classStr.baseVal || '');
-                if (!classString.includes('language-mermaid')) return;
-
+            const extractMermaidSource = (codeBlockContainer) => {
                 const codeBlock = codeBlockContainer.querySelector('.code-block');
-                if (!codeBlock) return;
+                if (!codeBlock) return '';
 
                 const lines = codeBlock.querySelectorAll('.line-content');
                 let source = '';
@@ -623,11 +617,29 @@
                     source += line.textContent;
                     if (idx < lines.length - 1) source += '\n';
                 });
+                return source.trim();
+            };
 
-                if (!source.trim()) return;
+            const renderMermaid = async (codeBlockContainer) => {
+                const classStr = codeBlockContainer.className || '';
+                const classString = typeof classStr === 'string' ? classStr : (classStr.baseVal || '');
+                if (!classString.includes('language-mermaid')) return;
 
-                // Mark the code block before rendering to prevent duplicate work
-                codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
+                const source = extractMermaidSource(codeBlockContainer);
+                if (!source) return;
+
+                const previousSource = codeBlockContainer[MERMAID_SOURCE_PROP] || '';
+
+                // Rerender when streaming changes the source
+                const isRendered = codeBlockContainer.getAttribute(MERMAID_ATTR) === '1';
+                const contentChanged = previousSource && previousSource !== source;
+
+                if (isRendered && !contentChanged) {
+                    return;
+                }
+
+                // Cache the source to detect streaming updates
+                codeBlockContainer[MERMAID_SOURCE_PROP] = source;
 
                 try {
                     await ensureMermaid();
@@ -640,37 +652,53 @@
 
                     const { svg } = await window.mermaid.render(id, source);
 
-                    const container = document.createElement('div');
-                    container.className = 'cascade-mermaid-container';
+                    // Keep the diagram next to the source so updates can reuse its container
+                    let container = codeBlockContainer.nextElementSibling;
+                    if (!container || !container.classList.contains('cascade-mermaid-container')) {
+                        container = document.createElement('div');
+                        container.className = 'cascade-mermaid-container';
+                        codeBlockContainer.insertAdjacentElement('afterend', container);
+
+                        // Keep the hidden source block in the DOM to detect streaming updates
+                        codeBlockContainer.style.display = 'none';
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.type = 'button';
+                        copyBtn.className = 'cascade-mermaid-copy';
+                        copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
+                        copyBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Read the source from the code block so the copy uses the latest update
+                            const mermaidSource = codeBlockContainer[MERMAID_SOURCE_PROP] || '';
+                            const text = '```mermaid\n' + mermaidSource + '\n```';
+                            const ok = await writeClipboard(text);
+                            if (!ok) return;
+
+                            copyBtn.innerHTML = `<span>Copied!</span>${CHECK_ICON_SVG}`;
+                            copyBtn.classList.add('copied');
+                            setTimeout(() => {
+                                copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
+                                copyBtn.classList.remove('copied');
+                            }, 1200);
+                        });
+                        container.appendChild(copyBtn);
+                    }
+
+                    // Reuse the copy button when replacing the diagram
+                    const copyBtn = container.querySelector('.cascade-mermaid-copy');
                     container.innerHTML = svg;
-                    container[MERMAID_SOURCE_PROP] = source; // Save the diagram source for Markdown copy
+                    if (copyBtn) {
+                        container.appendChild(copyBtn);
+                    }
 
-                    const copyBtn = document.createElement('button');
-                    copyBtn.type = 'button';
-                    copyBtn.className = 'cascade-mermaid-copy';
-                    copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
-                    copyBtn.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const text = '```mermaid\n' + source + '\n```';
-                        const ok = await writeClipboard(text);
-                        if (!ok) return;
-
-                        copyBtn.innerHTML = `<span>Copied!</span>${CHECK_ICON_SVG}`;
-                        copyBtn.classList.add('copied');
-                        setTimeout(() => {
-                            copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
-                            copyBtn.classList.remove('copied');
-                        }, 1200);
-                    });
-                    container.appendChild(copyBtn);
-
-                    codeBlockContainer.replaceWith(container);
+                    // Mark the code block after a successful render
+                    codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
 
                 } catch (error) {
                     console.error('[Cascade] Mermaid 渲染失败:', error);
-                    // Clear the marker on failure so a later scan can retry
-                    codeBlockContainer.removeAttribute(MERMAID_ATTR);
+                    // Clear the cached source on failure so a later scan can retry
+                    delete codeBlockContainer[MERMAID_SOURCE_PROP];
                 }
             };
 
