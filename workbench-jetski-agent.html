@@ -1,0 +1,91 @@
+<!-- Copyright (C) Microsoft Corporation. All rights reserved. -->
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Content-Security-Policy" content="
+				default-src
+					'none'
+				;
+				img-src
+					'self'
+					data:
+					blob:
+					vscode-remote-resource:
+					vscode-managed-remote-resource:
+					https:
+				;
+				media-src
+					'self'
+					data:
+					blob:
+					https://www.gstatic.com
+				;
+				frame-src
+					'self'
+					vscode-webview:
+				;
+				script-src
+					'self'
+					'unsafe-eval'
+					blob:
+				;
+				style-src
+					'self'
+					'unsafe-inline'
+				;
+				connect-src
+					'self'
+					data:
+					http://127.0.0.1:*
+					http://jetski-unleash.corp.goog/
+					http://antigravity-unleash.goog/
+					https:
+					ws:
+				;
+				font-src
+					'self'
+					vscode-remote-resource:
+					vscode-managed-remote-resource:
+					https://*.vscode-unpkg.net
+				;
+				require-trusted-types-for
+					'script'
+				;
+				trusted-types
+					amdLoader
+					cellRendererEditorText
+					defaultWorkerFactory
+					diffEditorWidget
+					diffReview
+					domLineBreaksComputer
+					dompurify
+					dompurifyMermaid
+					editorGhostText
+					editorViewLayer
+					mermaid
+					notebookRenderer
+					stickyScrollViewLayer
+					tokenizeToString
+					notebookChatEditController
+					renderCodeBlock
+				;
+		" />
+
+	<!-- Jetski Agent CSS -->
+	<link rel="stylesheet" href="../../../../tw-base.tailwind.css">
+	<link rel="stylesheet" href="../../../../jetskiMain.tailwind.css">
+
+</head>
+
+<body aria-label="">
+</body>
+
+<!-- Startup (do not modify order of script tags!) -->
+<script src="./jetskiAgent.js" type="module"></script>
+
+<!-- Anti-Power patch script -->
+<script src="./manager-enhancement.js" type="module"></script>
+
+</html>

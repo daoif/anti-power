@@ -1,0 +1,10 @@
+# 测试依赖
+tests/node_modules/
+tests/package-lock.json
+
+# Playwright 临时输出文件
+tests/temp/
+
+# Playwright 测试产物
+tests/test-results/
+tests/playwright-report/
