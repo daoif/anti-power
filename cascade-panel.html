@@ -86,6 +86,57 @@
             color: #22c55e;
             opacity: 1 !important;
         }
+
+        /* Mermaid diagram container */
+        .cascade-mermaid-container {
+            position: relative;
+            margin: 1em 0;
+            padding: 1em;
+            border-radius: 8px;
+            background: var(--vscode-editor-background, #1e1e1e);
+            border: 1px solid var(--vscode-editorWidget-border, #454545);
+            overflow-x: auto;
+        }
+
+        .cascade-mermaid-container svg {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .cascade-mermaid-container .cascade-mermaid-copy {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 2px 6px;
+            border: 1px solid var(--vscode-editorWidget-border, transparent);
+            border-radius: 4px;
+            background: var(--vscode-editorWidget-background, rgba(30, 30, 30, 0.8));
+            color: var(--vscode-editorWidget-foreground, currentColor);
+            font-size: 12px;
+            line-height: 1.2;
+            opacity: 0;
+            transition: opacity 0.12s ease;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .cascade-mermaid-container:hover .cascade-mermaid-copy {
+            opacity: 0.7;
+        }
+
+        .cascade-mermaid-container .cascade-mermaid-copy:hover {
+            opacity: 1 !important;
+        }
+
+        .cascade-mermaid-container .cascade-mermaid-copy.copied {
+            color: #22c55e;
+            opacity: 1 !important;
+        }
     </style>
 </head>
 
@@ -113,6 +164,13 @@
                 window.CASCADE_MATHJAX_URL ||
                 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
 
+            const MERMAID_VERSION = '10.9.0';
+            const MERMAID_URL =
+                window.CASCADE_MERMAID_URL ||
+                `https://cdn.jsdelivr.net/npm/mermaid@${MERMAID_VERSION}/dist/mermaid.min.js`;
+            const MERMAID_ATTR = 'data-cascade-mermaid-rendered';
+            const MERMAID_SOURCE_PROP = '__cascadeMermaidSource';
+
             const COMMON_LANGS = [
                 'xml', 'html', 'css', 'javascript', 'typescript', 'python', 'java',
                 'json', 'bash', 'shell', 'sql', 'yaml', 'markdown', 'go', 'rust',
@@ -129,6 +187,10 @@
 
             let mathEngine = null;
             let mathReadyPromise = null;
+
+            let mermaidReady = false;
+            let mermaidReadyPromise = null;
+            let mermaidIdCounter = 0;
 
 
             const loadStyle = (href) =>
@@ -207,6 +269,61 @@
                     mathEngine = null;
                 })();
                 return mathReadyPromise;
+            };
+
+            const ensureMermaid = () => {
+                if (mermaidReadyPromise) return mermaidReadyPromise;
+                mermaidReadyPromise = (async () => {
+                    if (window.mermaid && mermaidReady) return;
+
+                    if (window.mermaid) {
+                        window.mermaid.initialize({
+                            startOnLoad: false,
+                            theme: 'dark',
+                            themeVariables: {
+                                darkMode: true,
+                                background: '#1e1e1e',
+                                primaryColor: '#4a9eff',
+                                primaryTextColor: '#e0e0e0',
+                                primaryBorderColor: '#4a9eff',
+                                lineColor: '#6a9eff',
+                                secondaryColor: '#2d4a6f',
+                                tertiaryColor: '#1e3a5f',
+                            },
+                            securityLevel: 'loose',
+                            fontFamily: 'var(--vscode-font-family, "Segoe UI", sans-serif)',
+                        });
+                        mermaidReady = true;
+                        return;
+                    }
+
+                    try {
+                        await loadScript(MERMAID_URL);
+                        if (window.mermaid) {
+                            window.mermaid.initialize({
+                                startOnLoad: false,
+                                theme: 'dark',
+                                themeVariables: {
+                                    darkMode: true,
+                                    background: '#1e1e1e',
+                                    primaryColor: '#4a9eff',
+                                    primaryTextColor: '#e0e0e0',
+                                    primaryBorderColor: '#4a9eff',
+                                    lineColor: '#6a9eff',
+                                    secondaryColor: '#2d4a6f',
+                                    tertiaryColor: '#1e3a5f',
+                                },
+                                securityLevel: 'loose',
+                                fontFamily: 'var(--vscode-font-family, "Segoe UI", sans-serif)',
+                            });
+                            mermaidReady = true;
+                        }
+                    } catch (error) {
+                        console.warn('[Cascade] Mermaid 加载失败:', error);
+                        mermaidReady = false;
+                    }
+                })();
+                return mermaidReadyPromise;
             };
 
             const isEditable = (el) =>
@@ -301,9 +418,10 @@
                 const hasCodeBlock = element.querySelector('[class*="language-"], .code-block, [aria-label^="highlighted-code"]');
                 const hasTable = element.querySelector('table');
                 const hasMathRendered = element.querySelector('.katex, mjx-container, .MathJax');
+                const hasMermaid = element.querySelector('.cascade-mermaid-container');
 
-                // Use plain text when the message has no code blocks or tables
-                if (!hasCodeBlock && !hasTable) {
+                // Use plain text when the message has no code blocks, tables, or Mermaid diagrams
+                if (!hasCodeBlock && !hasTable && !hasMermaid) {
                     if (useRawText && element && element[RAW_TEXT_PROP] !== undefined) {
                         return String(element[RAW_TEXT_PROP]).trim();
                     }
@@ -365,6 +483,16 @@
                             }
                         }
 
+                        // Copy the saved Mermaid source in place of the rendered SVG
+                        if (classString.includes('cascade-mermaid-container')) {
+                            const source = currentNode[MERMAID_SOURCE_PROP];
+                            if (source) {
+                                result += '\n```mermaid\n' + source + '\n```\n';
+                            }
+                            skipUntilEndOfBlock = currentNode;
+                            continue;
+                        }
+
                         if (currentNode.tagName === 'TABLE') {
                             result += '\n' + extractTable(currentNode) + '\n';
                             skipUntilEndOfBlock = currentNode;
@@ -405,8 +533,8 @@
                     } else if (currentNode.nodeType === Node.TEXT_NODE) {
                         const parent = currentNode.parentElement;
                         if (parent) {
-                            // Skip rendered math text that would duplicate the LaTeX source
-                            if (parent.closest('.katex, mjx-container, .MathJax')) {
+                            // Skip rendered math and diagram text that would duplicate the source
+                            if (parent.closest('.katex, mjx-container, .MathJax, .cascade-mermaid-container')) {
                                 continue;
                             }
                             if (parent.closest('[class*="language-"]')) {
@@ -474,6 +602,75 @@
                 if (mathEngine === 'mathjax' && window.MathJax?.typesetPromise) {
                     await window.MathJax.typesetPromise([contentEl]);
                     contentEl.setAttribute(MATH_ATTR, '1');
+                }
+            };
+
+            // Mermaid rendering
+
+            const renderMermaid = async (codeBlockContainer) => {
+                if (codeBlockContainer.getAttribute(MERMAID_ATTR) === '1') return;
+
+                const classStr = codeBlockContainer.className || '';
+                const classString = typeof classStr === 'string' ? classStr : (classStr.baseVal || '');
+                if (!classString.includes('language-mermaid')) return;
+
+                const codeBlock = codeBlockContainer.querySelector('.code-block');
+                if (!codeBlock) return;
+
+                const lines = codeBlock.querySelectorAll('.line-content');
+                let source = '';
+                lines.forEach((line, idx) => {
+                    source += line.textContent;
+                    if (idx < lines.length - 1) source += '\n';
+                });
+
+                if (!source.trim()) return;
+
+                // Mark the code block before rendering to prevent duplicate work
+                codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
+
+                try {
+                    await ensureMermaid();
+                    if (!mermaidReady || !window.mermaid) {
+                        console.warn('[Cascade] Mermaid 引擎未就绪');
+                        return;
+                    }
+
+                    const id = `cascade-mermaid-${++mermaidIdCounter}`;
+
+                    const { svg } = await window.mermaid.render(id, source);
+
+                    const container = document.createElement('div');
+                    container.className = 'cascade-mermaid-container';
+                    container.innerHTML = svg;
+                    container[MERMAID_SOURCE_PROP] = source; // Save the diagram source for Markdown copy
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.type = 'button';
+                    copyBtn.className = 'cascade-mermaid-copy';
+                    copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
+                    copyBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const text = '```mermaid\n' + source + '\n```';
+                        const ok = await writeClipboard(text);
+                        if (!ok) return;
+
+                        copyBtn.innerHTML = `<span>Copied!</span>${CHECK_ICON_SVG}`;
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyBtn.innerHTML = `<span>Copy</span>${COPY_ICON_SVG}`;
+                            copyBtn.classList.remove('copied');
+                        }, 1200);
+                    });
+                    container.appendChild(copyBtn);
+
+                    codeBlockContainer.replaceWith(container);
+
+                } catch (error) {
+                    console.error('[Cascade] Mermaid 渲染失败:', error);
+                    // Clear the marker on failure so a later scan can retry
+                    codeBlockContainer.removeAttribute(MERMAID_ATTR);
                 }
             };
 
@@ -577,6 +774,10 @@
                 root.querySelectorAll(CONTENT_SELECTOR).forEach((node) => {
                     ensureContentCopyButton(node);
                     void renderMath(node);
+                });
+
+                root.querySelectorAll('[class*="language-mermaid"]').forEach((node) => {
+                    void renderMermaid(node);
                 });
 
                 addFeedbackCopyButtons();
