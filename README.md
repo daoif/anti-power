@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v2.0.0-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v2.0.1-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/支持_Antigravity-v1.14.2-green.svg" alt="Antigravity">
@@ -134,6 +134,7 @@ macOS 版仍在开发中。
 
 | 补丁版本 | 支持的 Antigravity 版本 | 发布日期 | 更新内容 |
 |---------|------------------------|----------|----------|
+| v2.0.1  | v1.14.2                | 2026-01-14 | 性能优化，感谢 @mikessslxxx |
 | v2.0.0  | v1.14.2                | 2026-01-14 | 新增 Tauri 工具，支持功能单独开关 |
 | v1.2.1  | v1.13.3                | 2026-01-13 | Bug 修复 |
 | v1.2.0  | v1.13.3                | 2026-01-13 | Mermaid 渲染 |
@@ -159,7 +160,7 @@ macOS 版仍在开发中。
 
 ## 🙏 致谢
 
-- [@mikessslxxx](https://github.com/mikessslxxx) - v1.1.0 数学公式渲染、代码重构与优化
+- [@mikessslxxx](https://github.com/mikessslxxx) - v1.1.0 数学公式渲染、v2.0.1 性能优化
 
 ---
 
