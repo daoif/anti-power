@@ -1,0 +1,109 @@
+/* Base layout reset */
+body {
+    margin: 0;
+}
+
+/* Table text color in chat content */
+#react-app #chat table tbody {
+    color: var(--codeium-text-color) !important;
+}
+
+/* Shared copy button styling */
+.cascade-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 2px 6px;
+    border: 1px solid var(--vscode-editorWidget-border, transparent);
+    border-radius: 4px;
+    background: var(--vscode-editorWidget-background, transparent);
+    color: var(--vscode-editorWidget-foreground, currentColor);
+    font-size: 12px;
+    line-height: 1.2;
+    transition: opacity 0.12s ease, transform 0.1s ease;
+    cursor: pointer;
+    font: inherit;
+    appearance: none;
+}
+
+.cascade-copy-btn span {
+    opacity: 0.9;
+}
+
+.cascade-copy-btn svg {
+    height: 1rem;
+    width: 1rem;
+}
+
+.cascade-copy-btn.copied {
+    color: #22c55e;
+    opacity: 1;
+}
+
+/* Feedback copy button tweaks */
+.custom-copy-btn {
+    opacity: 0.7;
+}
+
+.custom-copy-btn:hover {
+    opacity: 1;
+}
+
+/* Show the message copy button on hover or focus */
+.cascade-copy-button {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    opacity: 0;
+    z-index: 1;
+}
+
+[data-cascade-copy-bound='1']:hover .cascade-copy-button,
+[data-cascade-copy-bound='1']:focus-within .cascade-copy-button {
+    opacity: 0.7;
+}
+
+.cascade-copy-button:hover {
+    opacity: 1 !important;
+}
+
+/* Mermaid render container */
+.cascade-mermaid-container {
+    position: relative;
+    margin: 1em 0;
+    padding: 1em;
+    border-radius: 8px;
+    background: var(--vscode-editor-background, #1e1e1e);
+    border: 1px solid var(--vscode-editorWidget-border, #454545);
+    overflow-x: auto;
+}
+
+.cascade-mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Mermaid copy button */
+.cascade-mermaid-copy {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--vscode-editorWidget-background, rgba(30, 30, 30, 0.8));
+    opacity: 0;
+    z-index: 1;
+}
+
+.cascade-mermaid-container:hover .cascade-mermaid-copy {
+    opacity: 0.7;
+}
+
+.cascade-mermaid-copy:hover {
+    opacity: 1 !important;
+}
+
+.cascade-mermaid-copy.copied {
+    color: #22c55e;
+    opacity: 1 !important;
+}
