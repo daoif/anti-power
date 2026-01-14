@@ -11,11 +11,15 @@
           <img src="../assets/logo.png" alt="logo" class="about-icon" />
         </div>
         
-        <h3 class="about-name">Anti-Power Patcher</h3>
+        <h3 class="about-name">Anti-Power</h3>
         <p class="about-version">版本 {{ version }}</p>
         
         <p class="about-desc">
           Antigravity AI IDE 增强补丁管理工具，让你的 AI 对话体验更上一层楼。
+        </p>
+        
+        <p class="about-qq">
+          QQ 交流群: <a href="#" @click.prevent="openQQGroup" class="qq-link">993975349</a>
         </p>
 
         <div class="about-actions">
@@ -114,6 +118,11 @@ async function openGitHub() {
   const { openUrl } = await import('@tauri-apps/plugin-opener');
   await openUrl(props.githubUrl);
 }
+
+async function openQQGroup() {
+  const { openUrl } = await import('@tauri-apps/plugin-opener');
+  await openUrl('https://qm.qq.com/q/AHUKoyLVKg');
+}
 </script>
 
 <style scoped>
@@ -198,7 +207,23 @@ async function openGitHub() {
   font-size: 13px;
   color: var(--ag-text-secondary);
   line-height: 1.5;
-  margin: 0 0 20px;
+  margin: 0 0 12px;
+}
+
+.about-qq {
+  font-size: 13px;
+  color: var(--ag-text-secondary);
+  margin: 0 0 16px;
+}
+
+.qq-link {
+  color: var(--ag-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.qq-link:hover {
+  text-decoration: underline;
 }
 
 .about-actions {

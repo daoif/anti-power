@@ -146,7 +146,7 @@ onMounted(() => {
 
 <template>
   <div class="app-wrapper">
-    <TitleBar title="Anti-Power Patcher" @openAbout="showAbout = true" />
+    <TitleBar title="Anti-Power" @openAbout="showAbout = true" />
     
     <main class="app-container">
       <PathCard 

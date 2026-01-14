@@ -18,8 +18,20 @@
 
 > **Antigravity AI IDE** 对话界面补丁。
 
+<p align="center">
+  💬 <a href="https://qm.qq.com/q/AHUKoyLVKg">QQ 交流群: 993975349</a>
+</p>
+
 ---
 
+
+## 🖼️ 工具预览
+
+<p align="center">
+  <img src="docs/images/patcher-screenshot.png" alt="Anti-Power Patcher" width="400">
+</p>
+
+---
 ## ✨ 功能特性
 
 | 功能 | 描述 |
@@ -87,58 +99,34 @@
 
 ## 📥 下载安装
 
-### 方式一：GitHub Releases（推荐）
+### Windows（推荐）
 
-前往 [Releases 页面](https://github.com/daoif/anti-power/releases) 下载最新版本。
+1. 前往 [Releases 页面](https://github.com/daoif/anti-power/releases) 下载 `anti-power.exe`
+2. 双击运行，**无需安装**
+3. 安装器自动检测 Antigravity 安装路径
+4. 选择需要的功能，点击「安装补丁」
+5. 重启 Antigravity，或另开一个 Antigravity 窗口查看效果
 
-### 方式二：直接下载文件
+> ⚠️ **当前仅支持 Windows 系统**
 
-下载本仓库的 `cascade-panel.html` 文件。
+### macOS
 
----
+macOS 版仍在开发中。
 
-## 🔧 安装步骤
-
-### 步骤一：找到 Antigravity 安装目录
-
-#### 📁 Windows
-
-1. 在桌面上右键点击 **Antigravity** 快捷方式
-2. 选择 **"属性 (Properties)"**
-3. 点击 **"打开文件所在位置 (Open File Location)"**
-4. 进入目录：`resources\app\extensions\antigravity\`
-
-**完整路径示例：**
-```
-C:\Program Files\Antigravity\resources\app\extensions\antigravity\
-```
+如需在 macOS 上使用，可参考下方手动安装方式（使用 [v1.2.1](https://github.com/daoif/anti-power/releases/tag/v1.2.1) 旧版本）。
 
 <details>
-<summary><b>📁 macOS</b></summary>
+<summary><b>📁 macOS 手动安装方式（旧版）</b></summary>
 
-1. 打开 **"应用程序 (Applications)"** 文件夹
-2. 右键点击 **Antigravity.app**
-3. 选择 **"显示包内容 (Show Package Contents)"**
-4. 进入目录：`Contents/Resources/app/extensions/antigravity/`
-
-**完整路径：**
-```
-/Applications/Antigravity.app/Contents/Resources/app/extensions/antigravity/
-```
+1. 下载 [v1.2.1](https://github.com/daoif/anti-power/releases/tag/v1.2.1) 的 `cascade-panel.html`
+2. 打开 **"应用程序 (Applications)"** 文件夹
+3. 右键点击 **Antigravity.app** → **"显示包内容 (Show Package Contents)"**
+4. 进入 `Contents/Resources/app/extensions/antigravity/`
+5. 备份原始 `cascade-panel.html`
+6. 用下载的文件替换
+7. 重启 Antigravity
 
 </details>
-
-### 步骤二：备份原文件（重要！）
-
-将原始 `cascade-panel.html` 重命名为 `cascade-panel.html.bak`，或复制到其他位置备份。
-
-### 步骤三：替换文件
-
-将下载的 `cascade-panel.html` 复制到上述目录，替换原文件。
-
-### 步骤四：重启 Antigravity
-
-**完全退出** Antigravity，再重新启动。
 
 ---
 
@@ -146,6 +134,7 @@ C:\Program Files\Antigravity\resources\app\extensions\antigravity\
 
 | 补丁版本 | 支持的 Antigravity 版本 | 发布日期 | 更新内容 |
 |---------|------------------------|----------|----------|
+| v2.0.0  | v1.14.2                | 2026-01-14 | 新增 Tauri 工具，支持功能单独开关 |
 | v1.2.1  | v1.13.3                | 2026-01-13 | Bug 修复 |
 | v1.2.0  | v1.13.3                | 2026-01-13 | Mermaid 渲染 |
 | v1.1.0  | v1.13.3                | 2026-01-13 | 数学公式渲染 |
