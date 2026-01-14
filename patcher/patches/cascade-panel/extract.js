@@ -21,8 +21,8 @@ const extractTable = (tableEl) => {
         const cellContents = [];
 
         cells.forEach((cell) => {
-            let cellText = cell.innerText || cell.textContent;
-            cellText = cellText.trim().replace(/\n/g, ' ');
+            let cellText = cell.textContent || '';
+            cellText = cellText.trim().replace(/\n/g, ' ').replace(/\|/g, '\\|');
             cellContents.push(cellText);
         });
 

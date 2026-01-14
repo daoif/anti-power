@@ -3,6 +3,8 @@ import { CHECK_ICON_SVG, COPY_ICON_SVG } from './icons.js';
 import { extractFormattedContent } from './extract.js';
 import { captureRawText, isEditable, writeClipboard } from './utils.js';
 
+const copyTimers = new WeakMap();
+
 /**
  * @param {string} label
  * @param {string} icon
@@ -36,6 +38,9 @@ export const createCopyButton = ({ className, tag = 'button' } = {}) => {
     const button = document.createElement(tag);
     if (tag === 'button') {
         button.type = 'button';
+    } else {
+        button.setAttribute('role', 'button');
+        button.tabIndex = 0;
     }
     if (className) {
         button.className = className;
@@ -67,11 +72,20 @@ export const bindCopyButton = (
         onCopyFailed,
     } = {}
 ) => {
-    button.addEventListener('click', async (event) => {
+    if (typeof getText !== 'function') return;
+
+    const handleCopy = async (event) => {
         if (preventDefault) event.preventDefault();
         if (stopPropagation) event.stopPropagation();
-        const text = await getText();
-        if (!text) {
+        let text = '';
+        try {
+            const resolved = await getText();
+            text = resolved == null ? '' : String(resolved);
+        } catch (error) {
+            if (onCopyFailed) onCopyFailed(error);
+            return;
+        }
+        if (!text.trim()) {
             if (onMissing) onMissing();
             return;
         }
@@ -82,10 +96,27 @@ export const bindCopyButton = (
         }
 
         setCopyState(button, true);
-        setTimeout(() => {
+        const existingTimer = copyTimers.get(button);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+        }
+        const timerId = window.setTimeout(() => {
             setCopyState(button, false);
+            copyTimers.delete(button);
         }, copiedDuration);
-    });
+        copyTimers.set(button, timerId);
+    };
+
+    button.addEventListener('click', handleCopy);
+
+    if (button.tagName !== 'BUTTON') {
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                if (event.key === ' ') event.preventDefault();
+                handleCopy(event);
+            }
+        });
+    }
 };
 
 /**

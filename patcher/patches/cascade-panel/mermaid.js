@@ -1,4 +1,10 @@
-import { MERMAID_ATTR, MERMAID_SOURCE_PROP, MERMAID_URL } from './constants.js';
+import {
+    MERMAID_ATTR,
+    MERMAID_CONTAINER_CLASS,
+    MERMAID_COPY_BTN_CLASS,
+    MERMAID_SOURCE_PROP,
+    MERMAID_URL,
+} from './constants.js';
 import { bindCopyButton, createCopyButton } from './copy.js';
 import { getClassString, loadScript } from './utils.js';
 
@@ -21,7 +27,7 @@ const initializeMermaid = () => {
             secondaryColor: '#2d4a6f',
             tertiaryColor: '#1e3a5f',
         },
-        securityLevel: 'loose',
+        securityLevel: 'strict',
         fontFamily: 'var(--vscode-font-family, "Segoe UI", sans-serif)',
     });
     mermaidReady = true;
@@ -106,14 +112,16 @@ export const renderMermaid = async (codeBlockContainer) => {
 
         let container = codeBlockContainer.nextElementSibling;
         let copyBtn = null;
-        if (!container || !container.classList.contains('cascade-mermaid-container')) {
+        const hasContainer = container && container.classList.contains(MERMAID_CONTAINER_CLASS);
+        if (!hasContainer) {
             container = document.createElement('div');
-            container.className = 'cascade-mermaid-container';
+            container.className = MERMAID_CONTAINER_CLASS;
             codeBlockContainer.insertAdjacentElement('afterend', container);
+        }
 
-            codeBlockContainer.style.display = 'none';
-
-            copyBtn = createCopyButton({ className: 'cascade-mermaid-copy' });
+        copyBtn = container.querySelector(`.${MERMAID_COPY_BTN_CLASS}`);
+        if (!copyBtn) {
+            copyBtn = createCopyButton({ className: MERMAID_COPY_BTN_CLASS });
             bindCopyButton(copyBtn, {
                 getText: () => {
                     const mermaidSource = codeBlockContainer[MERMAID_SOURCE_PROP] || '';
@@ -124,19 +132,25 @@ export const renderMermaid = async (codeBlockContainer) => {
                 preventDefault: true,
                 stopPropagation: true,
             });
-            container.appendChild(copyBtn);
-        } else {
-            copyBtn = container.querySelector('.cascade-mermaid-copy');
         }
 
         container.innerHTML = svg;
+        container.style.display = '';
         if (copyBtn) {
             container.appendChild(copyBtn);
         }
 
+        codeBlockContainer.style.display = 'none';
         codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
     } catch (error) {
         console.error('[Cascade] Mermaid 渲染失败:', error);
         delete codeBlockContainer[MERMAID_SOURCE_PROP];
+        codeBlockContainer.removeAttribute(MERMAID_ATTR);
+        codeBlockContainer.style.display = '';
+        const container = codeBlockContainer.nextElementSibling;
+        if (container && container.classList.contains(MERMAID_CONTAINER_CLASS)) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+        }
     }
 };
