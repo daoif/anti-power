@@ -1,22 +1,56 @@
 import { MATH_ATTR, RAW_TEXT_PROP } from './constants.js';
 
+const stylePromises = new Map();
+const scriptPromises = new Map();
+
+const waitForResource = (el, url, cache, label) =>
+    new Promise((resolve, reject) => {
+        const onLoad = () => {
+            el.dataset.cascadeLoaded = '1';
+            delete el.dataset.cascadeLoading;
+            resolve();
+        };
+        const onError = () => {
+            cache.delete(url);
+            reject(new Error(`Failed to load ${label}: ${url}`));
+        };
+        el.addEventListener('load', onLoad, { once: true });
+        el.addEventListener('error', onError, { once: true });
+    });
+
 /**
  * Reuse an existing link for the same URL to avoid duplicate requests
  *
  * @param {string} href
  * @returns {Promise<void>} Resolves when the resource is available
  */
-export const loadStyle = (href) =>
-    new Promise((resolve, reject) => {
-        if (!href) return reject(new Error('Missing stylesheet URL'));
-        if (document.querySelector(`link[href="${href}"]`)) return resolve();
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = href;
-        link.onload = () => resolve();
-        link.onerror = () => reject(new Error(`Failed to load stylesheet: ${href}`));
-        document.head.appendChild(link);
-    });
+export const loadStyle = (href) => {
+    if (!href) return Promise.reject(new Error('Missing stylesheet URL'));
+    if (stylePromises.has(href)) return stylePromises.get(href);
+
+    const existing = document.querySelector(`link[rel="stylesheet"][href="${href}"]`);
+    if (existing) {
+        if (existing.dataset.cascadeLoaded === '1') return Promise.resolve();
+        if (existing.dataset.cascadeLoading === '1') {
+            const promise = waitForResource(existing, href, stylePromises, 'stylesheet');
+            stylePromises.set(href, promise);
+            return promise;
+        }
+        return Promise.resolve();
+    }
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.crossOrigin = 'anonymous';
+    link.referrerPolicy = 'no-referrer';
+    link.dataset.cascadeLoading = '1';
+
+    const promise = waitForResource(link, href, stylePromises, 'stylesheet');
+    stylePromises.set(href, promise);
+    document.head.appendChild(link);
+    return promise;
+};
 
 /**
  * Reuse an existing script for the same URL to avoid duplicate requests
@@ -24,17 +58,33 @@ export const loadStyle = (href) =>
  * @param {string} src
  * @returns {Promise<void>} Resolves when the resource is available
  */
-export const loadScript = (src) =>
-    new Promise((resolve, reject) => {
-        if (!src) return reject(new Error('Missing script URL'));
-        if (document.querySelector(`script[src="${src}"]`)) return resolve();
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-        document.head.appendChild(script);
-    });
+export const loadScript = (src) => {
+    if (!src) return Promise.reject(new Error('Missing script URL'));
+    if (scriptPromises.has(src)) return scriptPromises.get(src);
+
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+        if (existing.dataset.cascadeLoaded === '1') return Promise.resolve();
+        if (existing.dataset.cascadeLoading === '1') {
+            const promise = waitForResource(existing, src, scriptPromises, 'script');
+            scriptPromises.set(src, promise);
+            return promise;
+        }
+        return Promise.resolve();
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.referrerPolicy = 'no-referrer';
+    script.dataset.cascadeLoading = '1';
+
+    const promise = waitForResource(script, src, scriptPromises, 'script');
+    scriptPromises.set(src, promise);
+    document.head.appendChild(script);
+    return promise;
+};
 
 /**
  * Check the closest editable ancestor to protect inputs from renderer changes

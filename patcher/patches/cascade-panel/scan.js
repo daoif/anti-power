@@ -16,9 +16,16 @@ let config = {
  * @returns {void}
  */
 const scan = (root) => {
-    if (!root) return;
+    if (!root || !root.isConnected) return;
 
-    root.querySelectorAll(CONTENT_SELECTOR).forEach((node) => {
+    // Include the root because the mutated node can itself be a content region
+    const contentNodes = [];
+    if (root.matches && root.matches(CONTENT_SELECTOR)) {
+        contentNodes.push(root);
+    }
+    contentNodes.push(...root.querySelectorAll(CONTENT_SELECTOR));
+
+    contentNodes.forEach((node) => {
         if (config.copyButton) {
             ensureContentCopyButton(node);
         }
@@ -28,13 +35,15 @@ const scan = (root) => {
     });
 
     if (config.mermaid) {
-        root.querySelectorAll('[class*="language-mermaid"]').forEach((node) => {
+        const mermaidNodes = [];
+        if (root.matches && root.matches('[class*="language-mermaid"]')) {
+            mermaidNodes.push(root);
+        }
+        mermaidNodes.push(...root.querySelectorAll('[class*="language-mermaid"]'));
+
+        mermaidNodes.forEach((node) => {
             void renderMermaid(node);
         });
-    }
-
-    if (config.copyButton) {
-        addFeedbackCopyButtons();
     }
 };
 
@@ -47,18 +56,47 @@ const getRoot = () =>
     document.getElementById('react-app') ||
     document.body;
 
+let pendingNodes = new Set();
 let scheduled = false;
-/**
- * Batch DOM mutations into one scan per animation frame
- * @returns {void}
- */
-const scheduleScan = () => {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => {
-        scheduled = false;
-        scan(getRoot());
+
+const flushScan = () => {
+    scheduled = false;
+    const nodes = [...pendingNodes];
+    pendingNodes.clear();
+
+    nodes.forEach(node => {
+        if (node.isConnected) scan(node);
     });
+
+    if (config.copyButton) {
+        addFeedbackCopyButtons();
+    }
+};
+
+/** @param {NodeList|Array} nodes */
+const scheduleScan = (nodes) => {
+    let hasElements = false;
+    const enqueue = (target) => {
+        if (!target) return;
+        const contentRoot = target.closest ? target.closest(CONTENT_SELECTOR) : null;
+        pendingNodes.add(contentRoot || target);
+        hasElements = true;
+    };
+
+    nodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            enqueue(node);
+            return;
+        }
+        if (node.parentElement) {
+            enqueue(node.parentElement);
+        }
+    });
+
+    if (hasElements && !scheduled) {
+        scheduled = true;
+        requestAnimationFrame(flushScan);
+    }
 };
 
 /**
@@ -68,9 +106,29 @@ const scheduleScan = () => {
 const init = () => {
     const root = getRoot();
     scan(root);
+    if (config.copyButton) {
+        addFeedbackCopyButtons();
+    }
 
-    const observer = new MutationObserver(scheduleScan);
-    observer.observe(root, { childList: true, subtree: true });
+    const observer = new MutationObserver((mutations) => {
+        const nodesToScan = [];
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'characterData') {
+                if (mutation.target.parentElement) {
+                    nodesToScan.push(mutation.target.parentElement);
+                }
+                return;
+            }
+            if (mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach((node) => nodesToScan.push(node));
+            }
+        });
+        if (nodesToScan.length > 0) {
+            scheduleScan(nodesToScan);
+        }
+    });
+
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
 };
 
 /**

@@ -77,13 +77,10 @@ export const ensureMathEngine = () => {
 export const renderMath = async (contentEl) => {
     if (!contentEl || isEditable(contentEl)) return;
 
-    captureRawText(contentEl);
     const text = contentEl.textContent || '';
     if (!MATH_HINT_RE.test(text)) return;
 
-    if (contentEl.getAttribute(MATH_ATTR) === '1' && !MATH_HINT_RE.test(text)) {
-        return;
-    }
+    captureRawText(contentEl);
 
     await ensureMathEngine();
 

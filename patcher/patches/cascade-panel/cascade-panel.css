@@ -16,8 +16,9 @@ body {
     font-size: 12px;
     line-height: 1.2;
     transition: opacity 0.12s ease, transform 0.1s ease;
+    font-family: var(--vscode-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     cursor: pointer;
-    font: inherit;
+    box-sizing: border-box;
     appearance: none;
 }
 
