@@ -8,3 +8,13 @@ tests/temp/
 # Playwright 测试产物
 tests/test-results/
 tests/playwright-report/
+
+# Patcher 前端
+patcher/node_modules/
+patcher/dist/
+patcher/package-lock.json
+
+# Patcher Tauri (Rust)
+patcher/src-tauri/target/
+patcher/src-tauri/Cargo.lock
+patcher/src-tauri/gen/

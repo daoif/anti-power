@@ -1,0 +1,4 @@
+/* Table text color fix for dark theme */
+#react-app #chat table tbody {
+    color: var(--codeium-text-color) !important;
+}

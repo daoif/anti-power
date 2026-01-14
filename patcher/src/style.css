@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* Base styles for the Antigravity dark theme */
+:root {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+
+  /* Theme colors */
+  --ag-bg: #0d0d0d;
+  --ag-surface: #1a1a1a;
+  --ag-surface-2: #252525;
+  --ag-border: #333333;
+  --ag-text: #ffffff;
+  --ag-text-secondary: #a0a0a0;
+  --ag-accent: #4a9eff;
+  --ag-accent-hover: #6ab0ff;
+  --ag-success: #22c55e;
+  --ag-warning: #f59e0b;
+  --ag-error: #ef4444;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--ag-bg);
+  color: var(--ag-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep form inputs selectable while disabling selection in the patcher UI */
+*:not(input):not(textarea) {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ag-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

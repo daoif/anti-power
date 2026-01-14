@@ -3,11 +3,6 @@ body {
     margin: 0;
 }
 
-/* Table text color in chat content */
-#react-app #chat table tbody {
-    color: var(--codeium-text-color) !important;
-}
-
 /* Shared copy button styling */
 .cascade-copy-btn {
     display: flex;

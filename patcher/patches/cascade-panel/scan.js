@@ -3,9 +3,15 @@ import { addFeedbackCopyButtons, ensureContentCopyButton } from './copy.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
+/** The patch entry point supplies feature overrides */
+let config = {
+    mermaid: true,
+    math: true,
+    copyButton: true,
+    tableColor: true
+};
+
 /**
- * Each scan queries the root with selectors, so finer-grained observation could reduce the cost
- *
  * @param {Element} root
  * @returns {void}
  */
@@ -13,15 +19,23 @@ const scan = (root) => {
     if (!root) return;
 
     root.querySelectorAll(CONTENT_SELECTOR).forEach((node) => {
-        ensureContentCopyButton(node);
-        void renderMath(node);
+        if (config.copyButton) {
+            ensureContentCopyButton(node);
+        }
+        if (config.math) {
+            void renderMath(node);
+        }
     });
 
-    root.querySelectorAll('[class*="language-mermaid"]').forEach((node) => {
-        void renderMermaid(node);
-    });
+    if (config.mermaid) {
+        root.querySelectorAll('[class*="language-mermaid"]').forEach((node) => {
+            void renderMermaid(node);
+        });
+    }
 
-    addFeedbackCopyButtons();
+    if (config.copyButton) {
+        addFeedbackCopyButtons();
+    }
 };
 
 /**
@@ -60,10 +74,12 @@ const init = () => {
 };
 
 /**
- * Wait for DOM readiness before starting the scan
+ * @param {Object} userConfig - Feature overrides
  * @returns {void}
  */
-export const start = () => {
+export const start = (userConfig = {}) => {
+    config = { ...config, ...userConfig };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
