@@ -1,47 +1,53 @@
 <template>
-  <section class="card">
-    <h2 class="card-title">侧边栏设置</h2>
+  <section class="card" :class="{ 'is-disabled': !model.enabled }">
+    <div class="card-header">
+      <h2 class="card-title">侧边栏设置</h2>
+      <label class="enable-toggle" @click.stop>
+        <span class="toggle-label">启用补丁</span>
+        <input type="checkbox" v-model="model.enabled" class="checkbox">
+      </label>
+    </div>
     
     <div class="feature-list">
-      <label class="feature-item">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">Mermaid 流程图渲染</span>
           <p class="feature-desc">自动渲染 Mermaid 代码块为流程图</p>
         </div>
-        <input type="checkbox" v-model="model.mermaid" class="checkbox">
+        <input type="checkbox" v-model="model.mermaid" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">数学公式渲染</span>
           <p class="feature-desc">使用 KaTeX/MathJax 渲染 LaTeX 公式</p>
         </div>
-        <input type="checkbox" v-model="model.math" class="checkbox">
+        <input type="checkbox" v-model="model.math" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">一键复制按钮</span>
           <p class="feature-desc">在内容区域添加复制按钮</p>
         </div>
-        <input type="checkbox" v-model="model.copyButton" class="checkbox">
+        <input type="checkbox" v-model="model.copyButton" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">表格颜色修复</span>
           <p class="feature-desc">修复深色主题下表格文字不可见问题</p>
         </div>
-        <input type="checkbox" v-model="model.tableColor" class="checkbox">
+        <input type="checkbox" v-model="model.tableColor" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">侧边栏字体大小</span>
           <p class="feature-desc">调整 Cascade 面板整体字体大小</p>
         </div>
         <div class="feature-controls">
-          <input type="checkbox" v-model="model.fontSizeEnabled" class="checkbox">
+          <input type="checkbox" v-model="model.fontSizeEnabled" class="checkbox" :disabled="!model.enabled">
           <input
             type="number"
             v-model.number="model.fontSize"
@@ -49,7 +55,7 @@
             min="10"
             max="40"
             step="1"
-            :disabled="!model.fontSizeEnabled"
+            :disabled="!model.enabled || !model.fontSizeEnabled"
           >
         </div>
       </label>
@@ -59,6 +65,7 @@
 
 <script setup lang="ts">
 export interface FeatureFlags {
+  enabled: boolean;
   mermaid: boolean;
   math: boolean;
   copyButton: boolean;
@@ -77,6 +84,18 @@ const model = defineModel<FeatureFlags>({ required: true });
   padding: 20px;
   margin-bottom: 20px;
   border: 1px solid var(--ag-border);
+  transition: opacity 0.2s;
+}
+
+.card.is-disabled {
+  opacity: 0.6;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 .card-title {
@@ -85,7 +104,19 @@ const model = defineModel<FeatureFlags>({ required: true });
   color: var(--ag-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+.enable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--ag-text-secondary);
 }
 
 .feature-list {
@@ -100,6 +131,12 @@ const model = defineModel<FeatureFlags>({ required: true });
   justify-content: space-between;
   cursor: pointer;
   padding: 8px 0;
+  transition: opacity 0.2s;
+}
+
+.feature-item.item-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .feature-info { flex: 1; }
@@ -120,6 +157,10 @@ const model = defineModel<FeatureFlags>({ required: true });
   height: 18px;
   accent-color: var(--ag-accent);
   cursor: pointer;
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
 }
 
 .feature-controls {

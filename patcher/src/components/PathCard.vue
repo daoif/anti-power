@@ -32,7 +32,7 @@
         <div class="target-item">
           <div class="target-header">
             <span class="target-label">cascade-panel 增强</span>
-            <button class="open-btn" @click="openTargetDir" title="打开目录">
+            <button class="open-btn" @click="openTargetDir(targetPath)" title="打开目录">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -41,6 +41,19 @@
             </button>
           </div>
           <code class="target-path">{{ targetPath }}</code>
+        </div>
+        <div class="target-item">
+          <div class="target-header">
+            <span class="target-label">Agent Manager 窗口增强</span>
+            <button class="open-btn" @click="openTargetDir(managerTargetPath)" title="打开目录">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+          </div>
+          <code class="target-path">{{ managerTargetPath }}</code>
         </div>
       </div>
     </details>
@@ -65,10 +78,16 @@ const targetPath = computed(() => {
   return `${props.modelValue}${sep}resources${sep}app${sep}extensions${sep}antigravity`;
 });
 
-async function openTargetDir() {
-  if (!targetPath.value) return;
+const managerTargetPath = computed(() => {
+  if (!props.modelValue) return '';
+  const sep = props.modelValue.includes('/') ? '/' : '\\';
+  return `${props.modelValue}${sep}resources${sep}app${sep}out${sep}vs${sep}code${sep}electron-browser${sep}workbench`;
+});
+
+async function openTargetDir(path: string) {
+  if (!path) return;
   try {
-    await openPath(targetPath.value);
+    await openPath(path);
   } catch (e) {
     console.error('打开目录失败:', e);
   }
@@ -202,6 +221,9 @@ async function openTargetDir() {
   background: var(--ag-surface-2);
   border-radius: 6px;
   border: 1px solid var(--ag-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .target-item {

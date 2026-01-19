@@ -9,6 +9,8 @@ use crate::embedded;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct FeatureConfig {
+    /// Enable the sidebar patch or restore the original sidebar files
+    pub enabled: bool,
     pub mermaid: bool,
     pub math: bool,
     #[serde(rename = "copyButton")]
@@ -24,6 +26,7 @@ pub struct FeatureConfig {
 impl Default for FeatureConfig {
     fn default() -> Self {
         Self {
+            enabled: true,
             mermaid: true,
             math: true,
             copy_button: true,
@@ -38,6 +41,8 @@ impl Default for FeatureConfig {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ManagerFeatureConfig {
+    /// Enable the Manager patch or restore the original Manager files
+    pub enabled: bool,
     pub mermaid: bool,
     pub math: bool,
     #[serde(rename = "copyButton")]
@@ -51,6 +56,7 @@ pub struct ManagerFeatureConfig {
 impl Default for ManagerFeatureConfig {
     fn default() -> Self {
         Self {
+            enabled: false,
             mermaid: false,
             math: false,
             copy_button: true,
@@ -93,9 +99,19 @@ pub fn install_patch(
         return Err("Manager 窗口目录不存在".to_string());
     }
 
-    backup_original_files(&extensions_dir, &workbench_dir)?;
+    if features.enabled {
+        backup_cascade_files(&extensions_dir)?;
+        write_cascade_patches(&extensions_dir, &features)?;
+    } else {
+        restore_cascade_files(&extensions_dir)?;
+    }
 
-    write_embedded_patches(&extensions_dir, &workbench_dir, &features, &manager_features)?;
+    if manager_features.enabled {
+        backup_manager_files(&workbench_dir)?;
+        write_manager_patches(&workbench_dir, &manager_features)?;
+    } else {
+        restore_manager_files(&workbench_dir)?;
+    }
 
     Ok(())
 }
@@ -213,59 +229,49 @@ pub fn read_patch_config(path: String) -> Result<Option<FeatureConfig>, String> 
     Ok(Some(config))
 }
 
-/// Back up the original files
-fn backup_original_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
+/// Back up the original sidebar files
+fn backup_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_panel.exists() && !cascade_backup.exists() {
         fs::copy(&cascade_panel, &cascade_backup)
             .map_err(|e| format!("备份 cascade-panel.html 失败: {}", e))?;
     }
+    Ok(())
+}
 
+/// Back up the original Manager files
+fn backup_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
     let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
     let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
     if jetski_agent.exists() && !jetski_backup.exists() {
         fs::copy(&jetski_agent, &jetski_backup)
             .map_err(|e| format!("备份 workbench-jetski-agent.html 失败: {}", e))?;
     }
-
     Ok(())
 }
 
-/// Write the embedded patch files
-fn write_embedded_patches(
-    extensions_dir: &PathBuf,
-    workbench_dir: &PathBuf,
-    features: &FeatureConfig,
-    manager_features: &ManagerFeatureConfig
-) -> Result<(), String> {
+/// Write the sidebar patch files
+fn write_cascade_patches(extensions_dir: &PathBuf, features: &FeatureConfig) -> Result<(), String> {
     let cascade_panel_dir = extensions_dir.join("cascade-panel");
-    
-    let manager_panel_dir = workbench_dir.join("manager-panel");
     
     // Remove the old directory so obsolete patch files cannot linger
     if cascade_panel_dir.exists() {
         fs::remove_dir_all(&cascade_panel_dir)
             .map_err(|e| format!("删除旧 cascade-panel 目录失败: {}", e))?;
     }
-    if manager_panel_dir.exists() {
-        fs::remove_dir_all(&manager_panel_dir)
-            .map_err(|e| format!("删除旧 manager-panel 目录失败: {}", e))?;
-    }
     
     fs::create_dir_all(&cascade_panel_dir)
         .map_err(|e| format!("创建 cascade-panel 目录失败: {}", e))?;
-    fs::create_dir_all(&manager_panel_dir)
-        .map_err(|e| format!("创建 manager-panel 目录失败: {}", e))?;
     
-    // Read the patch files from disk when available in development builds
     let patch_files = embedded::get_all_files_runtime()?;
     for (relative_path, content) in patch_files {
-        let full_path = if relative_path.starts_with("manager-panel") || relative_path == "workbench-jetski-agent.html" {
-            workbench_dir.join(&relative_path)
-        } else {
-            extensions_dir.join(&relative_path)
-        };
+        // Skip the Manager entry and assets here
+        if relative_path.starts_with("manager-panel") || relative_path == "workbench-jetski-agent.html" {
+            continue;
+        }
+        
+        let full_path = extensions_dir.join(&relative_path);
         
         if let Some(parent) = full_path.parent() {
             if !parent.exists() {
@@ -281,6 +287,41 @@ fn write_embedded_patches(
     let cascade_config_path = cascade_panel_dir.join("config.json");
     write_config_file(&cascade_config_path, features)?;
 
+    Ok(())
+}
+
+/// Write the Manager patch files
+fn write_manager_patches(workbench_dir: &PathBuf, manager_features: &ManagerFeatureConfig) -> Result<(), String> {
+    let manager_panel_dir = workbench_dir.join("manager-panel");
+    
+    // Remove the old directory so obsolete patch files cannot linger
+    if manager_panel_dir.exists() {
+        fs::remove_dir_all(&manager_panel_dir)
+            .map_err(|e| format!("删除旧 manager-panel 目录失败: {}", e))?;
+    }
+    
+    fs::create_dir_all(&manager_panel_dir)
+        .map_err(|e| format!("创建 manager-panel 目录失败: {}", e))?;
+    
+    let patch_files = embedded::get_all_files_runtime()?;
+    for (relative_path, content) in patch_files {
+        if !relative_path.starts_with("manager-panel") && relative_path != "workbench-jetski-agent.html" {
+            continue;
+        }
+        
+        let full_path = workbench_dir.join(&relative_path);
+        
+        if let Some(parent) = full_path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent)
+                    .map_err(|e| format!("创建目录失败: {}", e))?;
+            }
+        }
+        
+        fs::write(&full_path, content)
+            .map_err(|e| format!("写入文件失败 {:?}: {}", full_path, e))?;
+    }
+    
     let manager_config_path = manager_panel_dir.join("config.json");
     write_manager_config_file(&manager_config_path, manager_features)?;
 
@@ -320,8 +361,8 @@ fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureCon
     Ok(())
 }
 
-/// Restore the backed-up files
-fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
+/// Restore the original sidebar files when the patch is disabled
+fn restore_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_backup.exists() {
@@ -329,17 +370,22 @@ fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Re
             .map_err(|e| format!("恢复 cascade-panel.html 失败: {}", e))?;
     }
 
+    let cascade_dir = extensions_dir.join("cascade-panel");
+    if cascade_dir.exists() {
+        fs::remove_dir_all(&cascade_dir)
+            .map_err(|e| format!("删除 cascade-panel 目录失败: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/// Restore the original Manager files when the patch is disabled
+fn restore_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
     let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
     let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
     if jetski_backup.exists() {
         fs::copy(&jetski_backup, &jetski_agent)
             .map_err(|e| format!("恢复 workbench-jetski-agent.html 失败: {}", e))?;
-    }
-
-    let cascade_dir = extensions_dir.join("cascade-panel");
-    if cascade_dir.exists() {
-        fs::remove_dir_all(&cascade_dir)
-            .map_err(|e| format!("删除 cascade-panel 目录失败: {}", e))?;
     }
 
     let manager_dir = workbench_dir.join("manager-panel");
@@ -350,3 +396,11 @@ fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Re
 
     Ok(())
 }
+
+/// Restore all backed-up files during a full uninstall
+fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
+    restore_cascade_files(extensions_dir)?;
+    restore_manager_files(workbench_dir)?;
+    Ok(())
+}
+

@@ -31,3 +31,22 @@ Antigravity 的 Markdown 解析器会把 `|` 当作表格分隔符，导致公�
 - Manager 窗口设置中的「字体大小」
 
 **备注**：该功能保留为占位，后续会在 Manager 渲染链路稳定后补齐。
+
+---
+
+## Manager 补丁导致"安装损坏"提示
+
+**问题描述**：启用 Manager 补丁后，打开 Antigravity 时左下角会弹出"Antigravity 安装似乎损坏。请重新安装。"的提示。
+
+**影响范围**：
+- 仅当 Manager 补丁启用时出现
+- 侧边栏补丁不受影响
+
+**原因**：Manager 补丁需要修改 `workbench-jetski-agent.html` 文件，Antigravity 启动时会检测该文件的完整性，发现被修改后会弹出此警告。
+
+**说明**：这是**预期行为**，不影响 Antigravity 的正常使用。如果不希望看到此提示，可以在 Patcher 中禁用 Manager 补丁。
+
+**变通方案**：
+1. 忽略该提示，点击关闭即可
+2. 如确实不需要 Manager 功能增强，在 Patcher 中关闭「Manager 窗口设置 → 启用补丁」开关
+

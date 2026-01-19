@@ -1,9 +1,19 @@
 <template>
-  <section class="card">
-    <h2 class="card-title">Manager 窗口设置</h2>
+  <section class="card" :class="{ 'is-disabled': !model.enabled }">
+    <div class="card-header">
+      <h2 class="card-title">Manager 窗口设置</h2>
+      <label class="enable-toggle" @click.stop>
+        <span class="toggle-label">启用补丁</span>
+        <input type="checkbox" v-model="model.enabled" class="checkbox">
+      </label>
+    </div>
+
+    <div v-if="model.enabled" class="warning-tip">
+      ⚠️ 启用后，Antigravity 左下角会提示"安装似乎损坏"，这是预期行为。
+    </div>
     
     <div class="feature-list">
-      <label class="feature-item is-disabled">
+      <label class="feature-item is-disabled" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">Mermaid 流程图渲染</span>
           <p class="feature-desc">暂未支持，后续开放</p>
@@ -11,7 +21,7 @@
         <input type="checkbox" v-model="model.mermaid" class="checkbox" disabled>
       </label>
 
-      <label class="feature-item is-disabled">
+      <label class="feature-item is-disabled" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">数学公式渲染</span>
           <p class="feature-desc">暂未支持，后续开放</p>
@@ -19,15 +29,15 @@
         <input type="checkbox" v-model="model.math" class="checkbox" disabled>
       </label>
 
-      <label class="feature-item">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">一键复制按钮</span>
           <p class="feature-desc">在消息区域添加复制按钮</p>
         </div>
-        <input type="checkbox" v-model="model.copyButton" class="checkbox">
+        <input type="checkbox" v-model="model.copyButton" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item is-disabled">
+      <label class="feature-item is-disabled" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">Manager 字体大小</span>
           <p class="feature-desc">暂未支持，后续开放</p>
@@ -51,6 +61,7 @@
 
 <script setup lang="ts">
 export interface ManagerFeatureFlags {
+  enabled: boolean;
   mermaid: boolean;
   math: boolean;
   copyButton: boolean;
@@ -68,6 +79,18 @@ const model = defineModel<ManagerFeatureFlags>({ required: true });
   padding: 20px;
   margin-bottom: 20px;
   border: 1px solid var(--ag-border);
+  transition: opacity 0.2s;
+}
+
+.card.is-disabled {
+  opacity: 0.6;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 .card-title {
@@ -76,7 +99,29 @@ const model = defineModel<ManagerFeatureFlags>({ required: true });
   color: var(--ag-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+.enable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--ag-text-secondary);
+}
+
+.warning-tip {
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #eab308;
 }
 
 .feature-list {
@@ -91,10 +136,16 @@ const model = defineModel<ManagerFeatureFlags>({ required: true });
   justify-content: space-between;
   cursor: pointer;
   padding: 8px 0;
+  transition: opacity 0.2s;
 }
 
 .feature-item.is-disabled {
   opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.feature-item.item-disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -121,6 +172,10 @@ const model = defineModel<ManagerFeatureFlags>({ required: true });
   height: 18px;
   accent-color: var(--ag-accent);
   cursor: pointer;
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
 }
 
 .feature-controls {

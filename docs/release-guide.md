@@ -20,7 +20,7 @@ cd patcher
 npm run tauri:build
 ```
 
-产物位置：`patcher/src-tauri/target/release/patcher.exe`
+产物位置：`patcher/src-tauri/target/release/anti-power.exe`
 
 ### 编译选项
 
@@ -49,7 +49,7 @@ git push origin vX.Y.Z
 
 3. 访问 [GitHub Releases](https://github.com/daoif/anti-power/releases/new)
 4. 选择标签，填写发布说明
-5. 上传 `patcher.exe`
+5. 上传 `anti-power.exe`
 6. 发布
 
 ---

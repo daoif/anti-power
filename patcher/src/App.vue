@@ -35,6 +35,7 @@ const showAbout = ref(false);
 const showConfirm = ref(false);
 
 const features = ref({
+  enabled: true,
   mermaid: true,
   math: true,
   copyButton: true,
@@ -43,8 +44,9 @@ const features = ref({
   fontSize: 20,
 });
 
-// Manager settings are independent of sidebar settings
+// Manager has independent settings and starts disabled
 const managerFeatures = ref({
+  enabled: false,
   mermaid: false,
   math: false,
   copyButton: true,

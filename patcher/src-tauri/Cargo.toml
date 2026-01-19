@@ -1,5 +1,5 @@
 [package]
-name = "patcher"
+name = "anti-power"
 version = "2.1.0"
 description = "A Tauri App"
 authors = ["you"]
