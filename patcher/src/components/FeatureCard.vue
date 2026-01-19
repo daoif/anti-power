@@ -1,6 +1,6 @@
 <template>
   <section class="card">
-    <h2 class="card-title">功能设置</h2>
+    <h2 class="card-title">侧边栏设置</h2>
     
     <div class="feature-list">
       <label class="feature-item">

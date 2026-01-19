@@ -1,7 +1,7 @@
 # Manager 窗口增强计划
 
 > 创建日期：2026-01-14  
-> 状态：**Hook 方案已验证，待实现功能**
+> 状态：**Manager 模块已接入安装器，功能持续迭代中**
 
 ## 📌 目标
 
@@ -11,20 +11,21 @@
 
 ## 📦 项目文件
 
-### 需要部署的文件
+### 需要部署的文件（安装器使用）
 
 | 源文件 | 目标路径 |
 |--------|----------|
-| `workbench-jetski-agent.html` | `E:\Program Files\Antigravity\resources\app\out\vs\code\electron-browser\workbench\` |
-| `manager-enhancement.js` | 同上 |
+| `patcher/patches/workbench-jetski-agent.html` | `E:\Program Files\Antigravity\resources\app\out\vs\code\electron-browser\workbench\` |
+| `patcher/patches/manager-panel/*` | 同上（`manager-panel/` 目录） |
 
-### 开发/测试文件
+### 开发/测试脚本
 
 | 文件 | 说明 |
 |------|------|
 | `tests/connect-antigravity.js` | 连接调试端口，列出所有页面 |
-| `tests/dump-manager-dom.js` | 导出 Manager 窗口的 DOM 结构 |
-| `tests/manager-dom-full.html` | 导出的完整运行时 DOM（82KB） |
+| `tests/dump-manager-dom.js` | 导出 Manager 窗口 DOM 到 `tests/temp` |
+| `tests/debug-manager.js` | 快速检查补丁加载与关键选择器 |
+| `tests/debug-manager-advanced.js` | 深度诊断脚本 |
 
 ---
 
@@ -57,6 +58,10 @@ node connect-antigravity.js "ws://127.0.0.1:9222/devtools/browser/你的UUID"
 
 # 导出 Manager 窗口 DOM
 node dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/你的UUID"
+
+# 诊断补丁加载/渲染状态
+node debug-manager.js
+node debug-manager-advanced.js
 ```
 
 > ⚠️ 每次重启 Antigravity，WebSocket URL 的 UUID 会变化
@@ -77,7 +82,7 @@ node dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/你的UUID"
 2. **远程调试连接** - 通过 `connectOverCDP` 成功连接
 3. **DOM 结构导出** - 获取了 Manager 窗口完整 HTML
 4. **🎉 Hook 方案验证成功** - 修改 `workbench-jetski-agent.html` 后红色边框立即生效
-5. **增强脚本框架** - 创建了 `manager-enhancement.js` 占位文件
+5. **✅ Manager 模块已接入安装器** - `manager-panel/` 已可随补丁部署
 
 ---
 
@@ -93,9 +98,9 @@ node dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/你的UUID"
 
 ## 💡 下一步
 
-1. **导出带对话内容的 DOM** - 分析聊天区域结构
-2. **确定改造点** - 对比侧边栏 `cascade-panel.html` 的增强方式
-3. **实现 `manager-enhancement.js`** - 添加实际功能
+1. **补齐渲染链路** - Mermaid / 数学公式 / 字号支持
+2. **完善样式一致性** - 与侧边栏复制按钮视觉对齐
+3. **完善调试脚本** - 快速定位 Manager 渲染问题
 
 ---
 

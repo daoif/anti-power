@@ -1,0 +1,142 @@
+/* Manager styles are independent of the legacy Cascade panel */
+
+/* Shared copy button style */
+.manager-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 2px 6px;
+    border: 1px solid var(--vscode-editorWidget-border, transparent);
+    border-radius: 4px;
+    background: var(--vscode-editorWidget-background, transparent);
+    color: var(--vscode-editorWidget-foreground, currentColor);
+    font-size: 0.85em;
+    line-height: 1.2;
+    font-family: var(--vscode-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    cursor: pointer;
+    box-sizing: border-box;
+    appearance: none;
+    transition: opacity 0.12s ease, transform 0.1s ease;
+}
+
+.manager-copy-btn span {
+    opacity: 0.9;
+}
+
+.manager-copy-btn svg {
+    height: 1em;
+    width: 1em;
+}
+
+.manager-copy-icon-check {
+    display: none;
+}
+
+.manager-copy-btn.copied .manager-copy-icon-copy {
+    display: none;
+}
+
+.manager-copy-btn.copied .manager-copy-icon-check {
+    display: inline-block;
+}
+
+.manager-copy-btn:hover {
+    opacity: 1;
+}
+
+.manager-copy-btn.copied {
+    color: #22c55e;
+    opacity: 1;
+}
+
+/* Message copy button */
+.manager-copy-button {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    opacity: 0;
+    z-index: 1;
+}
+
+[data-manager-copy-bound='1']:hover .manager-copy-button,
+[data-manager-copy-bound='1']:focus-within .manager-copy-button {
+    opacity: 0.7;
+}
+
+.manager-copy-button:hover {
+    opacity: 1 !important;
+}
+
+/* Feedback copy button */
+.manager-feedback-copy {
+    opacity: 0.7;
+}
+
+.manager-feedback-copy:hover {
+    opacity: 1;
+}
+
+/* Mermaid diagram container */
+.manager-mermaid-container {
+    position: relative;
+    margin: 1em 0;
+    padding: 1em;
+    border-radius: 8px;
+    background: var(--vscode-editor-background, #1e1e1e);
+    border: 1px solid var(--vscode-editorWidget-border, #454545);
+    overflow-x: auto;
+}
+
+.manager-mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+[id^='dmanager-mermaid-'] {
+    display: none !important;
+}
+
+/* Mermaid copy button */
+.manager-mermaid-copy {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+    z-index: 1;
+}
+
+.manager-mermaid-container:hover .manager-mermaid-copy {
+    opacity: 0.7;
+}
+
+.manager-mermaid-copy:hover {
+    opacity: 1 !important;
+}
+
+.manager-mermaid-copy.copied {
+    color: #22c55e;
+    opacity: 1 !important;
+}
+
+/* Table borders and row contrast */
+.manager-table-enhanced table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.manager-table-enhanced th,
+.manager-table-enhanced td {
+    border: 1px solid var(--vscode-editorWidget-border, #454545);
+    padding: 8px 12px;
+}
+
+.manager-table-enhanced th {
+    background: var(--vscode-editorWidget-background, rgba(60, 60, 60, 0.5));
+    font-weight: 600;
+}
+
+.manager-table-enhanced tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}

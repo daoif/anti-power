@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v2.0.1-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v2.1.0-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/支持_Antigravity-v1.14.2-green.svg" alt="Antigravity">
@@ -38,7 +38,7 @@
 |------|------|
 | **Mermaid 渲染** | 自动渲染流程图、时序图和类图等，支持深色主题 |
 | **数学公式渲染** | 支持 `$...$` 行内公式和 `$$...$$` 块级公式 |
-| **一键复制** | 用 Copy 按钮将 AI 回复复制为 Markdown |
+| **一键复制** | 用侧边栏或 Manager 的 Copy 按钮将回复复制为 Markdown |
 | **表格颜色修复** | 修复深色主题下表格文字不可见问题 |
 | **悬浮复制按钮** | 鼠标悬停时在内容区右上角显示 |
 
@@ -134,6 +134,7 @@ macOS 版仍在开发中。
 
 | 补丁版本 | 支持的 Antigravity 版本 | 发布日期 | 更新内容 |
 |---------|------------------------|----------|----------|
+| v2.1.0  | v1.14.2                | 2026-01-19 | 侧边栏字体调节、Mermaid 报错提示优化、Manager 一键复制 |
 | v2.0.1  | v1.14.2                | 2026-01-14 | 性能优化，感谢 @mikessslxxx |
 | v2.0.0  | v1.14.2                | 2026-01-14 | 新增 Tauri 工具，支持功能单独开关 |
 | v1.2.1  | v1.13.3                | 2026-01-13 | Bug 修复 |

@@ -12,7 +12,7 @@
 
 ### 方法二：Playwright 远程调试（用于 Manager 窗口）
 
-Manager 窗口需要通过 Playwright 远程调试。
+查看 Manager 窗口的 DOM 需要使用 Playwright 远程调试。
 
 1. **关闭所有 Antigravity 窗口**
 2. 使用调试模式启动：
@@ -26,6 +26,13 @@ Manager 窗口需要通过 Playwright 远程调试。
    cd tests
    node dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/你的UUID"
    ```
+
+常用脚本（在 `tests/` 目录）：
+
+- `connect-antigravity.js`：连接 9222 并列出可用页面
+- `dump-manager-dom.js`：导出完整 HTML、DOM 树与关键元素到 `tests/temp`
+- `debug-manager.js`：快速检查补丁加载与关键选择器
+- `debug-manager-advanced.js`：深入诊断（资源加载、渲染状态、错误探测）
 
 ---
 

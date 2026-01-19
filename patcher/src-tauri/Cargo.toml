@@ -1,6 +1,6 @@
 [package]
 name = "patcher"
-version = "2.0.1"
+version = "2.1.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -27,5 +27,4 @@ dirs = "5"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
-
 

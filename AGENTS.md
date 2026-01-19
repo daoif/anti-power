@@ -22,7 +22,7 @@
 - `patcher/src/`：安装器前端 UI（功能开关、安装/卸载按钮）。
 - `docs/`：开发/发布/已知问题（`developer-guide.md`、`release-guide.md`、`KNOWN_ISSUES.md`）。
 - `tests/`：Playwright 脚本，用于远程调试 Antigravity 的 Manager 窗口 DOM。
-- `workbench-jetski-agent.html` + `manager-enhancement.js`：Manager 窗口增强的实验性 Hook（尚未集成到安装器）。
+- `patcher/patches/workbench-jetski-agent.html` + `patcher/patches/manager-panel/`：Manager 窗口补丁入口与模块。
 
 ## Antigravity 内部 Hook 点
 - 侧边栏：`resources/app/extensions/antigravity/cascade-panel.html`

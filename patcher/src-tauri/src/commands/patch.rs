@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use crate::embedded;
 
-/// Patch feature toggles
+/// Sidebar feature toggles
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct FeatureConfig {
@@ -34,9 +34,39 @@ impl Default for FeatureConfig {
     }
 }
 
+/// Manager window feature toggles
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ManagerFeatureConfig {
+    pub mermaid: bool,
+    pub math: bool,
+    #[serde(rename = "copyButton")]
+    pub copy_button: bool,
+    #[serde(rename = "fontSizeEnabled")]
+    pub font_size_enabled: bool,
+    #[serde(rename = "fontSize")]
+    pub font_size: f32,
+}
+
+impl Default for ManagerFeatureConfig {
+    fn default() -> Self {
+        Self {
+            mermaid: false,
+            math: false,
+            copy_button: true,
+            font_size_enabled: false,
+            font_size: 16.0,
+        }
+    }
+}
+
 /// Install patches
 #[tauri::command]
-pub fn install_patch(path: String, features: FeatureConfig) -> Result<(), String> {
+pub fn install_patch(
+    path: String, 
+    features: FeatureConfig,
+    manager_features: ManagerFeatureConfig
+) -> Result<(), String> {
     let antigravity_path = PathBuf::from(&path);
     
     let extensions_dir = antigravity_path
@@ -45,13 +75,27 @@ pub fn install_patch(path: String, features: FeatureConfig) -> Result<(), String
         .join("extensions")
         .join("antigravity");
 
+    // The Manager entry lives under the workbench directory
+    let workbench_dir = antigravity_path
+        .join("resources")
+        .join("app")
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench");
+
     if !extensions_dir.exists() {
         return Err("无效的 Antigravity 安装目录".to_string());
     }
 
-    backup_original_files(&extensions_dir)?;
+    if !workbench_dir.exists() {
+        return Err("Manager 窗口目录不存在".to_string());
+    }
 
-    write_embedded_patches(&extensions_dir, &features)?;
+    backup_original_files(&extensions_dir, &workbench_dir)?;
+
+    write_embedded_patches(&extensions_dir, &workbench_dir, &features, &manager_features)?;
 
     Ok(())
 }
@@ -67,21 +111,34 @@ pub fn uninstall_patch(path: String) -> Result<(), String> {
         .join("extensions")
         .join("antigravity");
 
+    let workbench_dir = antigravity_path
+        .join("resources")
+        .join("app")
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench");
+
     if !extensions_dir.exists() {
         return Err("无效的 Antigravity 安装目录".to_string());
     }
 
-    restore_backup_files(&extensions_dir)?;
+    restore_backup_files(&extensions_dir, &workbench_dir)?;
 
     Ok(())
 }
 
 /// Update configuration in place without reinstalling patch files
 #[tauri::command]
-pub fn update_config(path: String, features: FeatureConfig) -> Result<(), String> {
+pub fn update_config(
+    path: String, 
+    features: FeatureConfig,
+    manager_features: ManagerFeatureConfig
+) -> Result<(), String> {
     let antigravity_path = PathBuf::from(&path);
     
-    let config_path = antigravity_path
+    let cascade_config_path = antigravity_path
         .join("resources")
         .join("app")
         .join("extensions")
@@ -89,11 +146,26 @@ pub fn update_config(path: String, features: FeatureConfig) -> Result<(), String
         .join("cascade-panel")
         .join("config.json");
 
-    if !config_path.parent().map(|p| p.exists()).unwrap_or(false) {
+    if !cascade_config_path.parent().map(|p| p.exists()).unwrap_or(false) {
         return Err("补丁尚未安装，请先安装补丁".to_string());
     }
 
-    write_config_file(&config_path, &features)?;
+    write_config_file(&cascade_config_path, &features)?;
+
+    let manager_config_path = antigravity_path
+        .join("resources")
+        .join("app")
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("manager-panel")
+        .join("config.json");
+
+    if manager_config_path.parent().map(|p| p.exists()).unwrap_or(false) {
+        write_manager_config_file(&manager_config_path, &manager_features)?;
+    }
 
     Ok(())
 }
@@ -142,34 +214,58 @@ pub fn read_patch_config(path: String) -> Result<Option<FeatureConfig>, String> 
 }
 
 /// Back up the original files
-fn backup_original_files(extensions_dir: &PathBuf) -> Result<(), String> {
+fn backup_original_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
-    let backup_path = extensions_dir.join("cascade-panel.html.bak");
+    let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
+    if cascade_panel.exists() && !cascade_backup.exists() {
+        fs::copy(&cascade_panel, &cascade_backup)
+            .map_err(|e| format!("备份 cascade-panel.html 失败: {}", e))?;
+    }
 
-    // Keep the original backup across reinstalls
-    if cascade_panel.exists() && !backup_path.exists() {
-        fs::copy(&cascade_panel, &backup_path)
-            .map_err(|e| format!("备份失败: {}", e))?;
+    let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
+    let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
+    if jetski_agent.exists() && !jetski_backup.exists() {
+        fs::copy(&jetski_agent, &jetski_backup)
+            .map_err(|e| format!("备份 workbench-jetski-agent.html 失败: {}", e))?;
     }
 
     Ok(())
 }
 
 /// Write the embedded patch files
-fn write_embedded_patches(extensions_dir: &PathBuf, features: &FeatureConfig) -> Result<(), String> {
+fn write_embedded_patches(
+    extensions_dir: &PathBuf,
+    workbench_dir: &PathBuf,
+    features: &FeatureConfig,
+    manager_features: &ManagerFeatureConfig
+) -> Result<(), String> {
     let cascade_panel_dir = extensions_dir.join("cascade-panel");
+    
+    let manager_panel_dir = workbench_dir.join("manager-panel");
     
     // Remove the old directory so obsolete patch files cannot linger
     if cascade_panel_dir.exists() {
         fs::remove_dir_all(&cascade_panel_dir)
-            .map_err(|e| format!("删除旧补丁目录失败: {}", e))?;
+            .map_err(|e| format!("删除旧 cascade-panel 目录失败: {}", e))?;
+    }
+    if manager_panel_dir.exists() {
+        fs::remove_dir_all(&manager_panel_dir)
+            .map_err(|e| format!("删除旧 manager-panel 目录失败: {}", e))?;
     }
     
     fs::create_dir_all(&cascade_panel_dir)
-        .map_err(|e| format!("创建补丁目录失败: {}", e))?;
+        .map_err(|e| format!("创建 cascade-panel 目录失败: {}", e))?;
+    fs::create_dir_all(&manager_panel_dir)
+        .map_err(|e| format!("创建 manager-panel 目录失败: {}", e))?;
     
-    for (relative_path, content) in embedded::get_all_files() {
-        let full_path = extensions_dir.join(relative_path);
+    // Read the patch files from disk when available in development builds
+    let patch_files = embedded::get_all_files_runtime()?;
+    for (relative_path, content) in patch_files {
+        let full_path = if relative_path.starts_with("manager-panel") || relative_path == "workbench-jetski-agent.html" {
+            workbench_dir.join(&relative_path)
+        } else {
+            extensions_dir.join(&relative_path)
+        };
         
         if let Some(parent) = full_path.parent() {
             if !parent.exists() {
@@ -182,13 +278,16 @@ fn write_embedded_patches(extensions_dir: &PathBuf, features: &FeatureConfig) ->
             .map_err(|e| format!("写入文件失败 {:?}: {}", full_path, e))?;
     }
     
-    let config_path = cascade_panel_dir.join("config.json");
-    write_config_file(&config_path, features)?;
+    let cascade_config_path = cascade_panel_dir.join("config.json");
+    write_config_file(&cascade_config_path, features)?;
+
+    let manager_config_path = manager_panel_dir.join("config.json");
+    write_manager_config_file(&manager_config_path, manager_features)?;
 
     Ok(())
 }
 
-/// Write the patch configuration file
+/// Write the sidebar patch configuration
 fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<(), String> {
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
@@ -205,22 +304,48 @@ fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<
     Ok(())
 }
 
-/// Restore the backed-up files
-fn restore_backup_files(extensions_dir: &PathBuf) -> Result<(), String> {
-    let cascade_panel = extensions_dir.join("cascade-panel.html");
-    let backup_path = extensions_dir.join("cascade-panel.html.bak");
+/// Write the Manager patch configuration
+fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureConfig) -> Result<(), String> {
+    let config_content = serde_json::json!({
+        "mermaid": features.mermaid,
+        "math": features.math,
+        "copyButton": features.copy_button,
+        "fontSizeEnabled": features.font_size_enabled,
+        "fontSize": features.font_size
+    });
+    
+    fs::write(config_path, serde_json::to_string_pretty(&config_content).unwrap())
+        .map_err(|e| format!("写入 Manager 配置文件失败: {}", e))?;
+    
+    Ok(())
+}
 
-    if backup_path.exists() {
-        fs::copy(&backup_path, &cascade_panel)
-            .map_err(|e| format!("恢复失败: {}", e))?;
-    } else {
-        return Err("未找到备份文件".to_string());
+/// Restore the backed-up files
+fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
+    let cascade_panel = extensions_dir.join("cascade-panel.html");
+    let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
+    if cascade_backup.exists() {
+        fs::copy(&cascade_backup, &cascade_panel)
+            .map_err(|e| format!("恢复 cascade-panel.html 失败: {}", e))?;
     }
 
-    let patch_dir = extensions_dir.join("cascade-panel");
-    if patch_dir.exists() {
-        fs::remove_dir_all(&patch_dir)
-            .map_err(|e| format!("删除补丁目录失败: {}", e))?;
+    let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
+    let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
+    if jetski_backup.exists() {
+        fs::copy(&jetski_backup, &jetski_agent)
+            .map_err(|e| format!("恢复 workbench-jetski-agent.html 失败: {}", e))?;
+    }
+
+    let cascade_dir = extensions_dir.join("cascade-panel");
+    if cascade_dir.exists() {
+        fs::remove_dir_all(&cascade_dir)
+            .map_err(|e| format!("删除 cascade-panel 目录失败: {}", e))?;
+    }
+
+    let manager_dir = workbench_dir.join("manager-panel");
+    if manager_dir.exists() {
+        fs::remove_dir_all(&manager_dir)
+            .map_err(|e| format!("删除 manager-panel 目录失败: {}", e))?;
     }
 
     Ok(())

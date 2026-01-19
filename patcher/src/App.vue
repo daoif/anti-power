@@ -5,10 +5,11 @@ import { open } from "@tauri-apps/plugin-dialog";
 import TitleBar from "./components/TitleBar.vue";
 import PathCard from "./components/PathCard.vue";
 import FeatureCard from "./components/FeatureCard.vue";
+import ManagerFeatureCard from "./components/ManagerFeatureCard.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.1.0";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 // Files shown in the install confirmation
@@ -16,10 +17,12 @@ const PATCH_FILES = {
   // Upstream files replaced by the installer
   modified: [
     "cascade-panel.html",
+    "workbench-jetski-agent.html",
   ],
   // New patch assets
   added: [
-    "cascade-panel/  (模块目录)",
+    "cascade-panel/  (侧边栏模块)",
+    "manager-panel/  (Manager模块)",
   ],
   // Files left behind by older patch versions
   deprecated: [] as string[],
@@ -38,6 +41,15 @@ const features = ref({
   tableColor: true,
   fontSizeEnabled: true,
   fontSize: 20,
+});
+
+// Manager settings are independent of sidebar settings
+const managerFeatures = ref({
+  mermaid: false,
+  math: false,
+  copyButton: true,
+  fontSizeEnabled: false,
+  fontSize: 16,
 });
 
 async function detectPath() {
@@ -101,7 +113,8 @@ async function confirmInstall() {
   try {
     await invoke("install_patch", { 
       path: antigravityPath.value,
-      features: features.value 
+      features: features.value,
+      managerFeatures: managerFeatures.value
     });
     isInstalled.value = true;
     showToast('✓ 补丁安装成功');
@@ -139,7 +152,8 @@ async function updateConfigOnly() {
   try {
     await invoke("update_config", { 
       path: antigravityPath.value,
-      features: features.value 
+      features: features.value,
+      managerFeatures: managerFeatures.value
     });
     showToast('✓ 配置已更新');
   } catch (e) {
@@ -166,6 +180,8 @@ onMounted(() => {
       />
 
       <FeatureCard v-model="features" />
+
+      <ManagerFeatureCard v-model="managerFeatures" />
 
       <section class="actions">
         <button 

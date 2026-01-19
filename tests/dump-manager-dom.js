@@ -70,13 +70,20 @@ async function main() {
 
         const domTree = await managerPage.evaluate(() => {
             function getNodeInfo(element, depth = 0) {
-                if (depth > 6) return null; // Limit depth to keep the DOM dump readable
+                if (depth > 15) return null; // Limit depth to keep the DOM dump readable
 
                 const info = {
                     tag: element.tagName?.toLowerCase() || '#text',
                     id: element.id || undefined,
-                    class: element.className || undefined,
                 };
+
+                // SVG className exposes its string value through baseVal
+                const className = element.className;
+                if (typeof className === 'string') {
+                    info.class = className;
+                } else if (className && typeof className === 'object' && className.baseVal !== undefined) {
+                    info.class = className.baseVal;
+                }
 
                 // Keep role and data-testid as DOM inspection anchors
                 if (element.getAttribute) {
@@ -105,12 +112,18 @@ async function main() {
         // Sample IDs and chat-related classes to help build selectors
         const keyElements = await managerPage.evaluate(() => {
             const elements = document.querySelectorAll('[id], [class*="cascade"], [class*="agent"], [class*="panel"], [class*="chat"]');
-            return Array.from(elements).slice(0, 100).map(el => ({
-                tag: el.tagName.toLowerCase(),
-                id: el.id || undefined,
-                class: el.className?.split(' ').filter(c => c).slice(0, 5).join(' ') || undefined,
-                text: el.textContent?.slice(0, 50).trim() || undefined
-            }));
+            return Array.from(elements).slice(0, 100).map(el => {
+                let className = el.className;
+                if (typeof className !== 'string') {
+                    className = className?.baseVal || '';
+                }
+                return {
+                    tag: el.tagName.toLowerCase(),
+                    id: el.id || undefined,
+                    class: className.split(' ').filter(c => c).slice(0, 5).join(' ') || undefined,
+                    text: el.textContent?.slice(0, 50).trim() || undefined
+                };
+            });
         });
 
         const elementsPath = path.join(tempDir, 'manager-key-elements.json');
