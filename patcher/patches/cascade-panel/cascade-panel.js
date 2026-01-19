@@ -2,7 +2,14 @@
 
 import { loadStyle } from './utils.js';
 
-const DEFAULT_CONFIG = { mermaid: true, math: true, copyButton: true, tableColor: true };
+const DEFAULT_CONFIG = {
+    mermaid: true,
+    math: true,
+    copyButton: true,
+    tableColor: true,
+    fontSizeEnabled: true,
+    fontSize: 20,
+};
 
 const loadConfig = async () => {
     try {
@@ -14,10 +21,28 @@ const loadConfig = async () => {
         if (!data || typeof data !== 'object' || Array.isArray(data)) {
             return DEFAULT_CONFIG;
         }
-        return data;
+        return { ...DEFAULT_CONFIG, ...data };
     } catch {
         return DEFAULT_CONFIG;
     }
+};
+
+const applyFontSize = (userConfig) => {
+    const root = document.documentElement;
+    if (!root) return;
+
+    if (!userConfig?.fontSizeEnabled) {
+        root.style.removeProperty('--cascade-panel-font-size');
+        return;
+    }
+
+    const size = Number(userConfig.fontSize);
+    if (!Number.isFinite(size) || size <= 0) {
+        root.style.removeProperty('--cascade-panel-font-size');
+        return;
+    }
+
+    root.style.setProperty('--cascade-panel-font-size', `${size}px`);
 };
 
 const loadTableFix = () => {
@@ -28,6 +53,7 @@ const loadTableFix = () => {
 
 (async () => {
     const config = await loadConfig();
+    applyFontSize(config);
 
     if (config.tableColor) {
         loadTableFix();

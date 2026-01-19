@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 /// Installer preferences
 #[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct AppConfig {
     /// Antigravity installation path
     #[serde(rename = "antigravityPath")]
@@ -17,6 +18,7 @@ pub struct AppConfig {
 
 /// Patch feature toggles
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct FeatureFlags {
     pub mermaid: bool,
     pub math: bool,
@@ -24,6 +26,10 @@ pub struct FeatureFlags {
     pub copy_button: bool,
     #[serde(rename = "tableColor")]
     pub table_color: bool,
+    #[serde(rename = "fontSizeEnabled")]
+    pub font_size_enabled: bool,
+    #[serde(rename = "fontSize")]
+    pub font_size: f32,
 }
 
 impl Default for FeatureFlags {
@@ -33,6 +39,8 @@ impl Default for FeatureFlags {
             math: true,
             copy_button: true,
             table_color: true,
+            font_size_enabled: true,
+            font_size: 20.0,
         }
     }
 }

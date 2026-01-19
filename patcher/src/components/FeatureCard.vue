@@ -34,6 +34,25 @@
         </div>
         <input type="checkbox" v-model="model.tableColor" class="checkbox">
       </label>
+
+      <label class="feature-item">
+        <div class="feature-info">
+          <span class="feature-name">侧边栏字体大小</span>
+          <p class="feature-desc">调整 Cascade 面板整体字体大小</p>
+        </div>
+        <div class="feature-controls">
+          <input type="checkbox" v-model="model.fontSizeEnabled" class="checkbox">
+          <input
+            type="number"
+            v-model.number="model.fontSize"
+            class="font-size-input"
+            min="10"
+            max="40"
+            step="1"
+            :disabled="!model.fontSizeEnabled"
+          >
+        </div>
+      </label>
     </div>
   </section>
 </template>
@@ -44,6 +63,8 @@ export interface FeatureFlags {
   math: boolean;
   copyButton: boolean;
   tableColor: boolean;
+  fontSizeEnabled: boolean;
+  fontSize: number;
 }
 
 const model = defineModel<FeatureFlags>({ required: true });
@@ -99,5 +120,27 @@ const model = defineModel<FeatureFlags>({ required: true });
   height: 18px;
   accent-color: var(--ag-accent);
   cursor: pointer;
+}
+
+.feature-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.font-size-input {
+  width: 64px;
+  padding: 6px 8px;
+  background: var(--ag-surface-2);
+  border: 1px solid var(--ag-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ag-text);
+  text-align: center;
+}
+
+.font-size-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

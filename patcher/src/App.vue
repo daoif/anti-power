@@ -36,6 +36,8 @@ const features = ref({
   math: true,
   copyButton: true,
   tableColor: true,
+  fontSizeEnabled: true,
+  fontSize: 20,
 });
 
 async function detectPath() {
@@ -57,9 +59,16 @@ async function checkPatchStatus(path: string) {
   try {
     isInstalled.value = await invoke<boolean>("check_patch_status", { path });
     if (isInstalled.value) {
-      const config = await invoke<{ mermaid: boolean; math: boolean; copyButton: boolean; tableColor: boolean } | null>("read_patch_config", { path });
+      const config = await invoke<{
+        mermaid: boolean;
+        math: boolean;
+        copyButton: boolean;
+        tableColor: boolean;
+        fontSizeEnabled?: boolean;
+        fontSize?: number;
+      } | null>("read_patch_config", { path });
       if (config) {
-        features.value = config;
+        features.value = { ...features.value, ...config };
       }
     }
   } catch (e) {

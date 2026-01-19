@@ -7,6 +7,7 @@ use crate::embedded;
 
 /// Patch feature toggles
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct FeatureConfig {
     pub mermaid: bool,
     pub math: bool,
@@ -14,6 +15,23 @@ pub struct FeatureConfig {
     pub copy_button: bool,
     #[serde(rename = "tableColor")]
     pub table_color: bool,
+    #[serde(rename = "fontSizeEnabled")]
+    pub font_size_enabled: bool,
+    #[serde(rename = "fontSize")]
+    pub font_size: f32,
+}
+
+impl Default for FeatureConfig {
+    fn default() -> Self {
+        Self {
+            mermaid: true,
+            math: true,
+            copy_button: true,
+            table_color: true,
+            font_size_enabled: true,
+            font_size: 20.0,
+        }
+    }
 }
 
 /// Install patches
@@ -176,7 +194,9 @@ fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<
         "mermaid": features.mermaid,
         "math": features.math,
         "copyButton": features.copy_button,
-        "tableColor": features.table_color
+        "tableColor": features.table_color,
+        "fontSizeEnabled": features.font_size_enabled,
+        "fontSize": features.font_size
     });
     
     fs::write(config_path, serde_json::to_string_pretty(&config_content).unwrap())

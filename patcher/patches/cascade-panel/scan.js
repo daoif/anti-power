@@ -8,7 +8,9 @@ let config = {
     mermaid: true,
     math: true,
     copyButton: true,
-    tableColor: true
+    tableColor: true,
+    fontSizeEnabled: true,
+    fontSize: 20,
 };
 
 /**
