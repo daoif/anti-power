@@ -11,6 +11,8 @@ import { getClassString, loadScript } from './utils.js';
 let mermaidReady = false;
 let mermaidReadyPromise = null;
 let mermaidIdCounter = 0;
+const MERMAID_RENDERING_PROP = '__cascadeMermaidRendering';
+const MERMAID_ERROR_PROP = '__cascadeMermaidErrorSource';
 
 /** @returns {void} */
 const initializeMermaid = () => {
@@ -93,12 +95,22 @@ export const renderMermaid = async (codeBlockContainer) => {
     const previousSource = codeBlockContainer[MERMAID_SOURCE_PROP] || '';
     const isRendered = codeBlockContainer.getAttribute(MERMAID_ATTR) === '1';
     const contentChanged = previousSource && previousSource !== source;
+    const errorSource = codeBlockContainer[MERMAID_ERROR_PROP] || '';
 
     if (isRendered && !contentChanged) {
         return;
     }
 
+    if (!isRendered && !contentChanged && errorSource === source) {
+        return;
+    }
+
+    if (codeBlockContainer[MERMAID_RENDERING_PROP]) {
+        return;
+    }
+
     codeBlockContainer[MERMAID_SOURCE_PROP] = source;
+    codeBlockContainer[MERMAID_RENDERING_PROP] = true;
 
     try {
         await ensureMermaid();
@@ -107,8 +119,11 @@ export const renderMermaid = async (codeBlockContainer) => {
             return;
         }
 
+        if (typeof window.mermaid.parse === 'function') {
+            await window.mermaid.parse(source);
+        }
+
         const id = `cascade-mermaid-${++mermaidIdCounter}`;
-        const { svg } = await window.mermaid.render(id, source);
 
         let container = codeBlockContainer.nextElementSibling;
         let copyBtn = null;
@@ -118,6 +133,8 @@ export const renderMermaid = async (codeBlockContainer) => {
             container.className = MERMAID_CONTAINER_CLASS;
             codeBlockContainer.insertAdjacentElement('afterend', container);
         }
+
+        const { svg, bindFunctions } = await window.mermaid.render(id, source, container);
 
         copyBtn = container.querySelector(`.${MERMAID_COPY_BTN_CLASS}`);
         if (!copyBtn) {
@@ -136,15 +153,20 @@ export const renderMermaid = async (codeBlockContainer) => {
 
         container.innerHTML = svg;
         container.style.display = '';
+        container[MERMAID_SOURCE_PROP] = source;
         if (copyBtn) {
             container.appendChild(copyBtn);
+        }
+        if (typeof bindFunctions === 'function') {
+            bindFunctions(container);
         }
 
         codeBlockContainer.style.display = 'none';
         codeBlockContainer.setAttribute(MERMAID_ATTR, '1');
+        delete codeBlockContainer[MERMAID_ERROR_PROP];
     } catch (error) {
-        console.error('[Cascade] Mermaid 渲染失败:', error);
-        delete codeBlockContainer[MERMAID_SOURCE_PROP];
+        console.warn('[Cascade] Mermaid 渲染失败:', error);
+        codeBlockContainer[MERMAID_ERROR_PROP] = source;
         codeBlockContainer.removeAttribute(MERMAID_ATTR);
         codeBlockContainer.style.display = '';
         const container = codeBlockContainer.nextElementSibling;
@@ -152,5 +174,7 @@ export const renderMermaid = async (codeBlockContainer) => {
             container.innerHTML = '';
             container.style.display = 'none';
         }
+    } finally {
+        delete codeBlockContainer[MERMAID_RENDERING_PROP];
     }
 };
