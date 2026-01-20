@@ -5,7 +5,7 @@
 ## 项目定位
 - Anti-Power 是 Antigravity AI IDE 的增强补丁。
 - 主要增强侧边栏对话区域（cascade-panel）：Mermaid 渲染、数学公式渲染、一键复制、表格颜色修复、字体大小控制等。
-- 当前重点支持 Windows；macOS 仅旧版手动安装流程（见 `README.md`）。
+- 当前重点支持 Windows；macOS 仅手动安装流程（见 `README.md` / `patcher/patches/manual-install.md`）。
 
 ## 补丁落地流程（核心链路）
 1. 桌面安装器位于 `patcher/`（Tauri + Vue）。
@@ -14,14 +14,15 @@
    - 备份 `resources/app/extensions/antigravity/cascade-panel.html` 为 `.bak`
    - 写入补丁文件与 `cascade-panel/` 目录
    - 生成 `cascade-panel/config.json`（功能开关）
-4. 补丁文件来源于 `patcher/patches/`，并通过 `patcher/src-tauri/src/embedded.rs` 以 `include_str!` 嵌入二进制。
+4. 补丁文件来源于 `patcher/patches/`，嵌入清单由 `patcher/src-tauri/build.rs` 自动生成（排除列表 `patcher/patches/.embed-exclude.txt`），`patcher/src-tauri/src/embedded.rs` 通过 `include!` 引入清单。
 
 ## 关键目录（修改点优先级）
 - `patcher/patches/`：真正注入到 Antigravity 的补丁源文件（HTML/JS/CSS）。
 - `patcher/src-tauri/`：安装器后端逻辑（路径检测、备份/写入、配置）。
 - `patcher/src/`：安装器前端 UI（功能开关、安装/卸载按钮）。
-- `docs/`：开发/发布/已知问题（`developer-guide.md`、`release-guide.md`、`KNOWN_ISSUES.md`）。
+- `docs/`：开发/发布/已知问题（`developer-guide.md`、`release-guide.md`、`KNOWN_ISSUES.md`、`screenshots.md`）。
 - `tests/`：Playwright 脚本，用于远程调试 Antigravity 的 Manager 窗口 DOM。
+- `patcher/patches/manual-install.md`：随补丁压缩包提供的手动安装说明（Windows / macOS）。
 - `patcher/patches/workbench-jetski-agent.html` + `patcher/patches/manager-panel/`：Manager 窗口补丁入口与模块。
 
 ## Antigravity 内部 Hook 点
@@ -41,6 +42,13 @@
 - 发布前需同步版本号：`patcher/package.json`、`patcher/src-tauri/tauri.conf.json`、`patcher/src-tauri/Cargo.toml`、`patcher/src/App.vue`、`README.md`（详见 `docs/release-guide.md`）。
 
 ## 重要约束/风险
-- 新增或删除补丁文件时，必须同步更新 `patcher/src-tauri/src/embedded.rs` 的嵌入列表。
+- 嵌入清单由 build.rs 自动生成；新增/删除补丁文件时，确认 `.embed-exclude.txt` 是否需要更新（如 `config.json`、文档）。
+- 安装逻辑使用白名单：侧边栏仅 `cascade-panel.html` + `cascade-panel/`；Manager 仅 `workbench-jetski-agent.html` + `manager-panel/`。
 - Antigravity 官方更新会覆盖补丁，需要重新安装。
 - 已知问题：表格内含 `|` 的 LaTeX 公式渲染异常（`docs/KNOWN_ISSUES.md`）。
+
+## 开发注意事项（工具/环境）
+- 文档统一使用英文标点符号（中英文内容都使用英文标点），避免中文标点导致工具处理异常。
+- `apply_patch` 在中文内容较长时可能触发 `byte index ... is not a char boundary`，导致补丁失败。
+  - 解决：使用提权 PowerShell `Set-Content -Encoding UTF8` 直接写入，或先写 ASCII 再分段追加。
+- 写入 `patcher/patches/` 或清理 `tests/` 在沙箱下可能 `Access denied`；需要使用提权命令执行写入/删除。

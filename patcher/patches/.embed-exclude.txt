@@ -1,0 +1,7 @@
+# Files excluded from Tauri embedding
+.embed-exclude.txt
+cascade-panel/config.json
+manager-panel/config.json
+manual-install.md
+.DS_Store
+Thumbs.db

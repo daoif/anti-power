@@ -34,6 +34,24 @@ npm run tauri:build
 
 ---
 
+## 生成补丁压缩包
+
+发布时附上用于手动安装的补丁压缩包，支持 macOS。
+
+```powershell
+# 以项目根目录执行
+Compress-Archive -Path patcher\patches\* -DestinationPath anti-power-patches.zip -Force
+```
+
+压缩包应包含：
+- `cascade-panel.html`
+- `cascade-panel/`
+- `workbench-jetski-agent.html`
+- `manager-panel/`
+- `manual-install.md`
+
+---
+
 ## 发布流程
 
 ```powershell
@@ -49,11 +67,13 @@ git push origin vX.Y.Z
 # 3. 使用 gh 发布
 gh release create vX.Y.Z `
   "patcher/src-tauri/target/release/anti-power.exe" `
+  "anti-power-patches.zip" `
   --title "vX.Y.Z" `
   --notes-file release-notes.md
 
 # 4. 清理临时文件
 Remove-Item release-notes.md
+Remove-Item anti-power-patches.zip
 ```
 
 > ⚠️ **关于 release-notes.md**
@@ -69,8 +89,12 @@ Remove-Item release-notes.md
 > ## 🐛 修复
 > - 修复描述
 > 
+> ## 🙏 致谢
+> - 感谢 @mikessslxxx
+> 
 > ## 📦 安装
-> 下载 `anti-power.exe`，双击运行，程序会自动检测 Antigravity 安装路径，选择功能后点击「安装补丁」即可。
+> - Windows：下载 `anti-power.exe` 安装
+> - macOS：下载 `anti-power-patches.zip` 手动安装
 > ```
 
 ---

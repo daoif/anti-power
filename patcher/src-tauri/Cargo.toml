@@ -1,6 +1,6 @@
 [package]
 name = "anti-power"
-version = "2.1.0"
+version = "2.2.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -27,4 +27,5 @@ dirs = "5"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
+
 

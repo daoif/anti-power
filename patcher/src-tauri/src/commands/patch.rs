@@ -47,6 +47,10 @@ pub struct ManagerFeatureConfig {
     pub math: bool,
     #[serde(rename = "copyButton")]
     pub copy_button: bool,
+    #[serde(rename = "maxWidthEnabled")]
+    pub max_width_enabled: bool,
+    #[serde(rename = "maxWidthRatio")]
+    pub max_width_ratio: f32,
     #[serde(rename = "fontSizeEnabled")]
     pub font_size_enabled: bool,
     #[serde(rename = "fontSize")]
@@ -60,6 +64,8 @@ impl Default for ManagerFeatureConfig {
             mermaid: false,
             math: false,
             copy_button: true,
+            max_width_enabled: false,
+            max_width_ratio: 75.0,
             font_size_enabled: false,
             font_size: 16.0,
         }
@@ -295,8 +301,7 @@ fn write_cascade_patches(extensions_dir: &PathBuf, features: &FeatureConfig) -> 
     
     let patch_files = embedded::get_all_files_runtime()?;
     for (relative_path, content) in patch_files {
-        // Skip the Manager entry and assets here
-        if relative_path.starts_with("manager-panel") || relative_path == "workbench-jetski-agent.html" {
+        if relative_path != "cascade-panel.html" && !relative_path.starts_with("cascade-panel/") {
             continue;
         }
         
@@ -334,7 +339,7 @@ fn write_manager_patches(workbench_dir: &PathBuf, manager_features: &ManagerFeat
     
     let patch_files = embedded::get_all_files_runtime()?;
     for (relative_path, content) in patch_files {
-        if !relative_path.starts_with("manager-panel") && relative_path != "workbench-jetski-agent.html" {
+        if relative_path != "workbench-jetski-agent.html" && !relative_path.starts_with("manager-panel/") {
             continue;
         }
         
@@ -380,6 +385,8 @@ fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureCon
         "mermaid": features.mermaid,
         "math": features.math,
         "copyButton": features.copy_button,
+        "maxWidthEnabled": features.max_width_enabled,
+        "maxWidthRatio": features.max_width_ratio,
         "fontSizeEnabled": features.font_size_enabled,
         "fontSize": features.font_size
     });

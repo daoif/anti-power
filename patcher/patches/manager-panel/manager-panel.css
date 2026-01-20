@@ -5,6 +5,13 @@
     font-size: var(--manager-panel-font-size, inherit) !important;
 }
 
+/* Maximum conversation width */
+:root[data-manager-panel-max-width='1'] .mx-auto.w-full[style*="max(30vw"],
+:root[data-manager-panel-max-width='1'] .w-full.transition-opacity.animate-fade-in.pt-0[style*="max(30vw"] {
+    max-width: max(30vw, 40rem, calc(var(--manager-panel-max-width-ratio, 75) * 1%)) !important;
+    width: 100% !important;
+}
+
 /* Shared copy button style */
 .manager-copy-btn {
     display: flex;
@@ -97,10 +104,6 @@
     height: auto;
     display: block;
     margin: 0 auto;
-}
-
-[id^='dmanager-mermaid-'] {
-    display: none !important;
 }
 
 /* Mermaid copy button */

@@ -3,6 +3,8 @@
     "math": true,
     "copyButton": true,
     "tableColor": false,
+    "maxWidthEnabled": false,
+    "maxWidthRatio": 75,
     "fontSizeEnabled": false,
     "fontSize": 16
 }

@@ -1,4 +1,14 @@
-/** Load the Manager patch independently of the legacy Cascade Panel */
+/**
+ * Manager patch entry point
+ * Runs independently of the legacy Cascade Panel
+ * 
+ * Enhancements
+ * - KaTeX formula rendering
+ * - Mermaid diagram rendering
+ * - Message copy buttons
+ * - Custom message font size
+ * - Message width limit
+ */
 
 // Resolve patch assets relative to this script
 const SCRIPT_BASE = new URL('./', import.meta.url).href;
@@ -8,6 +18,8 @@ const DEFAULT_CONFIG = {
     math: false,
     copyButton: true,
     tableColor: false,
+    maxWidthEnabled: false,
+    maxWidthRatio: 75,
     fontSizeEnabled: false,
     fontSize: 16,
 };
@@ -63,6 +75,28 @@ const applyFontSize = (userConfig) => {
     root.style.setProperty('--manager-panel-font-size', `${size}px`);
 };
 
+const applyMaxWidth = (userConfig) => {
+    const root = document.documentElement;
+    if (!root) return;
+
+    if (!userConfig?.maxWidthEnabled) {
+        root.removeAttribute('data-manager-panel-max-width');
+        root.style.removeProperty('--manager-panel-max-width-ratio');
+        return;
+    }
+
+    const ratio = Number(userConfig.maxWidthRatio);
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+        root.removeAttribute('data-manager-panel-max-width');
+        root.style.removeProperty('--manager-panel-max-width-ratio');
+        return;
+    }
+
+    const clamped = Math.min(100, Math.max(30, ratio));
+    root.setAttribute('data-manager-panel-max-width', '1');
+    root.style.setProperty('--manager-panel-max-width-ratio', String(clamped));
+};
+
 (async () => {
     console.log('[Manager Panel] 补丁加载中...');
 
@@ -74,6 +108,7 @@ const applyFontSize = (userConfig) => {
 
     const config = await loadConfig();
     applyFontSize(config);
+    applyMaxWidth(config);
 
     const { start } = await import('./scan.js');
     start(config);

@@ -39,6 +39,25 @@
 
       <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
+          <span class="feature-name">对话区域最大宽度</span>
+          <p class="feature-desc">设置消息区域最大宽度占比 (%)</p>
+        </div>
+        <div class="feature-controls">
+          <input type="checkbox" v-model="model.maxWidthEnabled" class="checkbox" :disabled="!model.enabled">
+          <input
+            type="number"
+            v-model.number="model.maxWidthRatio"
+            class="font-size-input"
+            min="30"
+            max="100"
+            step="1"
+            :disabled="!model.enabled || !model.maxWidthEnabled"
+          >
+        </div>
+      </label>
+
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
+        <div class="feature-info">
           <span class="feature-name">Manager 字体大小</span>
           <p class="feature-desc">自定义消息区域的字体大小 (px)</p>
         </div>
@@ -65,6 +84,8 @@ export interface ManagerFeatureFlags {
   mermaid: boolean;
   math: boolean;
   copyButton: boolean;
+  maxWidthEnabled: boolean;
+  maxWidthRatio: number;
   fontSizeEnabled: boolean;
   fontSize: number;
 }
