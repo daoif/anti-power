@@ -41,16 +41,37 @@ npm run tauri:build
 git add -A
 git commit -m "release: vX.Y.Z"
 
-# 2. 创建标签
+# 2. 创建标签并推送
 git tag vX.Y.Z
 git push origin master
 git push origin vX.Y.Z
+
+# 3. 使用 gh 发布
+gh release create vX.Y.Z `
+  "patcher/src-tauri/target/release/anti-power.exe" `
+  --title "vX.Y.Z" `
+  --notes-file release-notes.md
+
+# 4. 清理临时文件
+Remove-Item release-notes.md
 ```
 
-3. 访问 [GitHub Releases](https://github.com/daoif/anti-power/releases/new)
-4. 选择标签，填写发布说明
-5. 上传 `anti-power.exe`
-6. 发布
+> ⚠️ **关于 release-notes.md**
+> 
+> 发布说明较长或包含特殊字符时，**手动创建** `release-notes.md` 文件（使用编辑器），
+> 避免在命令行中拼接内容导致解析问题。
+>
+> 模板：
+> ```markdown
+> ## ✨ 新功能
+> - 功能描述
+> 
+> ## 🐛 修复
+> - 修复描述
+> 
+> ## 📦 安装
+> 下载 `anti-power.exe`，双击运行，程序会自动检测 Antigravity 安装路径，选择功能后点击「安装补丁」即可。
+> ```
 
 ---
 

@@ -1,5 +1,10 @@
 /* Manager styles are independent of the legacy Cascade panel */
 
+/* Custom message font size */
+.leading-relaxed.select-text {
+    font-size: var(--manager-panel-font-size, inherit) !important;
+}
+
 /* Shared copy button style */
 .manager-copy-btn {
     display: flex;

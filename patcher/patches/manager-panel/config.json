@@ -1,6 +1,6 @@
 {
-    "mermaid": false,
-    "math": false,
+    "mermaid": true,
+    "math": true,
     "copyButton": true,
     "tableColor": false,
     "fontSizeEnabled": false,

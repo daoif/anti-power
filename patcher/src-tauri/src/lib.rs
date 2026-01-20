@@ -4,7 +4,7 @@
 mod commands;
 mod embedded;
 
-use commands::{detect_antigravity_path, install_patch, uninstall_patch, update_config, check_patch_status, read_patch_config, get_config, save_config};
+use commands::{detect_antigravity_path, install_patch, uninstall_patch, update_config, check_patch_status, read_patch_config, read_manager_patch_config, get_config, save_config};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,6 +18,7 @@ pub fn run() {
             update_config,
             check_patch_status,
             read_patch_config,
+            read_manager_patch_config,
             get_config,
             save_config
         ])

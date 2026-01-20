@@ -84,6 +84,17 @@ async function checkPatchStatus(path: string) {
       if (config) {
         features.value = { ...features.value, ...config };
       }
+
+      const managerConfig = await invoke<{
+        mermaid: boolean;
+        math: boolean;
+        copyButton: boolean;
+        fontSizeEnabled?: boolean;
+        fontSize?: number;
+      } | null>("read_manager_patch_config", { path });
+      if (managerConfig) {
+        managerFeatures.value = { ...managerFeatures.value, ...managerConfig, enabled: true };
+      }
     }
   } catch (e) {
     console.error("检测补丁状态失败:", e);

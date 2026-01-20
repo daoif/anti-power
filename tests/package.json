@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "playwright": "^1.57.0"
+    "playwright": "^1.57.0",
+    "ws": "^8.19.0"
   }
 }

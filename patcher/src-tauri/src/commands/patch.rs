@@ -229,6 +229,35 @@ pub fn read_patch_config(path: String) -> Result<Option<FeatureConfig>, String> 
     Ok(Some(config))
 }
 
+/// Read the installed Manager patch configuration
+#[tauri::command]
+pub fn read_manager_patch_config(path: String) -> Result<Option<ManagerFeatureConfig>, String> {
+    let antigravity_path = PathBuf::from(&path);
+    
+    let config_path = antigravity_path
+        .join("resources")
+        .join("app")
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("manager-panel")
+        .join("config.json");
+
+    if !config_path.exists() {
+        return Ok(None);
+    }
+
+    let content = fs::read_to_string(&config_path)
+        .map_err(|e| format!("读取 Manager 配置失败: {}", e))?;
+    
+    let config: ManagerFeatureConfig = serde_json::from_str(&content)
+        .map_err(|e| format!("解析 Manager 配置失败: {}", e))?;
+    
+    Ok(Some(config))
+}
+
 /// Back up the original sidebar files
 fn backup_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");

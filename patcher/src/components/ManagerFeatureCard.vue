@@ -13,20 +13,20 @@
     </div>
     
     <div class="feature-list">
-      <label class="feature-item is-disabled" :class="{ 'item-disabled': !model.enabled }">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">Mermaid 流程图渲染</span>
-          <p class="feature-desc">暂未支持，后续开放</p>
+          <p class="feature-desc">渲染 Mermaid 语法的流程图、时序图等</p>
         </div>
-        <input type="checkbox" v-model="model.mermaid" class="checkbox" disabled>
+        <input type="checkbox" v-model="model.mermaid" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item is-disabled" :class="{ 'item-disabled': !model.enabled }">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">数学公式渲染</span>
-          <p class="feature-desc">暂未支持，后续开放</p>
+          <p class="feature-desc">渲染 LaTeX 数学公式 (KaTeX)</p>
         </div>
-        <input type="checkbox" v-model="model.math" class="checkbox" disabled>
+        <input type="checkbox" v-model="model.math" class="checkbox" :disabled="!model.enabled">
       </label>
 
       <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
@@ -37,13 +37,13 @@
         <input type="checkbox" v-model="model.copyButton" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item is-disabled" :class="{ 'item-disabled': !model.enabled }">
+      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
           <span class="feature-name">Manager 字体大小</span>
-          <p class="feature-desc">暂未支持，后续开放</p>
+          <p class="feature-desc">自定义消息区域的字体大小 (px)</p>
         </div>
         <div class="feature-controls">
-          <input type="checkbox" v-model="model.fontSizeEnabled" class="checkbox" disabled>
+          <input type="checkbox" v-model="model.fontSizeEnabled" class="checkbox" :disabled="!model.enabled">
           <input
             type="number"
             v-model.number="model.fontSize"
@@ -51,7 +51,7 @@
             min="10"
             max="40"
             step="1"
-            disabled
+            :disabled="!model.enabled || !model.fontSizeEnabled"
           >
         </div>
       </label>

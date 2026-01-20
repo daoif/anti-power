@@ -22,12 +22,38 @@ let mermaidId = 0;
 const MERMAID_RENDERING_PROP = '__managerMermaidRendering';
 const MERMAID_ERROR_PROP = '__managerMermaidErrorSource';
 
+/** Select a Trusted Types policy for Mermaid rendering */
+let mermaidPolicy = null;
+const ensureMermaidPolicy = () => {
+    if (mermaidPolicy) return mermaidPolicy;
+    const tt = window.trustedTypes;
+    if (!tt?.createPolicy) return null;
+
+    // Try policy names allowed by the Manager CSP
+    const policyNames = ['dompurifyMermaid', 'mermaid', 'dompurify'];
+    for (const name of policyNames) {
+        try {
+            mermaidPolicy = tt.createPolicy(name, {
+                createHTML: (html) => html,
+                createScriptURL: (url) => url,
+            });
+            console.log(`[Manager] 成功创建 Trusted Types policy: ${name}`);
+            return mermaidPolicy;
+        } catch {
+            // Try the next name if the policy already exists or CSP rejects it
+        }
+    }
+    return null;
+};
+
 const ensureMermaid = async () => {
     if (mermaidLoaded) return true;
     if (mermaidLoading) return mermaidLoading;
 
     mermaidLoading = (async () => {
         try {
+            ensureMermaidPolicy();
+
             await loadScript(MERMAID_URL);
             if (window.mermaid) {
                 window.mermaid.initialize({
@@ -156,8 +182,9 @@ export const renderMermaid = async (el) => {
             container.style.display = '';
         }
 
-        const { svg, bindFunctions } = await withTrustedHTML(() =>
-            window.mermaid.render(renderId, source, container)
+        const { svg, bindFunctions } = await withTrustedHTML(
+            () => window.mermaid.render(renderId, source, container),
+            mermaidPolicy
         );
 
         const parser = new DOMParser();
