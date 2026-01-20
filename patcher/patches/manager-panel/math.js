@@ -4,240 +4,119 @@
  */
 
 import {
-    MATH_ATTR,
-    MATH_HINT_RE,
-    RAW_TEXT_PROP,
+    KATEX_AUTO_URL,
     KATEX_CSS_URL,
     KATEX_JS_URL,
+    MATH_ATTR,
+    MATH_HINT_RE,
+    MATHJAX_URL,
+    RAW_TEXT_PROP,
 } from './constants.js';
-import { loadStyle, loadScript } from './utils.js';
+import { loadScript, loadStyle } from './utils.js';
 
-let katexLoaded = false;
-let katexLoading = null;
-const DELIMITERS = [
-    { left: '$$', right: '$$', display: true },
-    { left: '\\[', right: '\\]', display: true },
-    { left: '\\(', right: '\\)', display: false },
-    { left: '$', right: '$', display: false },
-];
+let mathEngine = null;
+let mathReadyPromise = null;
 
-const reloadScript = async (src) => {
-    const scripts = document.querySelectorAll(`script[src="${src}"]`);
-    scripts.forEach((script) => {
-        script.parentNode?.removeChild(script);
-    });
-    await loadScript(src);
+const isEditable = (el) => !!el?.closest?.('[contenteditable="true"], textarea, input');
+
+const captureRawText = (contentEl) => {
+    if (!contentEl) return;
+    if (contentEl.getAttribute(MATH_ATTR) === '1') return;
+    const raw = contentEl.innerText !== undefined
+        ? contentEl.innerText
+        : contentEl.textContent ?? '';
+    contentEl[RAW_TEXT_PROP] = raw;
 };
 
 /**
- * 加载 KaTeX 库
+ * 确保数学渲染引擎可用，优先 KaTeX，失败后回退 MathJax
+ * @returns {Promise<void>}
  */
-const ensureKatex = async () => {
-    if (katexLoaded) return true;
-    if (katexLoading) return katexLoading;
+export const ensureMathEngine = () => {
+    if (mathReadyPromise) return mathReadyPromise;
+    mathReadyPromise = (async () => {
+        if (window.katex && window.renderMathInElement) {
+            mathEngine = 'katex';
+            return;
+        }
 
-    katexLoading = (async () => {
         try {
             await loadStyle(KATEX_CSS_URL);
             await loadScript(KATEX_JS_URL);
-            if (!window.katex) {
-                await reloadScript(KATEX_JS_URL);
+            await loadScript(KATEX_AUTO_URL);
+            if (window.katex && window.renderMathInElement) {
+                mathEngine = 'katex';
+                return;
             }
-            if (!window.katex?.renderToString) {
-                return false;
-            }
-            katexLoaded = true;
-            return true;
-        } catch (err) {
-            console.warn('[Manager] KaTeX 加载失败:', err);
-            return false;
+        } catch (error) {
+            console.warn('[Manager] KaTeX 加载失败，尝试 MathJax:', error);
         }
+
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            mathEngine = 'mathjax';
+            return;
+        }
+
+        try {
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                },
+                options: {
+                    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                    ignoreHtmlClass: 'code-block|line-content|katex|no-math',
+                },
+                startup: { typeset: false },
+            };
+            await loadScript(MATHJAX_URL);
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                await window.MathJax.startup.promise;
+                mathEngine = 'mathjax';
+                return;
+            }
+        } catch (error) {
+            console.warn('[Manager] MathJax 加载失败:', error);
+        }
+
+        mathEngine = null;
     })();
-
-    return katexLoading;
-};
-
-const isEscaped = (text, index) => {
-    let slashCount = 0;
-    for (let i = index - 1; i >= 0 && text[i] === '\\'; i -= 1) {
-        slashCount += 1;
-    }
-    return slashCount % 2 === 1;
-};
-
-const findNextDelimiter = (text, startIndex) => {
-    let match = null;
-
-    for (const delimiter of DELIMITERS) {
-        const idx = text.indexOf(delimiter.left, startIndex);
-        if (idx === -1) continue;
-
-        if (delimiter.left === '$') {
-            if (isEscaped(text, idx)) continue;
-            const nextChar = text[idx + 1];
-            if (nextChar && /\s/.test(nextChar)) continue;
-        }
-
-        if (!match || idx < match.index || (idx === match.index && delimiter.left.length > match.delimiter.left.length)) {
-            match = { index: idx, delimiter };
-        }
-    }
-
-    return match;
-};
-
-const findEndDelimiter = (text, startIndex, delimiter) => {
-    let idx = text.indexOf(delimiter.right, startIndex);
-    while (idx !== -1) {
-        if (!isEscaped(text, idx)) {
-            if (delimiter.right === '$') {
-                const prevChar = text[idx - 1];
-                const nextChar = text[idx + 1];
-                if (prevChar && /\s/.test(prevChar)) {
-                    idx = text.indexOf(delimiter.right, idx + delimiter.right.length);
-                    continue;
-                }
-                if (nextChar === '$') {
-                    idx = text.indexOf(delimiter.right, idx + delimiter.right.length);
-                    continue;
-                }
-            }
-            return idx;
-        }
-        idx = text.indexOf(delimiter.right, idx + delimiter.right.length);
-    }
-    return -1;
-};
-
-const splitWithDelimiters = (text) => {
-    const tokens = [];
-    let pos = 0;
-
-    while (pos < text.length) {
-        const found = findNextDelimiter(text, pos);
-        if (!found) {
-            tokens.push({ type: 'text', data: text.slice(pos) });
-            break;
-        }
-
-        if (found.index > pos) {
-            tokens.push({ type: 'text', data: text.slice(pos, found.index) });
-        }
-
-        const start = found.index + found.delimiter.left.length;
-        const end = findEndDelimiter(text, start, found.delimiter);
-        if (end === -1) {
-            tokens.push({ type: 'text', data: text.slice(found.index) });
-            break;
-        }
-
-        const math = text.slice(start, end);
-        tokens.push({
-            type: 'math',
-            data: math,
-            display: found.delimiter.display,
-            left: found.delimiter.left,
-            right: found.delimiter.right,
-        });
-
-        pos = end + found.delimiter.right.length;
-    }
-
-    return tokens;
-};
-
-const renderKatexHtml = (latex, displayMode) => {
-    if (!window.katex?.renderToString) return null;
-    return window.katex.renderToString(latex, {
-        displayMode,
-        throwOnError: false,
-        trust: true,
-    });
-};
-
-const createFragmentFromHtml = (html) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const fragment = document.createDocumentFragment();
-    doc.body.childNodes.forEach((node) => {
-        fragment.appendChild(document.importNode(node, true));
-    });
-    return fragment;
-};
-
-const shouldSkipTextNode = (node) => {
-    const parent = node.parentElement;
-    if (!parent) return true;
-    if (parent.closest('pre, code, .code-block')) return true;
-    if (parent.closest('.manager-mermaid-container, .katex, .katex-display, mjx-container')) return true;
-    return false;
-};
-
-const renderMathIntoElement = (el) => {
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
-    const textNodes = [];
-    let node;
-
-    while ((node = walker.nextNode())) {
-        if (shouldSkipTextNode(node)) continue;
-        if (!node.textContent || !MATH_HINT_RE.test(node.textContent)) continue;
-        textNodes.push(node);
-    }
-
-    textNodes.forEach((textNode) => {
-        const tokens = splitWithDelimiters(textNode.textContent || '');
-        if (tokens.length === 1 && tokens[0].type === 'text') return;
-
-        const fragment = document.createDocumentFragment();
-        tokens.forEach((token) => {
-            if (token.type === 'text') {
-                if (token.data) {
-                    fragment.appendChild(document.createTextNode(token.data));
-                }
-                return;
-            }
-
-            const html = renderKatexHtml(token.data, token.display);
-            if (!html) {
-                fragment.appendChild(document.createTextNode(`${token.left}${token.data}${token.right}`));
-                return;
-            }
-
-            try {
-                const mathFragment = createFragmentFromHtml(html);
-                fragment.appendChild(mathFragment);
-            } catch {
-                fragment.appendChild(document.createTextNode(`${token.left}${token.data}${token.right}`));
-            }
-        });
-
-        textNode.replaceWith(fragment);
-    });
+    return mathReadyPromise;
 };
 
 /**
- * 渲染元素内的数学公式
- * @param {HTMLElement} el
+ * 渲染内容中的数学公式
+ * @param {Element} contentEl
+ * @returns {Promise<void>}
  */
-export const renderMath = async (el) => {
-    if (!el || el.hasAttribute(MATH_ATTR)) return;
+export const renderMath = async (contentEl) => {
+    if (!contentEl || isEditable(contentEl)) return;
 
-    const text = el.textContent || '';
+    const text = contentEl.textContent || '';
     if (!MATH_HINT_RE.test(text)) return;
 
-    // 保存原始文本
-    if (!el[RAW_TEXT_PROP]) {
-        el[RAW_TEXT_PROP] = text;
+    captureRawText(contentEl);
+
+    await ensureMathEngine();
+
+    if (mathEngine === 'katex' && window.renderMathInElement) {
+        window.renderMathInElement(contentEl, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '$', right: '$', display: false },
+            ],
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            ignoredClasses: ['code-block', 'line-content', 'katex', 'no-math'],
+            throwOnError: false,
+        });
+        contentEl.setAttribute(MATH_ATTR, '1');
+        return;
     }
 
-    const loaded = await ensureKatex();
-    if (!loaded || !window.katex?.renderToString) return;
-
-    el.setAttribute(MATH_ATTR, '1');
-
-    try {
-        renderMathIntoElement(el);
-    } catch (err) {
-        console.warn('[Manager] 数学公式渲染失败:', err);
+    if (mathEngine === 'mathjax' && window.MathJax?.typesetPromise) {
+        await window.MathJax.typesetPromise([contentEl]);
+        contentEl.setAttribute(MATH_ATTR, '1');
     }
 };

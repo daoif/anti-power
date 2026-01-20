@@ -143,7 +143,7 @@ export const withTrustedHTML = async (fn) => {
 const suspendAmd = () => {
     const defineFn = window.define;
     if (!defineFn || !defineFn.amd) {
-        return () => {};
+        return () => { };
     }
 
     if (amdSuspendCount === 0) {

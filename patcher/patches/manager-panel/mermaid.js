@@ -5,68 +5,127 @@
 
 import {
     MERMAID_ATTR,
-    MERMAID_URL,
-    MERMAID_SOURCE_PROP,
     MERMAID_CONTAINER_CLASS,
     MERMAID_COPY_BTN_CLASS,
+    MERMAID_SOURCE_PROP,
+    MERMAID_URL,
     COPY_BTN_CLASS,
 } from './constants.js';
 import {
-    loadScript,
     createCopyButton,
     copyToClipboard,
+    loadScript,
     showCopySuccess,
     withTrustedHTML,
 } from './utils.js';
 
-let mermaidLoaded = false;
-let mermaidLoading = null;
-let mermaidId = 0;
+let mermaidReady = false;
+let mermaidReadyPromise = null;
+let mermaidIdCounter = 0;
 const MERMAID_RENDERING_PROP = '__managerMermaidRendering';
 const MERMAID_ERROR_PROP = '__managerMermaidErrorSource';
+const MERMAID_MARKER_SELECTOR =
+    '[class*="language-mermaid"], [data-language="mermaid"], [data-lang="mermaid"], [data-mode="mermaid"], [data-code-language="mermaid"]';
 
 /**
- * 加载 Mermaid 库
+ * 初始化 Mermaid 配置
  */
-const ensureMermaid = async () => {
-    if (mermaidLoaded) return true;
-    if (mermaidLoading) return mermaidLoading;
+const initializeMermaid = () => {
+    window.mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+            darkMode: true,
+            background: '#1e1e1e',
+            primaryColor: '#4a9eff',
+            primaryTextColor: '#e0e0e0',
+            primaryBorderColor: '#4a9eff',
+            lineColor: '#6a9eff',
+            secondaryColor: '#2d4a6f',
+            tertiaryColor: '#1e3a5f',
+        },
+        securityLevel: 'strict',
+        fontFamily: 'var(--vscode-font-family, "Segoe UI", sans-serif)',
+    });
+    mermaidReady = true;
+};
 
-    mermaidLoading = (async () => {
+/**
+ * 确保 Mermaid 库加载并初始化
+ * @returns {Promise<void>}
+ */
+export const ensureMermaid = () => {
+    if (mermaidReadyPromise) return mermaidReadyPromise;
+    mermaidReadyPromise = (async () => {
+        if (window.mermaid && mermaidReady) return;
+
+        if (window.mermaid) {
+            initializeMermaid();
+            return;
+        }
+
         try {
             await loadScript(MERMAID_URL);
             if (window.mermaid) {
-                window.mermaid.initialize({
-                    startOnLoad: false,
-                    theme: 'dark',
-                    securityLevel: 'loose',
-                });
-                mermaidLoaded = true;
-                return true;
+                initializeMermaid();
             }
-            return false;
-        } catch (err) {
-            console.warn('[Manager] Mermaid 加载失败:', err);
-            return false;
+        } catch (error) {
+            console.warn('[Manager] Mermaid 加载失败:', error);
+            mermaidReady = false;
         }
     })();
-
-    return mermaidLoading;
+    return mermaidReadyPromise;
 };
 
-/**
- * 查找 Mermaid 代码块容器
- * @param {HTMLElement} el
- * @returns {HTMLElement|null}
- */
+const getClassString = (el) => {
+    const className = el?.className || '';
+    if (typeof className === 'string') return className;
+    if (className && typeof className.baseVal === 'string') return className.baseVal;
+    return '';
+};
+
+const normalizeLang = (value) => {
+    if (!value) return '';
+    return String(value).trim().toLowerCase();
+};
+
+const resolveLangAttr = (el) => {
+    if (!el?.getAttribute) return '';
+    const raw =
+        el.getAttribute('data-language') ||
+        el.getAttribute('data-lang') ||
+        el.getAttribute('data-mode') ||
+        el.getAttribute('data-code-language');
+    return normalizeLang(raw);
+};
+
+const resolveMermaidRoot = (el) => {
+    if (!el) return null;
+    if (el.matches?.(MERMAID_MARKER_SELECTOR)) return el;
+    return el.closest?.(MERMAID_MARKER_SELECTOR) || el;
+};
+
 const resolveCodeBlock = (el) => {
     if (!el) return null;
     if (el.classList?.contains('code-block')) return el;
-    const direct = el.querySelector?.('.code-block');
-    if (direct) return direct;
-    return el.closest?.('.code-block') || null;
+    return el.querySelector?.('.code-block') || null;
 };
 
+const isMermaidCandidate = (root, codeBlock) => {
+    const rootClass = getClassString(root);
+    const blockClass = getClassString(codeBlock);
+    if (rootClass.includes('language-mermaid') || blockClass.includes('language-mermaid')) {
+        return true;
+    }
+    const lang = resolveLangAttr(root) || resolveLangAttr(codeBlock);
+    return lang === 'mermaid';
+};
+
+/**
+ * 提取 Mermaid 源码
+ * @param {Element} codeBlock
+ * @returns {string}
+ */
 const extractMermaidSource = (codeBlock) => {
     if (!codeBlock) return '';
     const lines = codeBlock.querySelectorAll('.line-content');
@@ -81,12 +140,6 @@ const extractMermaidSource = (codeBlock) => {
     return (codeBlock.textContent || '').trim();
 };
 
-const isMermaidSource = (source) => {
-    const text = (source || '').trim();
-    if (!text) return false;
-    return /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph)/m.test(text);
-};
-
 const clearChildren = (el) => {
     while (el.firstChild) {
         el.removeChild(el.firstChild);
@@ -98,118 +151,110 @@ const cleanupMermaidTemp = (id) => {
     if (temp) temp.remove();
 };
 
-const resolveHideTarget = (codeBlock) => {
-    const wrapper = codeBlock?.parentElement;
-    if (wrapper && wrapper.children.length === 1) {
-        return wrapper;
-    }
-    return codeBlock || null;
-};
-
 /**
- * 渲染 Mermaid 图表
- * @param {HTMLElement} el - 包含 Mermaid 代码的 code-block 或其子元素
+ * 原地渲染 Mermaid 图表
+ * @param {Element} codeBlockContainer
+ * @returns {Promise<void>}
  */
-export const renderMermaid = async (el) => {
-    const codeBlock = resolveCodeBlock(el);
-    if (!codeBlock) return;
+export const renderMermaid = async (codeBlockContainer) => {
+    const root = resolveMermaidRoot(codeBlockContainer);
+    const codeBlock = resolveCodeBlock(root) || resolveCodeBlock(codeBlockContainer);
+    if (!root || !codeBlock) return;
 
     const source = extractMermaidSource(codeBlock);
-    if (!isMermaidSource(source)) return;
+    if (!source) return;
+    if (!isMermaidCandidate(root, codeBlock)) return;
 
-    const previousSource = codeBlock[MERMAID_SOURCE_PROP] || '';
-    const isRendered = codeBlock.getAttribute(MERMAID_ATTR) === '1';
+    const previousSource = root[MERMAID_SOURCE_PROP] || '';
+    const isRendered = root.getAttribute(MERMAID_ATTR) === '1';
     const contentChanged = previousSource && previousSource !== source;
-    const errorSource = codeBlock[MERMAID_ERROR_PROP] || '';
+    const errorSource = root[MERMAID_ERROR_PROP] || '';
 
     if (isRendered && !contentChanged) return;
     if (!isRendered && !contentChanged && errorSource === source) return;
-    if (codeBlock[MERMAID_RENDERING_PROP]) return;
+    if (root[MERMAID_RENDERING_PROP]) return;
 
-    codeBlock[MERMAID_SOURCE_PROP] = source;
-    codeBlock[MERMAID_RENDERING_PROP] = true;
+    root[MERMAID_SOURCE_PROP] = source;
+    root[MERMAID_RENDERING_PROP] = true;
 
-    const loaded = await ensureMermaid();
-    if (!loaded || !window.mermaid) {
-        delete codeBlock[MERMAID_RENDERING_PROP];
-        return;
-    }
-
-    let container = null;
-    let hideTarget = null;
     let renderId = null;
 
     try {
+        await ensureMermaid();
+        if (!mermaidReady || !window.mermaid) {
+            console.warn('[Manager] Mermaid 引擎未就绪');
+            return;
+        }
+
         if (typeof window.mermaid.parse === 'function') {
             await window.mermaid.parse(source);
         }
 
-        renderId = `manager-mermaid-${++mermaidId}`;
+        renderId = `manager-mermaid-${++mermaidIdCounter}`;
 
-        hideTarget = resolveHideTarget(codeBlock);
-        container = hideTarget?.previousElementSibling;
-        if (!container || !container.classList.contains(MERMAID_CONTAINER_CLASS)) {
+        let container = root.nextElementSibling;
+        let copyBtn = null;
+        const hasContainer = container && container.classList.contains(MERMAID_CONTAINER_CLASS);
+        if (!hasContainer) {
             container = document.createElement('div');
             container.className = MERMAID_CONTAINER_CLASS;
-        } else {
-            clearChildren(container);
-        }
-
-        if (hideTarget?.parentNode) {
-            if (!container.isConnected) {
-                hideTarget.parentNode.insertBefore(container, hideTarget);
-            }
-            container.style.display = '';
-            hideTarget.style.display = 'none';
-        } else if (codeBlock.parentNode && !container.isConnected) {
-            codeBlock.parentNode.insertBefore(container, codeBlock);
-            container.style.display = '';
+            root.insertAdjacentElement('afterend', container);
         }
 
         const { svg, bindFunctions } = await withTrustedHTML(() =>
             window.mermaid.render(renderId, source, container)
         );
 
+        copyBtn = container.querySelector(`.${MERMAID_COPY_BTN_CLASS}`);
+        if (!copyBtn) {
+            copyBtn = createCopyButton(`${COPY_BTN_CLASS} ${MERMAID_COPY_BTN_CLASS}`);
+            copyBtn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const mermaidSource = root[MERMAID_SOURCE_PROP] || '';
+                if (!mermaidSource) return;
+                const text = `\`\`\`mermaid\n${mermaidSource}\n\`\`\``;
+                const success = await copyToClipboard(text);
+                if (success) showCopySuccess(copyBtn);
+            });
+        }
+
+        clearChildren(container);
         const parser = new DOMParser();
         const doc = parser.parseFromString(svg, 'image/svg+xml');
         const svgEl = doc.querySelector('svg');
         if (!svgEl) {
             throw new Error('Mermaid SVG parse failed');
         }
+        container.appendChild(document.importNode(svgEl, true));
 
-        clearChildren(container);
-        const importedSvg = document.importNode(svgEl, true);
-        container.appendChild(importedSvg);
+        container.style.display = '';
         container[MERMAID_SOURCE_PROP] = source;
-
-        const copyBtn = createCopyButton(`${COPY_BTN_CLASS} ${MERMAID_COPY_BTN_CLASS}`);
-        copyBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const success = await copyToClipboard(source);
-            if (success) showCopySuccess(copyBtn);
-        });
-        container.appendChild(copyBtn);
-
+        if (copyBtn) {
+            container.appendChild(copyBtn);
+        }
         if (typeof bindFunctions === 'function') {
             bindFunctions(container);
         }
 
-        codeBlock.setAttribute(MERMAID_ATTR, '1');
-        delete codeBlock[MERMAID_ERROR_PROP];
-    } catch (err) {
-        console.warn('[Manager] Mermaid 渲染失败:', err);
-        codeBlock[MERMAID_ERROR_PROP] = source;
-        codeBlock.removeAttribute(MERMAID_ATTR);
-        if (hideTarget) hideTarget.style.display = '';
-        if (container?.classList?.contains(MERMAID_CONTAINER_CLASS)) {
+        root.style.display = 'none';
+        root.setAttribute(MERMAID_ATTR, '1');
+        delete root[MERMAID_ERROR_PROP];
+    } catch (error) {
+        console.warn('[Manager] Mermaid 渲染失败:', error);
+        root[MERMAID_ERROR_PROP] = source;
+        root.removeAttribute(MERMAID_ATTR);
+        root.style.display = '';
+        const container = root.nextElementSibling;
+        if (container && container.classList.contains(MERMAID_CONTAINER_CLASS)) {
+            container.innerHTML = '';
             container.style.display = 'none';
         }
     } finally {
         if (renderId) {
             cleanupMermaidTemp(renderId);
         }
-        delete codeBlock[MERMAID_RENDERING_PROP];
+        delete root[MERMAID_RENDERING_PROP];
     }
 };
 

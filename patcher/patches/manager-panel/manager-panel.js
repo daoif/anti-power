@@ -13,8 +13,8 @@
 const SCRIPT_BASE = new URL('./', import.meta.url).href;
 
 const DEFAULT_CONFIG = {
-    mermaid: false,
-    math: false,
+    mermaid: true,
+    math: true,
     copyButton: true,
     tableColor: false,
     fontSizeEnabled: false,
