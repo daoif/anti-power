@@ -18,3 +18,7 @@ patcher/package-lock.json
 patcher/src-tauri/target/
 patcher/src-tauri/Cargo.lock
 patcher/src-tauri/gen/
+
+# 构建产物
+anti-power-patches.zip
+release-notes.md
