@@ -1,7 +1,7 @@
 /**
  * Export the Manager window (Launchpad) DOM
  *
- * Run node dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/xxx"
+ * Run node scripts/dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/xxx"
  */
 
 const { chromium } = require('playwright');
@@ -13,7 +13,7 @@ async function main() {
 
     if (!wsUrl) {
         console.log('❌ 请提供 WebSocket URL 作为参数！');
-        console.log('用法: node dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/xxx"');
+        console.log('用法: node scripts/dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/xxx"');
         process.exit(1);
     }
 
@@ -58,7 +58,7 @@ async function main() {
 
         console.log('\n📦 正在导出 DOM 结构...\n');
 
-        const tempDir = path.join(__dirname, 'temp');
+        const tempDir = path.join(__dirname, '..', 'temp');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }

@@ -1,6 +1,6 @@
 // Antigravity installation discovery
-// Windows detection checks the registry before common paths
-// macOS detection placeholder for community contributions
+// Windows: query the registry and scan common paths
+// macOS: return `None` when standard paths fail
 
 use std::path::PathBuf;
 
@@ -28,6 +28,7 @@ pub fn detect_antigravity_path() -> Option<String> {
 
 /// Check whether the path is a valid Antigravity installation root
 fn is_valid_antigravity_path(path: &PathBuf) -> bool {
+    // Use the sidebar entry point to identify the installation root
     let cascade_panel_path = path
         .join("resources")
         .join("app")

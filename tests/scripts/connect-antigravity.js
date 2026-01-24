@@ -1,9 +1,9 @@
 /**
  * Connect to Antigravity over CDP
  *
- * 1. Start Antigravity with & "E:\Program Files\Antigravity\Antigravity.exe" --remote-debugging-port=9222
+ * 1. Start Antigravity with & "E:\\Program Files\\Antigravity\\Antigravity.exe" --remote-debugging-port=9222
  * 2. Copy the browser WebSocket URL shown in the terminal (ws://127.0.0.1:9222/devtools/browser/xxx)
- * 3. Run node connect-antigravity.js "ws://127.0.0.1:9222/devtools/browser/xxx"
+ * 3. Run node scripts/connect-antigravity.js "ws://127.0.0.1:9222/devtools/browser/xxx"
  */
 
 const { chromium } = require('playwright');
@@ -14,7 +14,7 @@ async function main() {
     if (!wsUrl) {
         console.log('❌ 请提供 WebSocket URL 作为参数！\n');
         console.log('使用方法:');
-        console.log('  node connect-antigravity.js "ws://127.0.0.1:9222/devtools/browser/xxxxxx"\n');
+        console.log('  node scripts/connect-antigravity.js "ws://127.0.0.1:9222/devtools/browser/xxxxxx"\n');
         console.log('WebSocket URL 可以在启动 Antigravity 时的终端输出中找到:');
         console.log('  DevTools listening on ws://127.0.0.1:9222/devtools/browser/xxxxxx\n');
         process.exit(1);

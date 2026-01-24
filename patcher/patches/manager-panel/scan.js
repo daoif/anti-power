@@ -1,4 +1,7 @@
-/** Observe Manager content independently of the legacy Cascade Panel */
+/**
+ * Observe Manager content independently of the legacy Cascade Panel
+ * Wait for Good/Bad feedback controls or stable content before rendering streamed messages
+ */
 
 import { CONTENT_SELECTOR, SECTION_SELECTOR } from './constants.js';
 import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';

@@ -1,3 +1,5 @@
+/** Observe content mutations and defer rendering until the message has finished or the content settles */
+
 import { CONTENT_SELECTOR } from './constants.js';
 import { addFeedbackCopyButtons, ensureContentCopyButton } from './copy.js';
 import { renderMath } from './math.js';

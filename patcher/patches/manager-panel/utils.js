@@ -1,4 +1,7 @@
-/** Keep Manager utilities independent of the legacy Cascade Panel */
+/**
+ * Share resource loaders and copy utilities within the Manager panel
+ * Apply Trusted Types during HTML writes and suspend AMD loading during script injection
+ */
 
 const TRUSTED_TYPES_POLICY_NAMES = [
     'renderCodeBlock',

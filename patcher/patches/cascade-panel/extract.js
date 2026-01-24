@@ -1,3 +1,5 @@
+/** Serialize DOM content as Markdown, restoring the original LaTeX and Mermaid source */
+
 import {
     BUTTON_CLASS,
     COMMON_LANGS,

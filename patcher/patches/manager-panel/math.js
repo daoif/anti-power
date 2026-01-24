@@ -1,4 +1,8 @@
-/** Render math in Manager independently of the legacy Cascade Panel */
+/**
+ * Parse delimiters in the Manager panel and pass each formula to katex.render for Trusted Types compatibility
+ * Support inline $...$ and \(...\), and display $$...$$ and \[...\]
+ * Keep the original text for copying
+ */
 
 import {
     MATH_ATTR,

@@ -87,7 +87,6 @@ pub fn install_patch(
         .join("extensions")
         .join("antigravity");
 
-    // The Manager entry lives under the workbench directory
     let workbench_dir = antigravity_path
         .join("resources")
         .join("app")
@@ -439,4 +438,3 @@ fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Re
     restore_manager_files(workbench_dir)?;
     Ok(())
 }
-

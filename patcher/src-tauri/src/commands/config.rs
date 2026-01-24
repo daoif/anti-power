@@ -53,7 +53,7 @@ fn get_config_path() -> PathBuf {
         .join("config.json")
 }
 
-/// Load installer preferences
+/// Load installer preferences, falling back to defaults on failure
 #[tauri::command]
 pub fn get_config() -> AppConfig {
     let config_path = get_config_path();

@@ -1,3 +1,8 @@
+/**
+ * Load Mermaid on demand for language-mermaid blocks
+ * Keep the original block for source copying and render again when the source changes
+ */
+
 import {
     MERMAID_ATTR,
     MERMAID_CONTAINER_CLASS,

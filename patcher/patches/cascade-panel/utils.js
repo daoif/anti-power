@@ -1,3 +1,5 @@
+/** Share resource loads to avoid duplicate requests for the same URL */
+
 import { MATH_ATTR, RAW_TEXT_PROP } from './constants.js';
 
 const stylePromises = new Map();

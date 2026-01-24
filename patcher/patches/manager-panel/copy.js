@@ -1,4 +1,7 @@
-/** Keep Manager copy controls independent of the legacy Cascade Panel */
+/**
+ * Keep Manager copy controls independent of the legacy Cascade Panel
+ * Copy formatted messages from the content area or Good/Bad feedback row
+ */
 
 import {
     CONTENT_SELECTOR,

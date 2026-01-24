@@ -1,5 +1,6 @@
 /**
- * Capture live Manager console output and read the patch's log buffer
+ * Capture live Manager console output
+ * Read earlier messages from the patch's log buffer when present
  */
 
 const http = require('http');
@@ -49,7 +50,7 @@ async function main() {
             method: 'Runtime.evaluate',
             params: {
                 expression: `
-                    // 检查是否有我们的日志存储
+                    // 检查是否有日志缓存.
                     window.__managerDebugLogs || []
                 `,
                 returnByValue: true,
@@ -80,7 +81,7 @@ async function main() {
         }
     });
 
-    console.log('正在监听实时 console 日志（5秒）...\n');
+    console.log('正在监听实时 console 日志 (5 秒)...\n');
 
     await new Promise(r => setTimeout(r, 5000));
 

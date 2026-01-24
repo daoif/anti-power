@@ -1,5 +1,7 @@
 /**
  * Extract sidebar messages from React elements in the virtualized list
+ *
+ * Run node scripts/dump-cascade-dom.js "ws://127.0.0.1:9222/devtools/browser/xxx"
  */
 
 const { chromium } = require('playwright');
@@ -28,6 +30,7 @@ async function main() {
     const wsUrl = process.argv[2];
     if (!wsUrl) {
         console.log('❌ 请提供 WebSocket URL 作为参数！');
+        console.log('用法: node scripts/dump-cascade-dom.js "ws://127.0.0.1:9222/devtools/browser/xxx"');
         process.exit(1);
     }
 
@@ -60,7 +63,7 @@ async function main() {
             process.exit(1);
         }
 
-        const tempDir = path.join(__dirname, 'temp');
+        const tempDir = path.join(__dirname, '..', 'temp');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }
