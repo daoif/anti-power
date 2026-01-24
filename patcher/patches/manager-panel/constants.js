@@ -1,4 +1,7 @@
-/** Keep Manager constants independent of the legacy Cascade Panel */
+/**
+ * Keep Manager selectors and resources independent of the legacy Cascade Panel
+ * Override CDN URLs through window globals to use local or mirrored assets
+ */
 
 // Selectors for Antigravity Manager message content
 export const CONTENT_SELECTOR = '.leading-relaxed.select-text';

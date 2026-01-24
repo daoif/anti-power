@@ -16,14 +16,14 @@
 
 ```powershell
 cd tests
-node debug-manager.js
-node debug-manager-advanced.js
+node scripts/debug-manager.js
+node scripts/debug-manager-advanced.js
 ```
 
 可选工具:
-- `connect-antigravity.js`: 列出所有页面, 需要传入 WebSocket URL
-- `dump-manager-dom.js`: 导出 Manager DOM 到 `tests/temp`, 需要传入 WebSocket URL
-- `capture-logs.js`: 捕获 Manager 控制台日志
+- `scripts/connect-antigravity.js`: 列出所有页面, 需要传入 WebSocket URL
+- `scripts/dump-manager-dom.js`: 导出 Manager DOM 到 `tests/temp`, 需要传入 WebSocket URL
+- `scripts/capture-logs.js`: 捕获 Manager 控制台日志
 
 WebSocket URL 可通过 `http://127.0.0.1:9222/json/version` 查看.
 

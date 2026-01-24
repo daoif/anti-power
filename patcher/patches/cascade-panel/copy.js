@@ -1,3 +1,5 @@
+/** Inject copy controls into Cascade message content and feedback rows */
+
 import { BOUND_ATTR, BUTTON_CLASS } from './constants.js';
 import { CHECK_ICON_SVG, COPY_ICON_SVG } from './icons.js';
 import { extractFormattedContent } from './extract.js';

@@ -1,3 +1,9 @@
+/**
+ * Prefer KaTeX and fall back to MathJax
+ * Support inline $...$ and \(...\), and display $$...$$ and \[...\]
+ * Share the pending engine load across renders
+ */
+
 import {
     KATEX_AUTO_URL,
     KATEX_CSS_URL,

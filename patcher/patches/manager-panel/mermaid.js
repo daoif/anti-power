@@ -1,4 +1,7 @@
-/** Render Mermaid in Manager independently of the legacy Cascade Panel */
+/**
+ * Load Mermaid on demand for Manager code blocks and render SVG through the Trusted Types policy
+ * Keep the source block until the diagram is ready
+ */
 
 import {
     MERMAID_ATTR,

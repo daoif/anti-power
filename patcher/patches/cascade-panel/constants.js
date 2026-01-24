@@ -1,3 +1,5 @@
+/** Override CDN URLs through window globals to use local or mirrored assets */
+
 // Limit enhancement scans to these content selectors
 export const CONTENT_SELECTOR = '.prose, .prose-sm, [data-in-html-content]';
 export const BOUND_ATTR = 'data-cascade-copy-bound';

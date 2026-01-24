@@ -1,7 +1,28 @@
-# Tauri + Vue + TypeScript
+# Anti-Power Patcher
 
-The patcher uses Vite, TypeScript, and Vue 3 single-file components with `<script setup>`. See the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup).
+安装器基于 Tauri、Vue 和 TypeScript，可检测 Antigravity 安装目录、安装或卸载补丁并写入配置。
 
-## Recommended IDE Setup
+## 运行与构建
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+```powershell
+npm install
+npm run tauri:dev
+```
+
+```powershell
+npm run tauri:build
+```
+
+产物输出在 `patcher/src-tauri/target/release/`.
+
+## 目录说明
+
+- `src/`: 安装器前端界面
+- `src-tauri/`: Tauri 后端命令与补丁安装逻辑
+- `patches/`: 补丁源文件与手动安装材料
+
+## 推荐 IDE
+
+- VS Code + Vue - Official
+- Tauri
+- rust-analyzer

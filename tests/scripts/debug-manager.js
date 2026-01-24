@@ -1,5 +1,6 @@
 /**
- * Find and inspect the Manager window over CDP
+ * Inspect the Manager window over CDP
+ * Start Antigravity with --remote-debugging-port=9222 and open Manager first
  */
 
 const { chromium } = require('playwright');
