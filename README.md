@@ -66,15 +66,15 @@
 
 如需手动安装, 下载 Release 中的补丁压缩包 (例如 `anti-power-patches.zip`), 并参考 [manual-install.md](patcher/patches/manual-install.md).
 
-### macOS
+### macOS & Linux
 
-macOS 现支持使用 [anti-power-macOS.sh](patcher/patches/anti-power-macOS.sh) 脚本一键替换
+运行 [anti-power.sh](patcher/patches/anti-power.sh) 安装补丁.
 
 > ⚠️ 受权限限制, 建议在 macOS 自带的 **Terminal (终端)** 中运行脚本.
 
 ```bash
-chmod +x ./anti-power-macOS.sh
-sudo ./anti-power-macOS.sh
+chmod +x ./anti-power.sh
+sudo ./anti-power.sh
 ```
 
 如需手动安装，请参考 [manual-install.md](patcher/patches/manual-install.md).
