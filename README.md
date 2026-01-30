@@ -14,10 +14,10 @@
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/协议-MIT-orange.svg" alt="开源协议">
   </a>
-  <br>
-  <a href="README_EN.md">
-    <img src="https://img.shields.io/badge/Language-English-blue?style=for-the-badge&logo=google-translate&logoColor=white" alt="English">
-  </a>
+</p>
+
+<p align="center">
+  中文 | <a href="README_EN.md">English</a>
 </p>
 
 > 🚀 针对 **Antigravity AI IDE** 的增强补丁, 提升侧边栏和 Manager 窗口的对话体验!
