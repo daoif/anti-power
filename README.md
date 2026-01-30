@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v2.3.0-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v2.3.1-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/支持_Antigravity-v1.15.8-green.svg" alt="Antigravity">
@@ -37,7 +37,7 @@
 | **一键复制** | 用侧边栏或 Manager 的 Copy 按钮将回复复制为 Markdown |
 | **表格颜色修复** | 修复深色主题下表格文字不可见问题 |
 | **Manager 布局调节** | 支持对话宽度与字号调节 |
-| **悬浮复制按钮** | 鼠标悬停时在内容区右上角显示 |
+| **悬浮复制按钮** | 右上角悬停时显示，右下角始终显示 |
 
 ### 复制功能
 
@@ -95,7 +95,7 @@ sudo ./anti-power.sh
 - 项目结构与分类说明: [project-structure.md](docs/reference/project-structure.md)
 - 效果截图: [screenshots.md](docs/reference/screenshots.md)
 - 已知问题: [known-issues.md](docs/reference/known-issues.md)
-- 开发者文档: [developer-guide.md](docs/guides/developer-guide.md) | [中文](docs/guides/developer-guide-zh.md)
+- 开发者文档: [developer-guide.md](docs/guides/developer-guide.md) | [English](docs/guides/developer-guide_EN.md)
 - 发布指南: [release-guide.md](docs/guides/release-guide.md)
 - 文档索引: [README.md](docs/README.md)
 
@@ -103,17 +103,9 @@ sudo ./anti-power.sh
 
 ## 📋 版本信息
 
-| 补丁版本 | 支持的 Antigravity 版本 | 发布日期 | 更新内容 |
-|---------|------------------------|----------|----------|
-| v2.3.0  | v1.15.8                | 2026-01-30 | 复制功能优化: 支持 Markdown 格式保留 (标题/列表/加粗/斜体/链接等) |
-| v2.2.0  | v1.14.2                | 2026-01-21 | Manager Mermaid/数学公式渲染, 对话宽度/字号调节, 感谢 @mikessslxxx |
-| v2.1.0  | v1.14.2                | 2026-01-19 | 侧边栏字体调节, Mermaid 报错提示优化, Manager 一键复制 |
-| v2.0.1  | v1.14.2                | 2026-01-14 | 性能优化 |
-| v2.0.0  | v1.14.2                | 2026-01-14 | 新增 Tauri 工具, 支持功能单独开关 |
-| v1.2.1  | v1.13.3                | 2026-01-13 | Bug 修复 |
-| v1.2.0  | v1.13.3                | 2026-01-13 | Mermaid 渲染 |
-| v1.1.0  | v1.13.3                | 2026-01-13 | 数学公式渲染 |
-| v1.0.0  | v1.13.3                | 2026-01-13 | 一键复制, 表格修复 |
+当前版本: **v2.3.1** | 支持 Antigravity: **v1.15.8**
+
+完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -132,7 +124,9 @@ sudo ./anti-power.sh
 
 ## 🙏 致谢
 
-- [@mikessslxxx](https://github.com/mikessslxxx)
+- [@mikessslxxx](https://github.com/mikessslxxx) - 数学公式渲染、Manager 功能增强
+- [@syanle](https://github.com/syanle) - Linux 支持
+- [@Sophomoresty](https://github.com/Sophomoresty) - 复制功能优化、开发者文档
 
 ---
 

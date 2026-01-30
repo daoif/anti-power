@@ -1,0 +1,104 @@
+# Changelog
+
+[中文](CHANGELOG.md) | English
+
+---
+
+## v2.3.1 (2026-01-31)
+
+> Community contribution: Thanks to [@Sophomoresty](https://github.com/Sophomoresty) for the PR
+
+### New Features
+- Added an always-visible copy button in the bottom-right corner
+- Developer documentation (bilingual: English and Chinese)
+
+### Improvements
+- KaTeX CSS and JS parallel loading for faster initial formula rendering
+- Top-right hover button moved up to avoid text obstruction
+- Code blocks use monospace font stack (Cascadia Code, Fira Code, etc.)
+- Remove excess empty lines in copied content
+
+### Fixes
+- Correctly identify code blocks and language identifiers in nested lists
+- Inline code (`pre.inline`) correctly extracted as backtick format
+- Filter SVG tags to avoid copying icon code
+
+### Changes
+- Removed copy button from good/bad feedback area (reduce UI clutter)
+- Manager features (mermaid, math) enabled by default
+
+---
+
+## v2.3.0 (2026-01-30)
+
+### New Features
+- Copying preserves Markdown formatting, including headings, lists, bold, italics, and links
+
+---
+
+## v2.2.0 (2026-01-21)
+
+> Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx)
+
+### New Features
+- Manager window Mermaid rendering
+- Manager window math formula rendering
+- Manager window conversation width adjustment
+- Manager window font size adjustment
+
+---
+
+## v2.1.0 (2026-01-19)
+
+### New Features
+- Sidebar font size adjustment
+- Manager window one-click copy
+
+### Improvements
+- Mermaid rendering error hint optimization
+
+---
+
+## v2.0.1 (2026-01-14)
+
+### Improvements
+- Performance optimization
+
+---
+
+## v2.0.0 (2026-01-14)
+
+### New Features
+- New Tauri installation tool
+- Support for toggling individual features
+
+---
+
+## v1.2.1 (2026-01-13)
+
+### Fixes
+- Bug fixes
+
+---
+
+## v1.2.0 (2026-01-13)
+
+### New Features
+- Mermaid flowchart rendering
+
+---
+
+## v1.1.0 (2026-01-13)
+
+> Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx)
+
+### New Features
+- Math formula rendering (KaTeX)
+
+---
+
+## v1.0.0 (2026-01-13)
+
+### Initial Release
+- One-click copy button
+- Table color fix (dark theme)

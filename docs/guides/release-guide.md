@@ -9,9 +9,8 @@
 | Cargo 配置 | `patcher/src-tauri/Cargo.toml` -> `version` |
 | 前端显示 | `patcher/src/App.vue` -> `APP_VERSION` |
 | README 版本徽章 | `README.md` -> 顶部版本号徽章 |
-| README 版本表格 | `README.md` -> "版本信息" 表格 |
 | README_EN 版本徽章 | `README_EN.md` -> 顶部版本号徽章 |
-| README_EN 版本表格 | `README_EN.md` -> "Version Info" 表格 |
+| 更新日志 | `CHANGELOG.md` -> 添加新版本记录 |
 
 ---
 

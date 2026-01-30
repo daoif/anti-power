@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/Version-v2.3.0-blue.svg" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v2.3.1-blue.svg" alt="Version">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/Supports_Antigravity-v1.15.8-green.svg" alt="Antigravity">
@@ -37,7 +37,7 @@
 | **One-Click Copy** | Use Copy in the Sidebar or Manager to copy replies as Markdown |
 | **Table Color Fix** | Makes table text visible in dark themes |
 | **Manager Layout** | Adjust conversation width and font size |
-| **Floating Copy Button** | Appears on hover at the top right of the content area |
+| **Floating Copy Buttons** | Top right on hover, bottom right always visible |
 
 ### Copy Features
 
@@ -95,7 +95,7 @@ For manual installation, please refer to [manual-install.md](patcher/patches/man
 - Project Structure & Classification: [project-structure.md](docs/reference/project-structure.md)
 - Screenshots: [screenshots.md](docs/reference/screenshots.md)
 - Known Issues: [known-issues.md](docs/reference/known-issues.md)
-- Developer Guide: [developer-guide.md](docs/guides/developer-guide.md)
+- Developer Guide: [developer-guide_EN.md](docs/guides/developer-guide_EN.md) | [中文](docs/guides/developer-guide.md)
 - Release Guide: [release-guide.md](docs/guides/release-guide.md)
 - Index: [README.md](docs/README.md)
 
@@ -103,17 +103,9 @@ For manual installation, please refer to [manual-install.md](patcher/patches/man
 
 ## 📋 Version Info
 
-| Patch Version | Supported Antigravity Version | Date | Update Content |
-|---------------|-------------------------------|------|----------------|
-| v2.3.0 | v1.15.8 | 2026-01-30 | Copy enhancement: Markdown format preservation (headings/lists/bold/italic/links etc.) |
-| v2.2.0 | v1.14.2 | 2026-01-21 | Manager Mermaid/Math rendering, width/font size adjustment, thanks to @mikessslxxx |
-| v2.1.0 | v1.14.2 | 2026-01-19 | Sidebar font adjustment, Mermaid error hint optimization, Manager one-click copy |
-| v2.0.1 | v1.14.2 | 2026-01-14 | Performance optimization |
-| v2.0.0 | v1.14.2 | 2026-01-14 | Added Tauri tool, supports toggling individual features |
-| v1.2.1 | v1.13.3 | 2026-01-13 | Bug fixes |
-| v1.2.0 | v1.13.3 | 2026-01-13 | Mermaid rendering |
-| v1.1.0 | v1.13.3 | 2026-01-13 | Math formula rendering |
-| v1.0.0 | v1.13.3 | 2026-01-13 | One-click copy, table fix |
+Current Version: **v2.3.1** | Supports Antigravity: **v1.15.8**
+
+For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 
 ---
 
@@ -132,7 +124,9 @@ Issues and Pull Requests are welcome.
 
 ## 🙏 Acknowledgments
 
-- [@mikessslxxx](https://github.com/mikessslxxx)
+- [@mikessslxxx](https://github.com/mikessslxxx) - Math formula rendering, Manager enhancements
+- [@syanle](https://github.com/syanle) - Linux support
+- [@Sophomoresty](https://github.com/Sophomoresty) - Copy function optimization, developer documentation
 
 ---
 

@@ -26,7 +26,7 @@
 - `patcher/src-tauri/`: 安装器后端逻辑 (路径检测, 备份/写入, 配置).
 - `patcher/src/`: 安装器前端 UI (功能开关, 安装/卸载按钮).
 - `docs/`: 开发, 发布, 结构, 已知问题与截图 (见 `docs/README.md`).
-- `docs/guides/developer-guide-zh.md`: 完整的中文开发者文档, 包含 DOM 结构, 代码规范, 开发流程.
+- `docs/guides/developer-guide.md`: 完整的中文开发者文档, 包含 DOM 结构, 代码规范, 开发流程.
 - `tests/scripts/`: Playwright 脚本, 用于远程调试 Antigravity 的 Manager 窗口 DOM.
 - `patcher/patches/manual-install.md`: 随补丁压缩包提供的手动安装说明 (Windows/macOS).
 - `patcher/patches/workbench-jetski-agent.html` + `patcher/patches/manager-panel/`: Manager 窗口补丁入口与模块.

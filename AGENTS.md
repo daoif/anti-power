@@ -26,7 +26,7 @@ English | [中文](AGENTS-zh.md)
 - `patcher/src-tauri/`: Installer backend logic (path detection, backup/write, config).
 - `patcher/src/`: Installer frontend UI (feature toggles, install/uninstall buttons).
 - `docs/`: Development, release, structure, known issues and screenshots (see `docs/README.md`).
-- `docs/guides/developer-guide.md`: Comprehensive developer documentation (English) with DOM structure, code conventions, and development workflow.
+- `docs/guides/developer-guide_EN.md`: Comprehensive developer documentation (English) with DOM structure, code conventions, and development workflow.
 - `tests/scripts/`: Playwright scripts for remote debugging Antigravity Manager window DOM.
 - `patcher/patches/manual-install.md`: Manual installation instructions bundled with patch zip (Windows/macOS).
 - `patcher/patches/workbench-jetski-agent.html` + `patcher/patches/manager-panel/`: Manager window patch entry and modules.
