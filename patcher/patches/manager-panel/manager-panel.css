@@ -1,5 +1,13 @@
 /* Manager Panel 样式 - 完全独立于 cascade-panel */
 
+/* 代码块等宽字体 */
+pre,
+pre .code-block,
+pre .line-content,
+pre code {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace !important;
+}
+
 /* 字体大小自定义 */
 .leading-relaxed.select-text {
     font-size: var(--manager-panel-font-size, inherit) !important;
