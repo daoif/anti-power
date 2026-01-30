@@ -31,8 +31,12 @@ export const ensureMathEngine = () => {
         }
 
         try {
-            await loadStyle(KATEX_CSS_URL);
-            await loadScript(KATEX_JS_URL);
+            // Load the KaTeX CSS and core script in parallel to reduce initial rendering latency
+            await Promise.all([
+                loadStyle(KATEX_CSS_URL),
+                loadScript(KATEX_JS_URL),
+            ]);
+            // Load auto-render after the KaTeX core script because it depends on katex
             await loadScript(KATEX_AUTO_URL);
             if (window.katex && window.renderMathInElement) {
                 mathEngine = 'katex';
