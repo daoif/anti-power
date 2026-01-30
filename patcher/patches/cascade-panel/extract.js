@@ -2,6 +2,7 @@
 
 import {
     BUTTON_CLASS,
+    BOTTOM_BUTTON_CLASS,
     COMMON_LANGS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
@@ -83,12 +84,13 @@ const extractNodeContent = (element, context = {}) => {
     const classString = getClassString(element);
     const tagName = element.tagName;
 
-    if (['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE'].includes(tagName)) {
+    if (['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG'].includes(tagName)) {
         return '';
     }
 
     if (
         classString.includes(BUTTON_CLASS) ||
+        classString.includes(BOTTOM_BUTTON_CLASS) ||
         classString.includes('custom-copy-btn') ||
         classString.includes('cascade-copy-btn')
     ) {
@@ -190,6 +192,14 @@ const extractNodeContent = (element, context = {}) => {
     if (tagName === 'CODE' && !element.closest('pre')) {
         const text = element.textContent || '';
         if (!text.trim()) return '';
+        return `\`${text}\``;
+    }
+
+    // Treat pre.inline as inline code
+    if (tagName === 'PRE' && classString.includes('inline')) {
+        const code = element.querySelector('code');
+        const text = code ? code.textContent : element.textContent;
+        if (!text?.trim()) return '';
         return `\`${text}\``;
     }
 
@@ -341,6 +351,7 @@ const extractChildrenContent = (element, context = {}) => {
 
             if (
                 parent?.closest(`.${BUTTON_CLASS}`) ||
+                parent?.closest(`.${BOTTOM_BUTTON_CLASS}`) ||
                 parent?.closest('.custom-copy-btn')
             ) {
                 continue;

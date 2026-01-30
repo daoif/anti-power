@@ -12,6 +12,21 @@ body {
     font-size: inherit;
 }
 
+/* Reduce KaTeX's default 1.21em size to fit chat text */
+.katex {
+    font-size: 1em;
+}
+
+.katex-display {
+    font-size: 1.1em;
+}
+
+pre.inline,
+pre.inline code,
+code:not([class*="language-"]) {
+    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', 'Courier New', monospace) !important;
+}
+
 /* Shared copy button styling */
 .cascade-copy-btn {
     display: flex;
@@ -54,22 +69,42 @@ body {
     opacity: 1;
 }
 
-/* Show the message copy button on hover or focus */
+/* Show the top-right copy button on hover or focus */
 .cascade-copy-button {
     position: absolute;
-    top: -2px;
+    top: -1.5em;
     right: 0;
     opacity: 0;
-    z-index: 1;
+    z-index: 10;
+    pointer-events: none;
 }
 
 [data-cascade-copy-bound='1']:hover .cascade-copy-button,
 [data-cascade-copy-bound='1']:focus-within .cascade-copy-button {
     opacity: 0.7;
+    pointer-events: auto;
 }
 
 .cascade-copy-button:hover {
     opacity: 1 !important;
+}
+
+/* Keep the bottom-right copy button visible */
+.cascade-copy-bottom {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    opacity: 0.6;
+    z-index: 10;
+}
+
+.cascade-copy-bottom:hover {
+    opacity: 1;
+}
+
+.cascade-copy-bottom.copied {
+    color: #22c55e;
+    opacity: 1;
 }
 
 /* Mermaid render container */

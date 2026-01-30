@@ -1,6 +1,6 @@
 /** Inject copy controls into Cascade message content and feedback rows */
 
-import { BOUND_ATTR, BUTTON_CLASS } from './constants.js';
+import { BOUND_ATTR, BUTTON_CLASS, BOTTOM_BUTTON_CLASS } from './constants.js';
 import { CHECK_ICON_SVG, COPY_ICON_SVG } from './icons.js';
 import { extractFormattedContent } from './extract.js';
 import { captureRawText, isEditable, writeClipboard } from './utils.js';
@@ -139,14 +139,25 @@ export const ensureContentCopyButton = (contentEl) => {
         contentEl.style.position = 'relative';
     }
 
-    const button = createCopyButton({ className: BUTTON_CLASS });
-    bindCopyButton(button, {
+    // Top-right hover button
+    const topButton = createCopyButton({ className: BUTTON_CLASS });
+    bindCopyButton(topButton, {
         getText: () => extractFormattedContent(contentEl, true),
         copiedDuration: 1200,
         preventDefault: true,
         stopPropagation: true,
     });
-    contentEl.appendChild(button);
+    contentEl.appendChild(topButton);
+
+    // Persistent bottom-right button
+    const bottomButton = createCopyButton({ className: BOTTOM_BUTTON_CLASS });
+    bindCopyButton(bottomButton, {
+        getText: () => extractFormattedContent(contentEl, true),
+        copiedDuration: 1200,
+        preventDefault: true,
+        stopPropagation: true,
+    });
+    contentEl.appendChild(bottomButton);
 };
 
 /**

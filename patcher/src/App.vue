@@ -44,11 +44,11 @@ const features = ref({
   fontSize: 20,
 });
 
-// Manager has independent settings and starts disabled
+// Manager has independent settings and starts enabled
 const managerFeatures = ref({
-  enabled: false,
-  mermaid: false,
-  math: false,
+  enabled: true,
+  mermaid: true,
+  math: true,
   copyButton: true,
   maxWidthEnabled: false,
   maxWidthRatio: 75,

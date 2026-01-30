@@ -7,13 +7,14 @@ import {
     CONTENT_SELECTOR,
     BOUND_ATTR,
     BUTTON_CLASS,
+    BOTTOM_BUTTON_CLASS,
     COPY_BTN_CLASS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
 } from './constants.js';
 import { createCopyButton, copyToClipboard, showCopySuccess } from './utils.js';
 
-const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE']);
+const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
 const BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI']);
 const COMMON_LANGS = new Set([
     'xml',
@@ -179,6 +180,7 @@ const extractNodeContent = (element, context = {}) => {
     if (
         classString.includes('manager-copy-btn') ||
         classString.includes('manager-copy-button') ||
+        classString.includes('manager-copy-bottom') ||
         classString.includes('manager-feedback-copy')
     ) {
         return '';
@@ -201,7 +203,23 @@ const extractNodeContent = (element, context = {}) => {
         return '';
     }
 
-    if (tagName === 'PRE' || classString.includes('code-block')) {
+    if (tagName === 'PRE') {
+        // Treat pre.inline as inline code
+        if (classString.includes('inline')) {
+            const code = element.querySelector('code');
+            const text = code ? code.textContent : element.textContent;
+            if (!text?.trim()) return '';
+            return `\`${text}\``;
+        }
+        const codeContent = extractCodeBlock(element).trimEnd();
+        if (codeContent) {
+            const lang = resolveCodeLanguage(element, codeContent);
+            const fence = lang ? `\`\`\`${lang}` : '```';
+            return `\n${fence}\n${codeContent}\n\`\`\`\n`;
+        }
+        return '';
+    }
+    if (classString.includes('code-block')) {
         const code = extractCodeBlock(element).trimEnd();
         if (code) {
             const lang = resolveCodeLanguage(element, code);
@@ -431,6 +449,7 @@ export const ensureContentCopyButton = (contentEl) => {
         contentEl.style.position = 'relative';
     }
 
+    // Top-right hover button
     const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -439,8 +458,18 @@ export const ensureContentCopyButton = (contentEl) => {
         const success = await copyToClipboard(text);
         if (success) showCopySuccess(btn);
     });
-
     contentEl.appendChild(btn);
+
+    // Persistent bottom-right button
+    const bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`);
+    bottomBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const text = extractFormattedText(contentEl);
+        const success = await copyToClipboard(text);
+        if (success) showCopySuccess(bottomBtn);
+    });
+    contentEl.appendChild(bottomBtn);
 };
 
 /** Insert copy buttons beside the Good/Bad feedback controls */
