@@ -14,10 +14,10 @@
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License">
   </a>
-  <br>
-  <a href="README.md">
-    <img src="https://img.shields.io/badge/Language-简体中文-blue?style=for-the-badge&logo=google-translate&logoColor=white" alt="简体中文">
-  </a>
+</p>
+
+<p align="center">
+  <a href="README.md">中文</a> | English
 </p>
 
 > A patch for the Sidebar and Manager in **Antigravity AI IDE**.
