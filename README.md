@@ -95,7 +95,7 @@ sudo ./anti-power.sh
 - 项目结构与分类说明: [project-structure.md](docs/reference/project-structure.md)
 - 效果截图: [screenshots.md](docs/reference/screenshots.md)
 - 已知问题: [known-issues.md](docs/reference/known-issues.md)
-- 开发调试指南: [developer-guide.md](docs/guides/developer-guide.md)
+- 开发者文档: [developer-guide.md](docs/guides/developer-guide.md) | [中文](docs/guides/developer-guide-zh.md)
 - 发布指南: [release-guide.md](docs/guides/release-guide.md)
 - 文档索引: [README.md](docs/README.md)
 

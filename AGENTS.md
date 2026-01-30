@@ -1,5 +1,7 @@
 # AGENTS.md (Anti-Power Project Key Context)
 
+English | [中文](AGENTS-zh.md)
+
 > Goal: Let AI quickly understand what this project does, how patches are applied, and where key entry points are.
 
 ## Project Positioning
