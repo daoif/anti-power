@@ -1,76 +1,291 @@
-# 开发者调试指南
+# Developer Guide
 
-本文档说明如何调试 Antigravity 并进行 UI 增强开发.
+English | [中文](developer-guide-zh.md)
 
-## 获取 DOM 结构的方法
+This guide explains how to debug Antigravity and develop UI enhancements.
 
-### 方法一: 内置开发者工具 (推荐用于主窗口/侧边栏)
+## Project Overview
 
-1. 在 Antigravity 主窗口中按 `Ctrl+Shift+P`
-2. 输入 "开发人员:切换开发人员工具" 或 "Developer: Toggle Developer Tools"
-3. 打开控制台, 查看任意位置的 DOM 结构 (包括侧边栏)
+Anti-Power is a patch tool that enhances Antigravity IDE, primarily improving the sidebar (cascade-panel) and Manager window content copy functionality.
 
-### 方法二: Playwright 远程调试 (用于 Manager 窗口)
-
-Manager 窗口无法使用方法一, 需要通过远程调试获取界面信息.
-
-1. 关闭所有 Antigravity 窗口
-2. 使用调试模式启动:
-   ```powershell
-   & "<Antigravity安装目录>\Antigravity.exe" --remote-debugging-port=9222
-   ```
-3. 手动打开 Manager 窗口
-4. 复制终端输出的 WebSocket URL
-5. 运行 Playwright 脚本:
-   ```powershell
-   cd tests
-   node scripts/dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/你的UUID"
-   ```
-
-常用脚本 (位于 `tests/scripts/`):
-
-- `scripts/connect-antigravity.js`: 连接 9222 并列出可用页面
-- `scripts/dump-manager-dom.js`: 导出完整 HTML, DOM 树与关键元素到 `tests/temp`
-- `scripts/debug-manager.js`: 快速检查补丁加载与关键选择器
-- `scripts/debug-manager-advanced.js`: 深入诊断, 包含资源加载, 渲染状态, 错误探测
-
----
-
-## 已知 Hook 点
-
-| Hook 点 | 文件路径 | 影响范围 |
-|---------|----------|----------|
-| **侧边栏面板** | `extensions/antigravity/cascade-panel.html` | Cascade 对话侧边栏 |
-| **Manager 窗口** | `out/vs/code/electron-browser/workbench/workbench-jetski-agent.html` | Agent Manager 独立窗口 |
-
----
-
-## 重要目录和文件
-
-以下路径相对于 Antigravity 安装目录 (例如 `C:\Program Files\Antigravity\`):
+## Directory Structure
 
 ```
-<安装目录>/
+patcher/
+├── src/                    # Tauri frontend (Vue.js)
+├── src-tauri/              # Tauri backend (Rust)
+├── patches/
+│   ├── cascade-panel/      # Sidebar patch module
+│   │   ├── cascade-panel.js    # Entry file
+│   │   ├── cascade-panel.css   # Styles
+│   │   ├── constants.js        # Constants
+│   │   ├── extract.js          # Content extraction core logic
+│   │   ├── copy.js             # Copy button functionality
+│   │   ├── scan.js             # DOM scanning and button injection
+│   │   ├── utils.js            # Utility functions
+│   │   ├── math.js             # KaTeX math rendering
+│   │   ├── mermaid.js          # Mermaid diagram rendering
+│   │   └── icons.js            # Icon definitions
+│   └── manager-panel/      # Manager window patch module
+│       ├── manager-panel.js    # Entry file
+│       ├── manager-panel.css   # Styles
+│       ├── constants.js        # Constants
+│       ├── copy.js             # Content extraction and copy
+│       ├── scan.js             # DOM scanning and button injection
+│       ├── utils.js            # Utility functions
+│       ├── math.js             # KaTeX math rendering
+│       └── mermaid.js          # Mermaid diagram rendering
+```
+
+## Patch Installation Paths
+
+- **cascade-panel**: `<Antigravity>/resources/app/extensions/antigravity/cascade-panel/`
+- **manager-panel**: `<Antigravity>/resources/app/out/vs/code/electron-browser/workbench/manager-panel/`
+
+## Quick Development Workflow
+
+No need to rebuild patcher every time - just copy files directly for testing:
+
+```bash
+# Copy cascade-panel (example path)
+cp patches/cascade-panel/*.js patches/cascade-panel/*.css "E:/Antigravity/resources/app/extensions/antigravity/cascade-panel/"
+
+# Copy manager-panel (example path)
+cp patches/manager-panel/*.js patches/manager-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/manager-panel/"
+```
+
+Then in Antigravity:
+1. Press `Ctrl+Shift+I` to open developer tools
+2. Press `Ctrl+R` to refresh the page
+
+**Note**: Manager window is independent and needs to be refreshed separately.
+
+---
+
+## Getting DOM Structure
+
+### Method 1: Built-in Developer Tools (Recommended for main window/sidebar)
+
+1. Press `Ctrl+Shift+P` in Antigravity main window
+2. Type "Developer: Toggle Developer Tools"
+3. Open console to inspect any DOM structure (including sidebar)
+
+### Method 2: Playwright Remote Debugging (For Manager window)
+
+Manager window cannot use Method 1, requires remote debugging.
+
+1. Close all Antigravity windows
+2. Start in debug mode:
+   ```powershell
+   & "<Antigravity-install-dir>\Antigravity.exe" --remote-debugging-port=9222
+   ```
+3. Manually open Manager window
+4. Copy the WebSocket URL from terminal output
+5. Run Playwright script:
+   ```powershell
+   cd tests
+   node scripts/dump-manager-dom.js "ws://127.0.0.1:9222/devtools/browser/your-UUID"
+   ```
+
+Available scripts (in `tests/scripts/`):
+
+- `scripts/connect-antigravity.js`: Connect to 9222 and list available pages
+- `scripts/dump-manager-dom.js`: Export complete HTML, DOM tree and key elements to `tests/temp`
+- `scripts/debug-manager.js`: Quick check patch loading and key selectors
+- `scripts/debug-manager-advanced.js`: Deep diagnostics including resource loading, render state, error detection
+
+---
+
+## Known Hook Points
+
+| Hook Point | File Path | Scope |
+|------------|-----------|-------|
+| **Sidebar Panel** | `extensions/antigravity/cascade-panel.html` | Cascade dialog sidebar |
+| **Manager Window** | `out/vs/code/electron-browser/workbench/workbench-jetski-agent.html` | Agent Manager standalone window |
+
+---
+
+## Important Directories and Files
+
+Paths relative to Antigravity installation directory (e.g., `C:\Program Files\Antigravity\`):
+
+```
+<install-dir>/
 └── resources/
     └── app/
         ├── extensions/
         │   └── antigravity/
-        │       └── cascade-panel.html      <- 侧边栏 Hook 点
+        │       └── cascade-panel.html      <- Sidebar hook point
         │
         └── out/
             └── vs/
                 └── code/
                     └── electron-browser/
                         └── workbench/
-                            ├── workbench.html              <- 主编辑器窗口
-                            ├── workbench-jetski-agent.html <- Manager Hook 点
-                            └── jetskiAgent.js              <- Manager 主脚本
+                            ├── workbench.html              <- Main editor window
+                            ├── workbench-jetski-agent.html <- Manager hook point
+                            └── jetskiAgent.js              <- Manager main script
 ```
 
 ---
 
-## 备注
+## Core Module Documentation
 
-- 修改 `workbench-jetski-agent.html` 会导致 Antigravity 启动时显示 "扩展已损坏" 提示, 但不影响正常使用
-- Manager 窗口使用 React + TailwindCSS 技术栈
-- 侧边栏面板通过 iframe 加载 `cascade-panel.html`
+### extract.js / copy.js (Content Extraction)
+
+Responsible for extracting content from DOM and converting to Markdown format.
+
+**Supported Content Types**:
+- Code blocks (with language identifier)
+- Inline code (`pre.inline` structure)
+- Ordered/unordered lists (with nesting support)
+- Tables
+- Math formulas (KaTeX/MathJax, restore LaTeX source)
+- Mermaid diagrams (restore source code)
+- Headings (convert to # format)
+
+**Key Functions**:
+- `extractFormattedContent()` / `extractFormattedText()` - Main extraction function
+- `extractCodeBlockContent()` - Extract code blocks, auto-detect language
+- `extractListItemContent()` - Extract list item content
+- `extractOrderedList()` / `extractUnorderedList()` - Recursively process nested lists
+- `extractLatexFromMath()` - Restore LaTeX from rendered formulas
+- `extractTable()` - Table to Markdown
+
+### constants.js
+
+Shared constants:
+- `BUTTON_CLASS` - Top-right copy button class name
+- `BOTTOM_BUTTON_CLASS` - Bottom-right copy button class name
+- `BOUND_ATTR` - Attribute marking bound copy functionality
+- `RAW_TEXT_PROP` - Property name for cached raw text
+- `MERMAID_SOURCE_PROP` - Property name for cached Mermaid source
+- `COMMON_LANGS` - Common programming languages set (for filtering noise)
+
+### scan.js
+
+DOM change monitoring and button injection:
+- Uses MutationObserver to monitor DOM changes
+- Automatically adds copy buttons to content areas
+- Handles Mermaid and math formula rendering
+
+---
+
+## DOM Structure Reference
+
+### Inline Code
+```html
+<pre class="inline"><code class="...">code content</code></pre>
+```
+Should extract as: `` `code content` ``
+
+### Code Block
+```html
+<pre>
+  <div>
+    <div class="font-sans">c</div>  <!-- Language label display -->
+  </div>
+  <div class="language-c ...">      <!-- language-xxx is here -->
+    <div class="code-block">
+      <div class="code-line">
+        <div class="line-content">code line 1</div>
+      </div>
+      ...
+    </div>
+  </div>
+</pre>
+```
+`extractCodeBlockContent()` searches in order:
+1. Current element's class
+2. Child elements with `[class*="language-"]`
+3. Parent element's class
+
+### List Structure
+```html
+<ol>
+  <li>
+    text content
+    <pre class="inline"><code>inline code</code></pre>
+    <pre>...</pre>  <!-- Code block -->
+    <ul>          <!-- Nested list -->
+      <li>...</li>
+    </ul>
+  </li>
+</ol>
+```
+
+---
+
+## Development Progress
+
+### Completed Features
+
+- [x] Basic copy functionality (top-right hover + bottom-right persistent buttons)
+- [x] Code block extraction (with language identifier)
+- [x] Inline code extraction (`pre.inline` -> backticks)
+- [x] Nested list support (ordered/unordered, recursive processing)
+- [x] Table to Markdown
+- [x] Math formula restore LaTeX source
+- [x] Mermaid diagram restore source
+- [x] Heading to Markdown # format
+- [x] Filter STYLE/SCRIPT/SVG tags
+- [x] Filter copy button text
+- [x] Inline code monospace font fix (cascade-panel)
+- [x] Remove empty lines to optimize Markdown format
+- [x] KaTeX parallel loading optimization
+
+### Known Issues
+
+- [ ] **Manager nested list code blocks missing language identifier**
+  - Reason: Manager DOM structure differs from cascade-panel, code blocks may not be direct children of `<li>`
+  - Requires debugging tools to inspect specific DOM structure
+
+### TODO
+
+- [ ] Manager nested code block language identifier extraction
+- [ ] More edge case handling
+- [ ] Unit tests
+
+---
+
+## Code Conventions
+
+### Naming Convention
+- cascade-panel uses `cascade-` prefix (e.g., `cascade-copy-button`)
+- manager-panel uses `manager-` prefix (e.g., `manager-copy-btn`)
+
+### Extraction Logic Sync
+cascade-panel's `extract.js` and manager-panel's `copy.js` should keep extraction logic in sync. When modifying one, sync the other.
+
+### Skipping Elements
+Use `skipUntilEndOfBlock` variable with `contains()` check to skip processed subtrees:
+```javascript
+if (skipUntilEndOfBlock && skipUntilEndOfBlock.contains(currentNode)) {
+    continue;
+}
+```
+
+### Content to Skip
+- `SKIP_TAGS`: STYLE, SCRIPT, NOSCRIPT, TEMPLATE, SVG
+- Copy button elements and their inner text
+- Already processed code blocks/formulas/list inner text
+- File icon containers (`show-file-icons`, `file-icon`)
+
+---
+
+## Build and Release
+
+```bash
+cd patcher
+npm run tauri:build
+```
+
+Build output: `src-tauri/target/release/anti-power.exe`
+
+---
+
+## Notes
+
+- Modifying `workbench-jetski-agent.html` will trigger "Extension corrupted" prompt at Antigravity startup, but does not affect normal use
+- Manager window uses React + TailwindCSS stack
+- Sidebar panel loads `cascade-panel.html` via iframe

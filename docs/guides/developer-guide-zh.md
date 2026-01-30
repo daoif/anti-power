@@ -1,5 +1,7 @@
 # Anti-Power 开发文档
 
+[English](developer-guide.md) | 中文
+
 ## 项目概述
 
 Anti-Power 是一个为 Antigravity IDE 提供增强功能的补丁工具，主要增强侧边栏（cascade-panel）和 Manager 窗口的内容复制功能。
@@ -31,7 +33,7 @@ patcher/
 │       ├── utils.js            # 工具函数
 │       ├── math.js             # KaTeX 数学公式渲染
 │       └── mermaid.js          # Mermaid 图表渲染
-└── DEVELOPMENT.md          # 本文档
+└── docs/guides/            # 本文档所在目录
 ```
 
 ## 补丁安装位置
@@ -156,6 +158,7 @@ DOM 变化监听与按钮注入：
 - [x] 过滤复制按钮文本
 - [x] 内联代码等宽字体样式修复（cascade-panel）
 - [x] 移除空行优化 Markdown 格式
+- [x] KaTeX CSS 和 JS 并行加载优化
 
 ### 已知问题
 
@@ -202,6 +205,19 @@ npm run tauri:build
 构建产物：`src-tauri/target/release/anti-power.exe`
 
 ## 版本历史
+
+### v2.3.x (社区增强)
+- KaTeX CSS 和 JS 并行加载，加快首次渲染速度
+- 右下角常驻复制按钮，移除 good/bad 旁边的复制按钮
+- 右上角复制按钮上移，避免遮挡文字
+- 侧边栏/Manager 嵌套列表支持，代码块语言标识识别
+- 内联代码 (`pre.inline`) 正确提取为反引号格式
+- SVG 标签过滤，避免复制内容包含图标代码
+- 清理复制内容中的多余空行
+- Manager 功能 (mermaid, math) 默认启用
+
+### v2.3.0
+- 复制功能优化: 支持 Markdown 格式保留 (标题/列表/加粗/斜体/链接等)
 
 ### v2.2.0
 - 添加 Manager 功能支持

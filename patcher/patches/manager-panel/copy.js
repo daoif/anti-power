@@ -2,16 +2,15 @@
  * Manager Panel 复制功能
  *
  * 本模块提供 Manager 窗口的复制按钮功能，完全独立于 cascade-panel。
+ * 提取逻辑与 cascade-panel/extract.js 保持同步。
  *
  * 主要功能：
  * - 内容区域复制按钮注入
- * - 反馈区域（Good/Bad 按钮旁）复制按钮注入
- * - 格式化内容提取（代码块、表格、Mermaid）
- * - 智能语言检测与 Markdown 转换
+ * - 格式化内容提取（代码块、表格、列表、Mermaid、数学公式）
+ * - 标题转换为 Markdown 格式
  */
 
 import {
-    CONTENT_SELECTOR,
     BOUND_ATTR,
     BUTTON_CLASS,
     BOTTOM_BUTTON_CLASS,
@@ -21,33 +20,15 @@ import {
 } from './constants.js';
 import { createCopyButton, copyToClipboard, showCopySuccess } from './utils.js';
 
-const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
-const BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI']);
+// 常见语言集合，用于过滤代码块标题等噪音文本
 const COMMON_LANGS = new Set([
-    'xml',
-    'html',
-    'css',
-    'javascript',
-    'typescript',
-    'python',
-    'java',
-    'json',
-    'bash',
-    'shell',
-    'sql',
-    'yaml',
-    'markdown',
-    'md',
-    'go',
-    'rust',
-    'c',
-    'cpp',
-    'csharp',
-    'php',
-    'ruby',
-    'swift',
-    'kotlin',
+    'xml', 'html', 'css', 'javascript', 'typescript', 'python', 'java',
+    'json', 'bash', 'shell', 'sql', 'yaml', 'markdown', 'md', 'go', 'rust',
+    'c', 'cpp', 'csharp', 'php', 'ruby', 'swift', 'kotlin',
 ]);
+
+// 需要跳过的标签
+const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
 
 /**
  * 获取类名字符串（兼容 SVG）
@@ -63,405 +44,516 @@ const getClassString = (el) => {
 };
 
 /**
- * 提取表格为 Markdown
+ * 从 KaTeX 或 MathJax 的渲染结构中提取 LaTeX 源码
+ * @param {Element} mathEl
+ * @returns {string|null} 提取失败返回 null
+ */
+const extractLatexFromMath = (mathEl) => {
+    const annotation = mathEl.querySelector('annotation[encoding="application/x-tex"]');
+    if (annotation) {
+        const latex = annotation.textContent;
+        const isDisplay = mathEl.closest('.katex-display') !== null;
+        return isDisplay ? `$$${latex}$$` : `$${latex}$`;
+    }
+
+    if (mathEl.tagName === 'MJX-CONTAINER') {
+        const ariaLabel = mathEl.getAttribute('aria-label');
+        if (ariaLabel) {
+            const isDisplay = mathEl.getAttribute('display') === 'true' ||
+                mathEl.classList.contains('MathJax_Display');
+            return isDisplay ? `$$${ariaLabel}$$` : `$${ariaLabel}$`;
+        }
+    }
+
+    return null;
+};
+
+/**
+ * 提取列表项内容，处理内联代码和数学公式
+ * 只提取列表项的直接文本内容，嵌套列表和代码块由调用方单独处理
+ * @param {HTMLLIElement} li
+ * @returns {string}
+ */
+const extractListItemContent = (li) => {
+    let content = '';
+    const walker = document.createTreeWalker(
+        li,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+
+    let node;
+    let skipUntil = null;
+
+    while ((node = walker.nextNode())) {
+        if (skipUntil && skipUntil.contains(node)) continue;
+        skipUntil = null;
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName;
+            const classString = getClassString(node);
+
+            // 跳过嵌套列表，由调用方递归处理
+            if (tag === 'OL' || tag === 'UL') {
+                skipUntil = node;
+                continue;
+            }
+
+            // PRE 标签处理：pre.inline 视为内联代码，其他 PRE 由调用方单独处理
+            if (tag === 'PRE') {
+                if (classString.includes('inline')) {
+                    const code = node.querySelector('code');
+                    content += `\`${code ? code.textContent : node.textContent}\``;
+                }
+                skipUntil = node;
+                continue;
+            }
+            if (classString.includes('language-') || classString.includes('code-block')) {
+                skipUntil = node;
+                continue;
+            }
+
+            // 跳过复制按钮
+            if (classString.includes(BUTTON_CLASS) || classString.includes(BOTTOM_BUTTON_CLASS) || classString.includes('manager-copy-btn')) {
+                skipUntil = node;
+                continue;
+            }
+
+            // 处理内联代码（非代码块内的 code 标签）
+            if (tag === 'CODE' && !node.closest('pre')) {
+                content += `\`${node.textContent}\``;
+                skipUntil = node;
+                continue;
+            }
+
+            // 处理 KaTeX 公式
+            if (node.classList.contains('katex')) {
+                const latex = extractLatexFromMath(node);
+                if (latex) {
+                    content += latex;
+                    skipUntil = node;
+                    continue;
+                }
+            }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+            const parent = node.parentElement;
+            // 跳过已处理的内联代码和公式内部文本
+            if (parent && parent.closest('code, .katex, mjx-container')) continue;
+            // 跳过代码块内部文本
+            if (parent && parent.closest('pre, .code-block, [class*="language-"]')) continue;
+            // 跳过复制按钮内部文本
+            if (parent && parent.closest(`.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .manager-copy-btn`)) continue;
+            content += node.textContent;
+        }
+    }
+
+    return content.trim().replace(/\n+/g, ' ');
+};
+
+/**
+ * 提取代码块内容
+ * @param {Element} codeBlockContainer - 包含代码块的容器
+ * @returns {string} Markdown 格式的代码块
+ */
+const extractCodeBlockContent = (codeBlockContainer) => {
+    // 尝试从当前元素获取语言标识
+    let classString = getClassString(codeBlockContainer);
+    let langMatch = classString.match(/language-(\w+)/);
+
+    // 如果当前元素没有语言标识，尝试从子元素查找
+    if (!langMatch) {
+        const langEl = codeBlockContainer.querySelector('[class*="language-"]');
+        if (langEl) {
+            const langElClass = getClassString(langEl);
+            langMatch = langElClass.match(/language-(\w+)/);
+        }
+    }
+
+    // 如果还没找到，尝试从父级查找
+    if (!langMatch && codeBlockContainer.parentElement) {
+        const parentClass = getClassString(codeBlockContainer.parentElement);
+        langMatch = parentClass.match(/language-(\w+)/);
+    }
+
+    const lang = langMatch ? langMatch[1] : '';
+
+    const codeBlock = codeBlockContainer.querySelector('.code-block') || codeBlockContainer;
+    const lines = codeBlock.querySelectorAll('.line-content');
+
+    let codeContent = '';
+    if (lines.length > 0) {
+        lines.forEach((line, idx) => {
+            codeContent += line.textContent;
+            if (idx < lines.length - 1) codeContent += '\n';
+        });
+    } else {
+        codeContent = codeBlock.textContent || '';
+    }
+
+    const fence = lang ? `\`\`\`${lang}` : '```';
+    return `${fence}\n${codeContent.trimEnd()}\n\`\`\``;
+};
+
+/**
+ * 将有序列表节点转换为 Markdown 格式（支持嵌套）
+ * @param {HTMLOListElement} olEl
+ * @param {number} depth - 嵌套深度
+ * @returns {string}
+ */
+const extractOrderedList = (olEl, depth = 0) => {
+    let markdown = '\n';
+    const startNum = parseInt(olEl.getAttribute('start'), 10) || 1;
+    const items = olEl.querySelectorAll(':scope > li');
+    const indent = '   '.repeat(depth); // 3 spaces per depth level
+
+    items.forEach((li, idx) => {
+        const num = startNum + idx;
+        const content = extractListItemContent(li);
+        markdown += `${indent}${num}. ${content}\n`;
+
+        // 处理列表项内的代码块（排除 pre.inline）
+        // 搜索当前 li 下的所有代码块，但跳过属于嵌套 li 的
+        const codeBlocks = li.querySelectorAll('pre:not(.inline), div[class*="language-"]');
+        codeBlocks.forEach((block) => {
+            // 跳过嵌套列表中的代码块（由递归处理）
+            const closestLi = block.closest('li');
+            if (closestLi !== li) return;
+            const codeMarkdown = extractCodeBlockContent(block);
+            // 代码块需要缩进以保持在列表项内
+            const indentedCode = codeMarkdown.split('\n').map(line => indent + '   ' + line).join('\n');
+            markdown += indentedCode + '\n';
+        });
+
+        // 递归处理嵌套列表
+        const nestedLists = li.querySelectorAll(':scope > ol, :scope > ul');
+        nestedLists.forEach((nested) => {
+            if (nested.tagName === 'OL') {
+                markdown += extractOrderedList(nested, depth + 1);
+            } else {
+                markdown += extractUnorderedList(nested, depth + 1);
+            }
+        });
+    });
+
+    return markdown;
+};
+
+/**
+ * 将无序列表节点转换为 Markdown 格式（支持嵌套）
+ * @param {HTMLUListElement} ulEl
+ * @param {number} depth - 嵌套深度
+ * @returns {string}
+ */
+const extractUnorderedList = (ulEl, depth = 0) => {
+    let markdown = '\n';
+    const items = ulEl.querySelectorAll(':scope > li');
+    const indent = '   '.repeat(depth); // 3 spaces per depth level
+
+    items.forEach((li) => {
+        const content = extractListItemContent(li);
+        markdown += `${indent}- ${content}\n`;
+
+        // 处理列表项内的代码块（排除 pre.inline）
+        // 搜索当前 li 下的所有代码块，但跳过属于嵌套 li 的
+        const codeBlocks = li.querySelectorAll('pre:not(.inline), div[class*="language-"]');
+        codeBlocks.forEach((block) => {
+            // 跳过嵌套列表中的代码块（由递归处理）
+            const closestLi = block.closest('li');
+            if (closestLi !== li) return;
+            const codeMarkdown = extractCodeBlockContent(block);
+            // 代码块需要缩进以保持在列表项内
+            const indentedCode = codeMarkdown.split('\n').map(line => indent + '   ' + line).join('\n');
+            markdown += indentedCode + '\n';
+        });
+
+        // 递归处理嵌套列表
+        const nestedLists = li.querySelectorAll(':scope > ol, :scope > ul');
+        nestedLists.forEach((nested) => {
+            if (nested.tagName === 'OL') {
+                markdown += extractOrderedList(nested, depth + 1);
+            } else {
+                markdown += extractUnorderedList(nested, depth + 1);
+            }
+        });
+    });
+
+    return markdown;
+};
+
+/**
+ * 将表格节点转换为 Markdown 表格字符串
  * @param {HTMLTableElement} tableEl
  * @returns {string}
  */
 const extractTable = (tableEl) => {
     let markdown = '';
     const rows = tableEl.querySelectorAll('tr');
+
     rows.forEach((row, rowIdx) => {
         const cells = row.querySelectorAll('th, td');
         const cellContents = [];
+
         cells.forEach((cell) => {
             let cellText = cell.textContent || '';
             cellText = cellText.trim().replace(/\n/g, ' ').replace(/\|/g, '\\|');
             cellContents.push(cellText);
         });
-        markdown += `| ${cellContents.join(' | ')} |\n`;
+
+        markdown += '| ' + cellContents.join(' | ') + ' |\n';
+
         if (rowIdx === 0 && row.querySelector('th')) {
-            markdown += `| ${cellContents.map(() => '---').join(' | ')} |\n`;
+            markdown += '| ' + cellContents.map(() => '---').join(' | ') + ' |\n';
         }
     });
+
     return markdown;
 };
 
 /**
- * 提取代码块内容
- * @param {Element} root
- * @returns {string}
- */
-const extractCodeBlock = (root) => {
-    const codeRoot = root.classList?.contains('code-block')
-        ? root
-        : root.querySelector?.('.code-block');
-
-    if (codeRoot) {
-        const lines = codeRoot.querySelectorAll('.line-content');
-        if (lines.length > 0) {
-            return Array.from(lines)
-                .map((line) => line.textContent || '')
-                .join('\n');
-        }
-        return codeRoot.textContent || '';
-    }
-
-    return root.textContent || '';
-};
-
-/**
- * 判断元素是否可见
- * @param {Element} el
- * @returns {boolean}
- */
-const isVisibleElement = (el) => {
-    if (!el || !el.isConnected) return false;
-    const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-        return false;
-    }
-    const rect = el.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
-};
-
-const normalizeLang = (lang) => {
-    if (!lang) return '';
-    const lowered = String(lang).trim().toLowerCase();
-    if (lowered === 'markdown') return 'md';
-    return lowered;
-};
-
-const looksLikeMarkdown = (text) => {
-    if (!text) return false;
-    const lines = text.split(/\r?\n/).map((line) => line.trim());
-    const hasTable = lines.some((line) => line.includes('|')) &&
-        lines.some((line) => /^(\|?\s*:?-{3,}:?\s*)\|/.test(line));
-    const hasHeading = lines.some((line) => /^#{1,6}\s+/.test(line));
-    const hasList = lines.some((line) => /^[-*+]\s+/.test(line) || /^\d+\.\s+/.test(line));
-    return hasTable || hasHeading || hasList;
-};
-
-const resolveCodeLanguage = (element, codeText) => {
-    const candidates = [
-        element,
-        element.closest?.('pre') || null,
-        element.parentElement,
-    ].filter(Boolean);
-
-    for (const target of candidates) {
-        const raw =
-            target.getAttribute?.('data-language') ||
-            target.getAttribute?.('data-lang') ||
-            target.getAttribute?.('data-mode') ||
-            target.getAttribute?.('data-code-language');
-        const normalized = normalizeLang(raw);
-        if (normalized) return normalized;
-    }
-
-    const pre = element.closest?.('pre') || element;
-    const prev = pre?.previousElementSibling;
-    if (prev && prev.textContent) {
-        const label = normalizeLang(prev.textContent);
-        if (label && COMMON_LANGS.has(label)) return label;
-    }
-
-    const text = codeText || '';
-    if (looksLikeMarkdown(text)) return 'md';
-
-    return '';
-};
-
-/**
- * 递归提取节点格式化内容
- * @param {Element} element - 待提取的节点
- * @param {Object} context - 上下文信息
- * @returns {string}
- */
-const extractNodeContent = (element, context = {}) => {
-    if (!element) return '';
-
-    const classString = getClassString(element);
-    const tagName = element.tagName;
-
-    // 跳过不需要处理的元素
-    if (SKIP_TAGS.has(tagName)) {
-        return '';
-    }
-
-    // 跳过复制按钮
-    if (
-        classString.includes('manager-copy-btn') ||
-        classString.includes('manager-copy-button') ||
-        classString.includes('manager-copy-bottom') ||
-        classString.includes('manager-feedback-copy')
-    ) {
-        return '';
-    }
-
-    // Mermaid 容器：恢复源码
-    if (classString.includes('manager-mermaid-container')) {
-        const source = element[MERMAID_SOURCE_PROP];
-        if (source) {
-            return `\n\`\`\`mermaid\n${source}\n\`\`\`\n`;
-        }
-        return '';
-    }
-
-    // 表格处理
-    if (tagName === 'TABLE') {
-        const table = extractTable(element).trimEnd();
-        if (table) {
-            return `\n${table}\n`;
-        }
-        return '';
-    }
-
-    // 代码块处理
-    if (tagName === 'PRE') {
-        // pre.inline 视为内联代码
-        if (classString.includes('inline')) {
-            const code = element.querySelector('code');
-            const text = code ? code.textContent : element.textContent;
-            if (!text?.trim()) return '';
-            return `\`${text}\``;
-        }
-        const codeContent = extractCodeBlock(element).trimEnd();
-        if (codeContent) {
-            const lang = resolveCodeLanguage(element, codeContent);
-            const fence = lang ? `\`\`\`${lang}` : '```';
-            return `\n${fence}\n${codeContent}\n\`\`\`\n`;
-        }
-        return '';
-    }
-    if (classString.includes('code-block')) {
-        const code = extractCodeBlock(element).trimEnd();
-        if (code) {
-            const lang = resolveCodeLanguage(element, code);
-            const fence = lang ? `\`\`\`${lang}` : '```';
-            return `\n${fence}\n${code}\n\`\`\`\n`;
-        }
-        return '';
-    }
-
-    // 标题处理 (H1-H6)
-    if (/^H[1-6]$/.test(tagName)) {
-        const level = parseInt(tagName[1], 10);
-        const prefix = '#'.repeat(level);
-        const content = extractChildrenContent(element, context);
-        return `\n${prefix} ${content.trim()}\n`;
-    }
-
-    // 加粗处理
-    if (tagName === 'STRONG' || tagName === 'B') {
-        const content = extractChildrenContent(element, context);
-        const trimmed = content.trim();
-        if (!trimmed) return '';
-        return `**${trimmed}**`;
-    }
-
-    // 斜体处理
-    if (tagName === 'EM' || tagName === 'I') {
-        const content = extractChildrenContent(element, context);
-        const trimmed = content.trim();
-        if (!trimmed) return '';
-        return `*${trimmed}*`;
-    }
-
-    // 删除线处理
-    if (tagName === 'DEL' || tagName === 'S' || tagName === 'STRIKE') {
-        const content = extractChildrenContent(element, context);
-        const trimmed = content.trim();
-        if (!trimmed) return '';
-        return `~~${trimmed}~~`;
-    }
-
-    // 行内代码处理
-    if (tagName === 'CODE' && !element.closest('pre')) {
-        const text = element.textContent || '';
-        if (!text.trim()) return '';
-        return `\`${text}\``;
-    }
-
-    // 链接处理
-    if (tagName === 'A') {
-        const href = element.getAttribute('href') || '';
-        const content = extractChildrenContent(element, context);
-        const trimmed = content.trim();
-        if (!trimmed) return '';
-        if (href && href !== '#' && !href.startsWith('javascript:')) {
-            return `[${trimmed}](${href})`;
-        }
-        return trimmed;
-    }
-
-    // 列表项处理
-    if (tagName === 'LI') {
-        const parent = element.parentElement;
-
-        // 计算嵌套深度：统计祖先中有多少个 UL/OL
-        let depth = 0;
-        let ancestor = element.parentElement;
-        while (ancestor) {
-            if (ancestor.tagName === 'UL' || ancestor.tagName === 'OL') {
-                depth++;
-            }
-            ancestor = ancestor.parentElement;
-        }
-        // depth 至少为 1（当前所在的列表），缩进层级 = depth - 1
-        const indent = '  '.repeat(Math.max(0, depth - 1));
-
-        // 分开处理：文本内容 vs 嵌套列表
-        let textContent = '';
-        let nestedListContent = '';
-
-        for (const child of element.childNodes) {
-            if (child.nodeType === Node.ELEMENT_NODE) {
-                const childTag = child.tagName;
-                if (childTag === 'UL' || childTag === 'OL') {
-                    // 嵌套列表单独处理
-                    nestedListContent += extractNodeContent(child, context);
-                } else {
-                    textContent += extractNodeContent(child, context);
-                }
-            } else if (child.nodeType === Node.TEXT_NODE) {
-                const text = child.textContent || '';
-                // 跳过不需要的文本
-                const parentEl = child.parentElement;
-                if (parentEl?.closest('style, script, noscript, template')) {
-                    continue;
-                }
-                if (parentEl?.closest('.manager-copy-btn, .manager-copy-button, .manager-feedback-copy')) {
-                    continue;
-                }
-                if (parentEl?.closest('.code-block, pre')) {
-                    continue;
-                }
-                textContent += text;
-            }
-        }
-
-        const trimmedText = textContent.trim();
-        if (!trimmedText && !nestedListContent) return '';
-
-        // 构建列表项前缀
-        let prefix;
-        if (parent?.tagName === 'OL') {
-            const items = Array.from(parent.children).filter(c => c.tagName === 'LI');
-            const index = items.indexOf(element) + 1;
-            prefix = `${indent}${index}. `;
-        } else {
-            prefix = `${indent}- `;
-        }
-
-        // 组合结果：文本 + 换行 + 嵌套列表
-        if (nestedListContent) {
-            return `${prefix}${trimmedText}\n${nestedListContent}`;
-        } else {
-            return `${prefix}${trimmedText}\n`;
-        }
-    }
-
-    // 列表容器：嵌套列表不额外添加换行
-    if (tagName === 'UL' || tagName === 'OL') {
-        // 检查是否是顶级列表（父元素不是 LI）
-        const isTopLevel = !element.parentElement?.closest('li');
-        const content = extractChildrenContent(element, context);
-        return isTopLevel ? `\n${content}` : content;
-    }
-
-    // 段落处理
-    if (tagName === 'P') {
-        const content = extractChildrenContent(element, context);
-        const trimmed = content.trim();
-        if (!trimmed) return '';
-        return `\n${trimmed}\n`;
-    }
-
-    // 换行处理
-    if (tagName === 'BR') {
-        return '\n';
-    }
-
-    // 块引用处理
-    if (tagName === 'BLOCKQUOTE') {
-        const content = extractChildrenContent(element, context);
-        const lines = content.trim().split('\n');
-        const quoted = lines.map(line => `> ${line}`).join('\n');
-        return `\n${quoted}\n`;
-    }
-
-    // 水平线
-    if (tagName === 'HR') {
-        return '\n---\n';
-    }
-
-    // DIV 和 其他块级元素
-    if (tagName === 'DIV' || tagName === 'SECTION' || tagName === 'ARTICLE') {
-        const content = extractChildrenContent(element, context);
-        return content;
-    }
-
-    // 默认：递归处理子节点
-    return extractChildrenContent(element, context);
-};
-
-/**
- * 提取元素所有子节点的内容
- * @param {Element} element
- * @param {Object} context
- * @returns {string}
- */
-const extractChildrenContent = (element, context = {}) => {
-    let result = '';
-
-    for (const child of element.childNodes) {
-        if (child.nodeType === Node.TEXT_NODE) {
-            const parent = child.parentElement;
-            if (!parent) continue;
-
-            const text = child.textContent || '';
-            if (!text.trim()) {
-                if (text.includes('\n')) {
-                    continue;
-                }
-                if (result && !result.endsWith(' ') && !result.endsWith('\n')) {
-                    result += ' ';
-                }
-                continue;
-            }
-
-            if (parent.closest('style, script, noscript, template')) {
-                continue;
-            }
-            if (parent.closest('.manager-copy-btn, .manager-copy-button, .manager-feedback-copy')) {
-                continue;
-            }
-            if (parent.closest('.code-block, pre')) {
-                continue;
-            }
-
-            result += text;
-        } else if (child.nodeType === Node.ELEMENT_NODE) {
-            result += extractNodeContent(child, context);
-        }
-    }
-
-    return result;
-};
-
-/**
- * 提取内容区的格式化文本（支持 Markdown 格式元素）
+ * 提取格式化内容（代码块、表格、数学公式、Mermaid、列表等）
  * @param {HTMLElement} el
  * @returns {string}
  */
 const extractFormattedText = (el) => {
     if (!el) return '';
 
-    const result = extractNodeContent(el, {});
+    const hasCodeBlock = el.querySelector(
+        '[class*="language-"], .code-block, [aria-label^="highlighted-code"], pre'
+    );
+    const hasTable = el.querySelector('table');
+    const hasMermaid = el.querySelector('.manager-mermaid-container');
+    const hasList = el.querySelector('ol, ul');
+    const hasMath = el.querySelector('.katex, mjx-container');
+    const hasHeading = el.querySelector('h1, h2, h3, h4, h5, h6');
 
-    // 清理多余的空行，保持格式整洁
+    // 仅当没有任何需要特殊处理的结构时才使用缓存的原始文本
+    if (!hasCodeBlock && !hasTable && !hasMermaid && !hasList && !hasMath && !hasHeading) {
+        if (el[RAW_TEXT_PROP] !== undefined) {
+            return String(el[RAW_TEXT_PROP]).trim();
+        }
+    }
+
+    let result = '';
+    const walker = document.createTreeWalker(
+        el,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+
+    let currentNode;
+    let skipUntilEndOfBlock = null;
+
+    while ((currentNode = walker.nextNode())) {
+        // 跳过已处理块级节点的内部子树
+        if (skipUntilEndOfBlock && skipUntilEndOfBlock.contains(currentNode)) {
+            continue;
+        }
+        skipUntilEndOfBlock = null;
+
+        if (currentNode.nodeType === Node.ELEMENT_NODE) {
+            const classString = getClassString(currentNode);
+
+            // 跳过 STYLE/SCRIPT 等标签
+            if (SKIP_TAGS.has(currentNode.tagName)) {
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 标题处理：转换为 Markdown # 格式
+            const headingMatch = currentNode.tagName.match(/^H([1-6])$/);
+            if (headingMatch) {
+                const level = parseInt(headingMatch[1], 10);
+                const prefix = '#'.repeat(level);
+                const headingText = currentNode.textContent.trim();
+                result += `\n${prefix} ${headingText}\n`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 公式处理：优先从渲染 DOM 中恢复 LaTeX
+            if (classString.includes('katex') && !classString.includes('katex-display')) {
+                if (currentNode.classList.contains('katex')) {
+                    const latex = extractLatexFromMath(currentNode);
+                    if (latex) {
+                        result += latex;
+                        skipUntilEndOfBlock = currentNode;
+                        continue;
+                    }
+                }
+            }
+
+            if (classString.includes('katex-display')) {
+                const katexEl = currentNode.querySelector('.katex') || currentNode;
+                const latex = extractLatexFromMath(katexEl);
+                if (latex) {
+                    result += `\n${latex}\n`;
+                    skipUntilEndOfBlock = currentNode;
+                    continue;
+                }
+            }
+
+            if (currentNode.tagName === 'MJX-CONTAINER') {
+                const latex = extractLatexFromMath(currentNode);
+                if (latex) {
+                    const isDisplay = currentNode.getAttribute('display') === 'true';
+                    result += isDisplay ? `\n${latex}\n` : latex;
+                    skipUntilEndOfBlock = currentNode;
+                    continue;
+                }
+            }
+
+            // Mermaid 容器：恢复源码
+            if (classString.includes('manager-mermaid-container')) {
+                const source = currentNode[MERMAID_SOURCE_PROP];
+                if (source) {
+                    result += `\n\`\`\`mermaid\n${source}\n\`\`\`\n`;
+                }
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            if (currentNode.tagName === 'TABLE') {
+                result += `\n${extractTable(currentNode)}\n`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 有序列表处理
+            if (currentNode.tagName === 'OL') {
+                result += extractOrderedList(currentNode);
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 无序列表处理
+            if (currentNode.tagName === 'UL') {
+                result += extractUnorderedList(currentNode);
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 代码块：通过 language-xxx 类匹配（优先）
+            const langMatch = classString.match(/language-(\w+)/);
+            if (langMatch) {
+                const lang = langMatch[1];
+                const codeBlock = currentNode.querySelector('.code-block');
+                if (codeBlock) {
+                    const lines = codeBlock.querySelectorAll('.line-content');
+                    let codeContent = '';
+                    lines.forEach((line, idx) => {
+                        codeContent += line.textContent;
+                        if (idx < lines.length - 1) codeContent += '\n';
+                    });
+                    result += `\n\`\`\`${lang}\n${codeContent}\n\`\`\`\n`;
+                    skipUntilEndOfBlock = currentNode;
+                    continue;
+                }
+            }
+
+            // PRE 标签处理：如果子元素有 language-xxx，跳过让递归处理
+            if (currentNode.tagName === 'PRE') {
+                // 检查子元素是否有 language-xxx 类
+                const hasLangChild = currentNode.querySelector('[class*="language-"]');
+                if (hasLangChild) {
+                    // 不截断，让 TreeWalker 继续进入子元素
+                    continue;
+                }
+                // 无语言标识的代码块
+                const codeBlock = currentNode.querySelector('.code-block');
+                if (codeBlock) {
+                    const lines = codeBlock.querySelectorAll('.line-content');
+                    let codeContent = '';
+                    if (lines.length > 0) {
+                        lines.forEach((line, idx) => {
+                            codeContent += line.textContent;
+                            if (idx < lines.length - 1) codeContent += '\n';
+                        });
+                    } else {
+                        codeContent = codeBlock.textContent || '';
+                    }
+                    result += `\n\`\`\`\n${codeContent.trimEnd()}\n\`\`\`\n`;
+                    skipUntilEndOfBlock = currentNode;
+                    continue;
+                }
+            }
+
+            // .code-block 兜底（无语言标识）
+            if (classString.includes('code-block')) {
+                const lines = currentNode.querySelectorAll('.line-content');
+                let codeContent = '';
+                if (lines.length > 0) {
+                    lines.forEach((line, idx) => {
+                        codeContent += line.textContent;
+                        if (idx < lines.length - 1) codeContent += '\n';
+                    });
+                } else {
+                    codeContent = currentNode.textContent || '';
+                }
+                result += `\n\`\`\`\n${codeContent.trimEnd()}\n\`\`\`\n`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            const ariaLabel = currentNode.getAttribute('aria-label') || '';
+            if (ariaLabel.startsWith('highlighted-code') && !langMatch) {
+                const codeBlock = currentNode.querySelector('.code-block');
+                if (codeBlock) {
+                    const lines = codeBlock.querySelectorAll('.line-content');
+                    let codeContent = '';
+                    lines.forEach((line, idx) => {
+                        codeContent += line.textContent;
+                        if (idx < lines.length - 1) codeContent += '\n';
+                    });
+                    result += `\n\`\`\`\n${codeContent}\n\`\`\`\n`;
+                    skipUntilEndOfBlock = currentNode;
+                }
+            }
+        } else if (currentNode.nodeType === Node.TEXT_NODE) {
+            const parent = currentNode.parentElement;
+            if (parent) {
+                // 跳过渲染器内部文本
+                if (parent.closest('.katex, mjx-container, .MathJax, .manager-mermaid-container')) {
+                    continue;
+                }
+                if (parent.closest('[class*="language-"]')) {
+                    continue;
+                }
+                if (parent.closest('.code-block, pre')) {
+                    continue;
+                }
+
+                const parentClassStr = getClassString(parent);
+                if (
+                    parentClassStr.includes('opacity-60') &&
+                    parent.closest('pre')?.previousElementSibling
+                ) {
+                    continue;
+                }
+
+                const textContent = currentNode.textContent.trim().toLowerCase();
+                if (
+                    COMMON_LANGS.has(textContent) &&
+                    parent.closest('pre')?.parentElement?.querySelector('[class*="language-"]')
+                ) {
+                    continue;
+                }
+
+                // 跳过复制按钮内部文本
+                if (parent.closest(`.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .manager-copy-btn, .manager-feedback-copy`)) {
+                    continue;
+                }
+            }
+            result += currentNode.textContent;
+        }
+    }
+
+    // 去除所有空行，优化 Markdown 格式
     return result
-        .replace(/\n{3,}/g, '\n\n')  // 最多保留两个连续换行
+        .split('\n')
+        .filter(line => line.trim() !== '')
+        .join('\n')
         .trim();
 };
 
@@ -487,7 +579,7 @@ export const ensureContentCopyButton = (contentEl) => {
         contentEl.style.position = 'relative';
     }
 
-    // 右上角按钮（悬停显示）
+    // 右上角悬停按钮
     const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -498,7 +590,7 @@ export const ensureContentCopyButton = (contentEl) => {
     });
     contentEl.appendChild(btn);
 
-    // 右下角按钮（常驻显示）
+    // 右下角常驻按钮
     const bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`);
     bottomBtn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -508,42 +600,4 @@ export const ensureContentCopyButton = (contentEl) => {
         if (success) showCopySuccess(bottomBtn);
     });
     contentEl.appendChild(bottomBtn);
-};
-
-/**
- * 为反馈区域添加复制按钮（Good/Bad 按钮旁边）
- */
-export const addFeedbackCopyButtons = () => {
-    const feedbackContainers = document.querySelectorAll('[data-tooltip-id^="up-"]');
-
-    feedbackContainers.forEach((goodBtn) => {
-        const parent = goodBtn.parentElement;
-        if (!parent || parent.querySelector('.manager-feedback-copy')) return;
-
-        // 找到对应的内容区
-        let contentEl = null;
-        let node = parent;
-        for (let i = 0; i < 20 && node; i++) {
-            const candidates = node.querySelectorAll(CONTENT_SELECTOR);
-            if (candidates.length > 0) {
-                const visible = Array.from(candidates).filter((el) => isVisibleElement(el));
-                contentEl = visible[visible.length - 1] || candidates[candidates.length - 1];
-                break;
-            }
-            node = node.parentElement;
-        }
-        if (!contentEl) return;
-
-        const btn = createCopyButton(`${COPY_BTN_CLASS} manager-feedback-copy`);
-        btn.style.marginRight = '0.5rem';
-        btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const text = extractFormattedText(contentEl);
-            const success = await copyToClipboard(text);
-            if (success) showCopySuccess(btn);
-        });
-
-        parent.insertBefore(btn, goodBtn);
-    });
 };
