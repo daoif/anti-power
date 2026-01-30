@@ -162,90 +162,212 @@ const resolveCodeLanguage = (element, codeText) => {
 };
 
 /**
- * Prefer the cached original text when available
- * @param {HTMLElement} el
+ * @param {Element} element
+ * @param {Object} context
  * @returns {string}
  */
-const extractFormattedText = (el) => {
-    if (!el) return '';
+const extractNodeContent = (element, context = {}) => {
+    if (!element) return '';
 
-    const hasRichBlock = el.querySelector('pre, .code-block, table, .manager-mermaid-container');
-    if (!hasRichBlock && el[RAW_TEXT_PROP] !== undefined) {
-        return String(el[RAW_TEXT_PROP]).trim();
+    const classString = getClassString(element);
+    const tagName = element.tagName;
+
+    if (SKIP_TAGS.has(tagName)) {
+        return '';
     }
 
+    if (
+        classString.includes('manager-copy-btn') ||
+        classString.includes('manager-copy-button') ||
+        classString.includes('manager-feedback-copy')
+    ) {
+        return '';
+    }
+
+    // Copy Mermaid source instead of the rendered diagram
+    if (classString.includes('manager-mermaid-container')) {
+        const source = element[MERMAID_SOURCE_PROP];
+        if (source) {
+            return `\n\`\`\`mermaid\n${source}\n\`\`\`\n`;
+        }
+        return '';
+    }
+
+    if (tagName === 'TABLE') {
+        const table = extractTable(element).trimEnd();
+        if (table) {
+            return `\n${table}\n`;
+        }
+        return '';
+    }
+
+    if (tagName === 'PRE' || classString.includes('code-block')) {
+        const code = extractCodeBlock(element).trimEnd();
+        if (code) {
+            const lang = resolveCodeLanguage(element, code);
+            const fence = lang ? `\`\`\`${lang}` : '```';
+            return `\n${fence}\n${code}\n\`\`\`\n`;
+        }
+        return '';
+    }
+
+    if (/^H[1-6]$/.test(tagName)) {
+        const level = parseInt(tagName[1], 10);
+        const prefix = '#'.repeat(level);
+        const content = extractChildrenContent(element, context);
+        return `\n${prefix} ${content.trim()}\n`;
+    }
+
+    if (tagName === 'STRONG' || tagName === 'B') {
+        const content = extractChildrenContent(element, context);
+        const trimmed = content.trim();
+        if (!trimmed) return '';
+        return `**${trimmed}**`;
+    }
+
+    if (tagName === 'EM' || tagName === 'I') {
+        const content = extractChildrenContent(element, context);
+        const trimmed = content.trim();
+        if (!trimmed) return '';
+        return `*${trimmed}*`;
+    }
+
+    if (tagName === 'DEL' || tagName === 'S' || tagName === 'STRIKE') {
+        const content = extractChildrenContent(element, context);
+        const trimmed = content.trim();
+        if (!trimmed) return '';
+        return `~~${trimmed}~~`;
+    }
+
+    if (tagName === 'CODE' && !element.closest('pre')) {
+        const text = element.textContent || '';
+        if (!text.trim()) return '';
+        return `\`${text}\``;
+    }
+
+    if (tagName === 'A') {
+        const href = element.getAttribute('href') || '';
+        const content = extractChildrenContent(element, context);
+        const trimmed = content.trim();
+        if (!trimmed) return '';
+        if (href && href !== '#' && !href.startsWith('javascript:')) {
+            return `[${trimmed}](${href})`;
+        }
+        return trimmed;
+    }
+
+    if (tagName === 'LI') {
+        const parent = element.parentElement;
+
+        let depth = 0;
+        let ancestor = element.parentElement;
+        while (ancestor) {
+            if (ancestor.tagName === 'UL' || ancestor.tagName === 'OL') {
+                depth++;
+            }
+            ancestor = ancestor.parentElement;
+        }
+        // Count the current list as depth 1 so top-level items stay unindented
+        const indent = '  '.repeat(Math.max(0, depth - 1));
+
+        // Separate item text from nested lists so each list keeps its own indentation
+        let textContent = '';
+        let nestedListContent = '';
+
+        for (const child of element.childNodes) {
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                const childTag = child.tagName;
+                if (childTag === 'UL' || childTag === 'OL') {
+                    nestedListContent += extractNodeContent(child, context);
+                } else {
+                    textContent += extractNodeContent(child, context);
+                }
+            } else if (child.nodeType === Node.TEXT_NODE) {
+                const text = child.textContent || '';
+                const parentEl = child.parentElement;
+                if (parentEl?.closest('style, script, noscript, template')) {
+                    continue;
+                }
+                if (parentEl?.closest('.manager-copy-btn, .manager-copy-button, .manager-feedback-copy')) {
+                    continue;
+                }
+                if (parentEl?.closest('.code-block, pre')) {
+                    continue;
+                }
+                textContent += text;
+            }
+        }
+
+        const trimmedText = textContent.trim();
+        if (!trimmedText && !nestedListContent) return '';
+
+        let prefix;
+        if (parent?.tagName === 'OL') {
+            const items = Array.from(parent.children).filter(c => c.tagName === 'LI');
+            const index = items.indexOf(element) + 1;
+            prefix = `${indent}${index}. `;
+        } else {
+            prefix = `${indent}- `;
+        }
+
+        if (nestedListContent) {
+            return `${prefix}${trimmedText}\n${nestedListContent}`;
+        } else {
+            return `${prefix}${trimmedText}\n`;
+        }
+    }
+
+    // Avoid adding a blank line before nested lists
+    if (tagName === 'UL' || tagName === 'OL') {
+        const isTopLevel = !element.parentElement?.closest('li');
+        const content = extractChildrenContent(element, context);
+        return isTopLevel ? `\n${content}` : content;
+    }
+
+    if (tagName === 'P') {
+        const content = extractChildrenContent(element, context);
+        const trimmed = content.trim();
+        if (!trimmed) return '';
+        return `\n${trimmed}\n`;
+    }
+
+    if (tagName === 'BR') {
+        return '\n';
+    }
+
+    if (tagName === 'BLOCKQUOTE') {
+        const content = extractChildrenContent(element, context);
+        const lines = content.trim().split('\n');
+        const quoted = lines.map(line => `> ${line}`).join('\n');
+        return `\n${quoted}\n`;
+    }
+
+    if (tagName === 'HR') {
+        return '\n---\n';
+    }
+
+    if (tagName === 'DIV' || tagName === 'SECTION' || tagName === 'ARTICLE') {
+        const content = extractChildrenContent(element, context);
+        return content;
+    }
+
+    return extractChildrenContent(element, context);
+};
+
+/**
+ * @param {Element} element
+ * @param {Object} context
+ * @returns {string}
+ */
+const extractChildrenContent = (element, context = {}) => {
     let result = '';
-    const walker = document.createTreeWalker(
-        el,
-        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-        null,
-        false
-    );
 
-    const ensureLineBreak = () => {
-        if (result && !result.endsWith('\n')) {
-            result += '\n';
-        }
-    };
-
-    let currentNode;
-    let skipUntilEndOfBlock = null;
-
-    while ((currentNode = walker.nextNode())) {
-        if (skipUntilEndOfBlock && skipUntilEndOfBlock.contains(currentNode)) {
-            continue;
-        }
-        skipUntilEndOfBlock = null;
-
-        if (currentNode.nodeType === Node.ELEMENT_NODE) {
-            const element = currentNode;
-            if (SKIP_TAGS.has(element.tagName)) {
-                skipUntilEndOfBlock = element;
-                continue;
-            }
-
-            const classString = getClassString(element);
-
-            if (BLOCK_TAGS.has(element.tagName)) {
-                ensureLineBreak();
-            }
-
-            if (classString.includes('manager-mermaid-container')) {
-                const source = element[MERMAID_SOURCE_PROP];
-                if (source) {
-                    ensureLineBreak();
-                    result += `\`\`\`mermaid\n${source}\n\`\`\`\n`;
-                }
-                skipUntilEndOfBlock = element;
-                continue;
-            }
-
-            if (element.tagName === 'TABLE') {
-                const table = extractTable(element).trimEnd();
-                if (table) {
-                    ensureLineBreak();
-                    result += `${table}\n`;
-                }
-                skipUntilEndOfBlock = element;
-                continue;
-            }
-
-            if (element.tagName === 'PRE' || classString.includes('code-block')) {
-                const code = extractCodeBlock(element).trimEnd();
-                if (code) {
-                    const lang = resolveCodeLanguage(element, code);
-                    const fence = lang ? `\`\`\`${lang}` : '```';
-                    ensureLineBreak();
-                    result += `${fence}\n${code}\n\`\`\`\n`;
-                }
-                skipUntilEndOfBlock = element;
-                continue;
-            }
-        } else if (currentNode.nodeType === Node.TEXT_NODE) {
-            const parent = currentNode.parentElement;
+    for (const child of element.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+            const parent = child.parentElement;
             if (!parent) continue;
 
-            const text = currentNode.textContent || '';
+            const text = child.textContent || '';
             if (!text.trim()) {
                 if (text.includes('\n')) {
                     continue;
@@ -267,10 +389,27 @@ const extractFormattedText = (el) => {
             }
 
             result += text;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+            result += extractNodeContent(child, context);
         }
     }
 
-    return result.trim();
+    return result;
+};
+
+/**
+ * Preserve Markdown formatting when extracting message content
+ * @param {HTMLElement} el
+ * @returns {string}
+ */
+const extractFormattedText = (el) => {
+    if (!el) return '';
+
+    const result = extractNodeContent(el, {});
+
+    return result
+        .replace(/\n{3,}/g, '\n\n')  // Keep at most one blank line between blocks
+        .trim();
 };
 
 /** @param {HTMLElement} contentEl */

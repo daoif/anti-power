@@ -10,6 +10,8 @@
 | 前端显示 | `patcher/src/App.vue` -> `APP_VERSION` |
 | README 版本徽章 | `README.md` -> 顶部版本号徽章 |
 | README 版本表格 | `README.md` -> "版本信息" 表格 |
+| README_EN 版本徽章 | `README_EN.md` -> 顶部版本号徽章 |
+| README_EN 版本表格 | `README_EN.md` -> "Version Info" 表格 |
 
 ---
 
@@ -50,6 +52,8 @@ Compress-Archive -Path patcher\patches\* -DestinationPath anti-power-patches.zip
 - `manager-panel/`
 - `manual-install.md`
 
+> 💡 `-Force` 参数会自动覆盖已存在的文件, 无需手动删除旧的压缩包.
+
 ---
 
 ## 发布流程
@@ -71,7 +75,7 @@ gh release create vX.Y.Z `
   --title "vX.Y.Z" `
   --notes-file release-notes.md
 
-# 4. 清理临时文件
+# 4. 清理临时文件 (可选, 这些文件已在 .gitignore 中)
 Remove-Item release-notes.md
 Remove-Item anti-power-patches.zip
 ```

@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v2.2.0-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v2.3.0-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/支持_Antigravity-v1.14.2-green.svg" alt="Antigravity">
+    <img src="https://img.shields.io/badge/支持_Antigravity-v1.15.8-green.svg" alt="Antigravity">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/协议-MIT-orange.svg" alt="开源协议">
@@ -105,6 +105,7 @@ sudo ./anti-power.sh
 
 | 补丁版本 | 支持的 Antigravity 版本 | 发布日期 | 更新内容 |
 |---------|------------------------|----------|----------|
+| v2.3.0  | v1.15.8                | 2026-01-30 | 复制功能优化: 支持 Markdown 格式保留 (标题/列表/加粗/斜体/链接等) |
 | v2.2.0  | v1.14.2                | 2026-01-21 | Manager Mermaid/数学公式渲染, 对话宽度/字号调节, 感谢 @mikessslxxx |
 | v2.1.0  | v1.14.2                | 2026-01-19 | 侧边栏字体调节, Mermaid 报错提示优化, Manager 一键复制 |
 | v2.0.1  | v1.14.2                | 2026-01-14 | 性能优化 |
