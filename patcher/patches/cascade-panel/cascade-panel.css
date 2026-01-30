@@ -24,7 +24,17 @@ body {
 pre.inline,
 pre.inline code,
 code:not([class*="language-"]) {
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', 'Courier New', monospace) !important;
+    font-family: var(--vscode-editor-font-family, 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace) !important;
+}
+
+pre:not(.inline),
+pre:not(.inline) .code-block,
+pre:not(.inline) .line-content,
+pre:not(.inline) code,
+[class*="language-"],
+[class*="language-"] .code-block,
+[class*="language-"] .line-content {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace !important;
 }
 
 /* Shared copy button styling */

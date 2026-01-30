@@ -1,5 +1,12 @@
 /* Manager styles are independent of the legacy Cascade panel */
 
+pre,
+pre .code-block,
+pre .line-content,
+pre code {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace !important;
+}
+
 /* Custom message font size */
 .leading-relaxed.select-text {
     font-size: var(--manager-panel-font-size, inherit) !important;
