@@ -4,7 +4,7 @@
  */
 
 import { CONTENT_SELECTOR, SECTION_SELECTOR } from './constants.js';
-import { ensureContentCopyButton } from './copy.js';
+import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';
 import { renderMath } from './math.js';
 import { scanMermaid } from './mermaid.js';
 
@@ -158,6 +158,10 @@ const scan = (root) => {
 
     if (config.mermaid) {
         scanMermaid(root);
+    }
+
+    if (config.copyButton) {
+        addFeedbackCopyButtons();
     }
 };
 

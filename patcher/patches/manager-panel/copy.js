@@ -6,10 +6,10 @@
 import {
     BOUND_ATTR,
     BUTTON_CLASS,
-    BOTTOM_BUTTON_CLASS,
     COPY_BTN_CLASS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
+    CONTENT_SELECTOR,
 } from './constants.js';
 import { createCopyButton, copyToClipboard, showCopySuccess } from './utils.js';
 
@@ -107,7 +107,7 @@ const extractListItemContent = (li) => {
                 continue;
             }
 
-            if (classString.includes(BUTTON_CLASS) || classString.includes(BOTTOM_BUTTON_CLASS) || classString.includes('manager-copy-btn')) {
+            if (classString.includes(BUTTON_CLASS) || classString.includes('manager-copy-btn')) {
                 skipUntil = node;
                 continue;
             }
@@ -133,7 +133,7 @@ const extractListItemContent = (li) => {
             if (parent && parent.closest('code, .katex, mjx-container')) continue;
             // Leave code block text for the caller
             if (parent && parent.closest('pre, .code-block, [class*="language-"]')) continue;
-            if (parent && parent.closest(`.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .manager-copy-btn`)) continue;
+            if (parent && parent.closest(`.${BUTTON_CLASS}, .manager-copy-btn`)) continue;
             content += node.textContent;
         }
     }
@@ -516,7 +516,7 @@ const extractFormattedText = (el) => {
                     continue;
                 }
 
-                if (parent.closest(`.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .manager-copy-btn, .manager-feedback-copy`)) {
+                if (parent.closest(`.${BUTTON_CLASS}, .manager-copy-btn, .manager-feedback-copy`)) {
                     continue;
                 }
             }
@@ -532,22 +532,6 @@ const extractFormattedText = (el) => {
         .trim();
 };
 
-const HIGHLIGHT_CLASS = 'manager-copy-highlight';
-
-/**
- * Highlight the content that the button will copy on hover
- * @param {HTMLElement} button
- * @param {HTMLElement} contentEl - Message content to highlight
- */
-const bindHighlightEvents = (button, contentEl) => {
-    button.addEventListener('mouseenter', () => {
-        contentEl.classList.add(HIGHLIGHT_CLASS);
-    });
-    button.addEventListener('mouseleave', () => {
-        contentEl.classList.remove(HIGHLIGHT_CLASS);
-    });
-};
-
 /** @param {HTMLElement} contentEl */
 export const ensureContentCopyButton = (contentEl) => {
     if (!contentEl || contentEl.getAttribute(BOUND_ATTR) === '1') return;
@@ -561,14 +545,14 @@ export const ensureContentCopyButton = (contentEl) => {
 
     contentEl.setAttribute(BOUND_ATTR, '1');
 
-    // Keep absolute positioning relative to the content container
+    // Anchor the floating copy controls to the content container
     const style = window.getComputedStyle(contentEl);
     if (style.position === 'static') {
         contentEl.style.position = 'relative';
     }
 
     // Top-right hover button
-    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`, 'top');
+    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -576,18 +560,58 @@ export const ensureContentCopyButton = (contentEl) => {
         const success = await copyToClipboard(text);
         if (success) showCopySuccess(btn);
     });
-    bindHighlightEvents(btn, contentEl);
     contentEl.appendChild(btn);
 
-    // The bottom-right hover button shares the content container as its positioning anchor
-    const bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`, 'bottom');
-    bottomBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const text = extractFormattedText(contentEl);
-        const success = await copyToClipboard(text);
-        if (success) showCopySuccess(bottomBtn);
+    // Reveal the copy button only while the pointer is near the top-right corner
+    contentEl.addEventListener('mousemove', (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (x > rect.width - 120 && y < 60) {
+            btn.classList.add('manager-copy-button-visible');
+        } else {
+            btn.classList.remove('manager-copy-button-visible');
+        }
     });
-    bindHighlightEvents(bottomBtn, contentEl);
-    contentEl.appendChild(bottomBtn);
+
+    contentEl.addEventListener('mouseleave', () => {
+        btn.classList.remove('manager-copy-button-visible');
+    });
+};
+
+/** Insert copy buttons beside the Good/Bad feedback controls */
+export const addFeedbackCopyButtons = () => {
+    const feedbackContainers = document.querySelectorAll('[data-tooltip-id^="up-"]');
+
+    feedbackContainers.forEach((goodBtn) => {
+        const parent = goodBtn.parentElement;
+        if (!parent || parent.querySelector('.manager-feedback-copy')) return;
+
+        let contentEl = null;
+        let node = parent;
+        for (let i = 0; i < 20 && node; i++) {
+            const candidates = node.querySelectorAll && node.querySelectorAll(CONTENT_SELECTOR);
+            if (candidates && candidates.length > 0) {
+                // Prefer candidates with a non-null offsetParent, then fall back to all matches
+                const visible = Array.from(candidates).filter((el) => el.offsetParent !== null);
+                contentEl = visible[visible.length - 1] || candidates[candidates.length - 1];
+                break;
+            }
+            node = node.parentElement;
+        }
+        if (!contentEl) return;
+
+        const btn = createCopyButton(`${COPY_BTN_CLASS} manager-feedback-copy`);
+        btn.style.marginRight = '0.5rem';
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const text = extractFormattedText(contentEl);
+            const success = await copyToClipboard(text);
+            if (success) showCopySuccess(btn);
+        });
+
+        parent.insertBefore(btn, goodBtn);
+    });
 };

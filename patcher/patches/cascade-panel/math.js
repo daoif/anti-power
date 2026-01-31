@@ -31,12 +31,8 @@ export const ensureMathEngine = () => {
         }
 
         try {
-            // Load the KaTeX CSS and core script in parallel to reduce initial rendering latency
-            await Promise.all([
-                loadStyle(KATEX_CSS_URL),
-                loadScript(KATEX_JS_URL),
-            ]);
-            // Load auto-render after the KaTeX core script because it depends on katex
+            await loadStyle(KATEX_CSS_URL);
+            await loadScript(KATEX_JS_URL);
             await loadScript(KATEX_AUTO_URL);
             if (window.katex && window.renderMathInElement) {
                 mathEngine = 'katex';
@@ -87,10 +83,9 @@ export const ensureMathEngine = () => {
 export const renderMath = async (contentEl) => {
     if (!contentEl || isEditable(contentEl)) return;
 
+    captureRawText(contentEl);
     const text = contentEl.textContent || '';
     if (!MATH_HINT_RE.test(text)) return;
-
-    captureRawText(contentEl);
 
     await ensureMathEngine();
 

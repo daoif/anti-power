@@ -12,7 +12,6 @@ export const MATH_ATTR = 'data-manager-math-rendered';
 export const MERMAID_ATTR = 'data-manager-mermaid-rendered';
 
 export const BUTTON_CLASS = 'manager-copy-button';
-export const BOTTOM_BUTTON_CLASS = 'manager-copy-bottom';
 export const COPY_BTN_CLASS = 'manager-copy-btn';
 export const MERMAID_CONTAINER_CLASS = 'manager-mermaid-container';
 export const MERMAID_COPY_BTN_CLASS = 'manager-mermaid-copy';

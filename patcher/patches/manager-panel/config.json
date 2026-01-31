@@ -2,9 +2,9 @@
     "mermaid": true,
     "math": true,
     "copyButton": true,
-    "tableColor": false,
-    "maxWidthEnabled": false,
+    "tableColor": true,
+    "maxWidthEnabled": true,
     "maxWidthRatio": 75,
-    "fontSizeEnabled": false,
+    "fontSizeEnabled": true,
     "fontSize": 16
 }

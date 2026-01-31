@@ -284,16 +284,9 @@ export const loadScript = (src) => {
     });
 };
 
+const COPY_LABEL = 'Copy';
 const COPIED_LABEL = 'Copied!';
 const SVG_NS = 'http://www.w3.org/2000/svg';
-
-/**
- * @param {'top'|'bottom'} position
- * @returns {string}
- */
-const getCopyLabel = (position) => {
-    return position === 'top' ? '↓Copy' : '↑Copy';
-};
 
 const createSvg = () => {
     const svg = document.createElementNS(SVG_NS, 'svg');
@@ -333,8 +326,7 @@ const createCheckIcon = () => {
  */
 export const setCopyState = (btn, copied) => {
     if (!btn) return;
-    const position = btn.dataset.copyPosition || 'top';
-    const label = copied ? COPIED_LABEL : getCopyLabel(position);
+    const label = copied ? COPIED_LABEL : COPY_LABEL;
     const span = btn.querySelector('span');
     if (span) span.textContent = label;
     btn.classList.toggle('copied', copied);
@@ -343,16 +335,14 @@ export const setCopyState = (btn, copied) => {
 
 /**
  * @param {string} className
- * @param {'top'|'bottom'} [position='top'] - Top or bottom button position
  * @returns {HTMLButtonElement}
  */
-export const createCopyButton = (className, position = 'top') => {
+export const createCopyButton = (className) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = className;
-    btn.dataset.copyPosition = position;
     const span = document.createElement('span');
-    span.textContent = getCopyLabel(position);
+    span.textContent = COPY_LABEL;
 
     btn.appendChild(span);
     btn.appendChild(createCopyIcon());

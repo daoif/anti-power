@@ -1,7 +1,7 @@
 /** Observe content mutations and defer rendering until the message has finished or the content settles */
 
 import { CONTENT_SELECTOR } from './constants.js';
-import { ensureContentCopyButton } from './copy.js';
+import { addFeedbackCopyButtons, ensureContentCopyButton } from './copy.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
@@ -191,6 +191,10 @@ const scan = (root) => {
             }
             void renderMermaid(node);
         });
+    }
+
+    if (config.copyButton) {
+        addFeedbackCopyButtons();
     }
 };
 
