@@ -82,7 +82,7 @@ pre:not(.inline) code,
 /* Show the top-right copy button on hover or focus */
 .cascade-copy-button {
     position: absolute;
-    top: -1.5em;
+    top: 0;
     right: 0;
     opacity: 0;
     z-index: 10;
@@ -90,7 +90,8 @@ pre:not(.inline) code,
 }
 
 [data-cascade-copy-bound='1']:hover .cascade-copy-button,
-[data-cascade-copy-bound='1']:focus-within .cascade-copy-button {
+[data-cascade-copy-bound='1']:focus-within .cascade-copy-button,
+.cascade-copy-button:hover {
     opacity: 0.7;
     pointer-events: auto;
 }
@@ -99,22 +100,38 @@ pre:not(.inline) code,
     opacity: 1 !important;
 }
 
-/* Keep the bottom-right copy button visible */
+/* Show the bottom-right copy button on hover */
 .cascade-copy-bottom {
     position: absolute;
     bottom: 0;
     right: 0;
-    opacity: 0.6;
+    opacity: 0;
     z-index: 10;
+    pointer-events: none;
+}
+
+[data-cascade-copy-bound='1']:hover .cascade-copy-bottom,
+[data-cascade-copy-bound='1']:focus-within .cascade-copy-bottom,
+.cascade-copy-bottom:hover {
+    opacity: 0.7;
+    pointer-events: auto;
 }
 
 .cascade-copy-bottom:hover {
-    opacity: 1;
+    opacity: 1 !important;
 }
 
 .cascade-copy-bottom.copied {
     color: #22c55e;
-    opacity: 1;
+    opacity: 1 !important;
+    pointer-events: auto;
+}
+
+/* Highlight the message when its copy button is hovered */
+.cascade-copy-highlight {
+    outline: 2px solid var(--vscode-focusBorder, #007fd4);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 /* Mermaid render container */

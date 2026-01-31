@@ -532,6 +532,22 @@ const extractFormattedText = (el) => {
         .trim();
 };
 
+const HIGHLIGHT_CLASS = 'manager-copy-highlight';
+
+/**
+ * Highlight the content that the button will copy on hover
+ * @param {HTMLElement} button
+ * @param {HTMLElement} contentEl - Message content to highlight
+ */
+const bindHighlightEvents = (button, contentEl) => {
+    button.addEventListener('mouseenter', () => {
+        contentEl.classList.add(HIGHLIGHT_CLASS);
+    });
+    button.addEventListener('mouseleave', () => {
+        contentEl.classList.remove(HIGHLIGHT_CLASS);
+    });
+};
+
 /** @param {HTMLElement} contentEl */
 export const ensureContentCopyButton = (contentEl) => {
     if (!contentEl || contentEl.getAttribute(BOUND_ATTR) === '1') return;
@@ -545,14 +561,14 @@ export const ensureContentCopyButton = (contentEl) => {
 
     contentEl.setAttribute(BOUND_ATTR, '1');
 
-    // Anchor the floating copy controls to the content container
+    // Keep absolute positioning relative to the content container
     const style = window.getComputedStyle(contentEl);
     if (style.position === 'static') {
         contentEl.style.position = 'relative';
     }
 
     // Top-right hover button
-    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
+    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`, 'top');
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -560,10 +576,11 @@ export const ensureContentCopyButton = (contentEl) => {
         const success = await copyToClipboard(text);
         if (success) showCopySuccess(btn);
     });
+    bindHighlightEvents(btn, contentEl);
     contentEl.appendChild(btn);
 
-    // Persistent bottom-right button
-    const bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`);
+    // The bottom-right hover button shares the content container as its positioning anchor
+    const bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`, 'bottom');
     bottomBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -571,5 +588,6 @@ export const ensureContentCopyButton = (contentEl) => {
         const success = await copyToClipboard(text);
         if (success) showCopySuccess(bottomBtn);
     });
+    bindHighlightEvents(bottomBtn, contentEl);
     contentEl.appendChild(bottomBtn);
 };

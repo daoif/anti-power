@@ -7,6 +7,8 @@ import { captureRawText, isEditable, writeClipboard } from './utils.js';
 
 const copyTimers = new WeakMap();
 
+const HIGHLIGHT_CLASS = 'cascade-copy-highlight';
+
 /**
  * @param {string} label
  * @param {string} icon
@@ -15,13 +17,24 @@ const copyTimers = new WeakMap();
 const buttonMarkup = (label, icon) => `<span>${label}</span>${icon}`;
 
 /**
+ * @param {boolean} copied - Whether to show the copied state
+ * @param {'top'|'bottom'} position - Top or bottom button position
+ * @returns {string}
+ */
+const getLabelText = (copied, position) => {
+    if (copied) return 'Copied!';
+    return position === 'top' ? '↓Copy' : '↑Copy';
+};
+
+/**
  * Update the visible copy state and the accessible label together
  * @param {HTMLElement} button
  * @param {boolean} copied
  * @returns {void}
  */
 export const setCopyState = (button, copied) => {
-    const label = copied ? 'Copied!' : 'Copy';
+    const position = button.dataset.copyPosition || 'top';
+    const label = getLabelText(copied, position);
     const icon = copied ? CHECK_ICON_SVG : COPY_ICON_SVG;
     button.innerHTML = buttonMarkup(label, icon);
     button.classList.toggle('copied', copied);
@@ -34,9 +47,10 @@ export const setCopyState = (button, copied) => {
  * @param {Object} [options]
  * @param {string} [options.className] - Extra CSS class
  * @param {string} [options.tag='button'] - HTML tag for the copy control
+ * @param {'top'|'bottom'} [options.position='top'] - Top or bottom button position
  * @returns {HTMLElement}
  */
-export const createCopyButton = ({ className, tag = 'button' } = {}) => {
+export const createCopyButton = ({ className, tag = 'button', position = 'top' } = {}) => {
     const button = document.createElement(tag);
     if (tag === 'button') {
         button.type = 'button';
@@ -48,6 +62,7 @@ export const createCopyButton = ({ className, tag = 'button' } = {}) => {
         button.className = className;
     }
     button.classList.add('cascade-copy-btn');
+    button.dataset.copyPosition = position;
     setCopyState(button, false);
     return button;
 };
@@ -122,6 +137,20 @@ export const bindCopyButton = (
 };
 
 /**
+ * Highlight the content that the button will copy on hover
+ * @param {HTMLElement} button
+ * @param {HTMLElement} contentEl - Message content to highlight
+ */
+const bindHighlightEvents = (button, contentEl) => {
+    button.addEventListener('mouseenter', () => {
+        contentEl.classList.add(HIGHLIGHT_CLASS);
+    });
+    button.addEventListener('mouseleave', () => {
+        contentEl.classList.remove(HIGHLIGHT_CLASS);
+    });
+};
+
+/**
  * Skip editable and previously bound content
  *
  * @param {Element} contentEl
@@ -134,29 +163,32 @@ export const ensureContentCopyButton = (contentEl) => {
     if (contentEl.getAttribute(BOUND_ATTR) === '1') return;
     contentEl.setAttribute(BOUND_ATTR, '1');
 
+    // Keep absolute positioning relative to the content container
     const pos = getComputedStyle(contentEl).position;
     if (pos === 'static') {
         contentEl.style.position = 'relative';
     }
 
     // Top-right hover button
-    const topButton = createCopyButton({ className: BUTTON_CLASS });
+    const topButton = createCopyButton({ className: BUTTON_CLASS, position: 'top' });
     bindCopyButton(topButton, {
         getText: () => extractFormattedContent(contentEl, true),
         copiedDuration: 1200,
         preventDefault: true,
         stopPropagation: true,
     });
+    bindHighlightEvents(topButton, contentEl);
     contentEl.appendChild(topButton);
 
-    // Persistent bottom-right button
-    const bottomButton = createCopyButton({ className: BOTTOM_BUTTON_CLASS });
+    // The bottom-right hover button shares the content container as its positioning anchor
+    const bottomButton = createCopyButton({ className: BOTTOM_BUTTON_CLASS, position: 'bottom' });
     bindCopyButton(bottomButton, {
         getText: () => extractFormattedContent(contentEl, true),
         copiedDuration: 1200,
         preventDefault: true,
         stopPropagation: true,
     });
+    bindHighlightEvents(bottomButton, contentEl);
     contentEl.appendChild(bottomButton);
 };
 
