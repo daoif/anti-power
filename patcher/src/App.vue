@@ -10,7 +10,7 @@ import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
 // 常量
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.3.2";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 // 补丁文件清单
@@ -45,6 +45,11 @@ const features = ref({
   tableColor: true,
   fontSizeEnabled: true,
   fontSize: 20,
+  // 复制按钮子选项
+  copyButtonSmartHover: false,
+  copyButtonBottomPosition: 'float' as 'float' | 'feedback',
+  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonCustomText: '',
 });
 
 // Manager 功能开关（独立配置，默认启用）
@@ -57,6 +62,11 @@ const managerFeatures = ref({
   maxWidthRatio: 75,
   fontSizeEnabled: false,
   fontSize: 16,
+  // 复制按钮子选项
+  copyButtonSmartHover: false,
+  copyButtonBottomPosition: 'float' as 'float' | 'feedback',
+  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonCustomText: '',
 });
 
 // 检测 Antigravity 安装路径

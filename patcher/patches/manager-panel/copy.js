@@ -13,6 +13,7 @@
 import {
     BOUND_ATTR,
     BUTTON_CLASS,
+    BOTTOM_BUTTON_CLASS,
     COPY_BTN_CLASS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
@@ -558,6 +559,51 @@ const extractFormattedText = (el) => {
 };
 
 /**
+ * 获取配置（从全局变量读取）
+ * @returns {Object}
+ */
+const getConfig = () => {
+    return window.__MANAGER_CONFIG__ || {};
+};
+
+/**
+ * 绑定智能感应事件（鼠标在按钮附近才显示）
+ * @param {HTMLElement} contentEl - 内容容器
+ * @param {HTMLElement} topBtn - 右上角按钮
+ * @param {HTMLElement} bottomBtn - 右下角按钮（可选）
+ */
+const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
+    contentEl.addEventListener('mousemove', (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 右上角区域：右侧 120px, 顶部 60px
+        if (x > rect.width - 120 && y < 60) {
+            topBtn.classList.add('manager-copy-button-visible');
+        } else {
+            topBtn.classList.remove('manager-copy-button-visible');
+        }
+
+        // 右下角区域：右侧 120px, 底部 60px
+        if (bottomBtn) {
+            if (x > rect.width - 120 && y > rect.height - 60) {
+                bottomBtn.classList.add('manager-copy-button-visible');
+            } else {
+                bottomBtn.classList.remove('manager-copy-button-visible');
+            }
+        }
+    });
+
+    contentEl.addEventListener('mouseleave', () => {
+        topBtn.classList.remove('manager-copy-button-visible');
+        if (bottomBtn) {
+            bottomBtn.classList.remove('manager-copy-button-visible');
+        }
+    });
+};
+
+/**
  * 为内容区添加复制按钮
  * @param {HTMLElement} contentEl
  */
@@ -579,8 +625,12 @@ export const ensureContentCopyButton = (contentEl) => {
         contentEl.style.position = 'relative';
     }
 
+    const config = getConfig();
+    const smartHover = config.copyButtonSmartHover || false;
+    const bottomPosition = config.copyButtonBottomPosition || 'float';
+
     // 右上角悬停按钮
-    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
+    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`, 'top');
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -590,24 +640,25 @@ export const ensureContentCopyButton = (contentEl) => {
     });
     contentEl.appendChild(btn);
 
-    // 智能感应：仅当鼠标移动到右上角附近时才显示按钮
-    // 阈值：右侧 120px, 顶部 60px
-    contentEl.addEventListener('mousemove', (e) => {
-        const rect = contentEl.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // 右下角悬停按钮（悬浮模式）
+    let bottomBtn = null;
+    if (bottomPosition === 'float') {
+        bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`, 'bottom');
+        bottomBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const text = extractFormattedText(contentEl);
+            const success = await copyToClipboard(text);
+            if (success) showCopySuccess(bottomBtn);
+        });
+        contentEl.appendChild(bottomBtn);
+    }
 
-        // 检查是否在右上角区域
-        if (x > rect.width - 120 && y < 60) {
-            btn.classList.add('manager-copy-button-visible');
-        } else {
-            btn.classList.remove('manager-copy-button-visible');
-        }
-    });
-
-    contentEl.addEventListener('mouseleave', () => {
-        btn.classList.remove('manager-copy-button-visible');
-    });
+    // 如果启用智能感应，添加类名并绑定 mousemove 事件
+    if (smartHover) {
+        contentEl.classList.add('smart-hover');
+        bindSmartHover(contentEl, btn, bottomBtn);
+    }
 };
 
 /**

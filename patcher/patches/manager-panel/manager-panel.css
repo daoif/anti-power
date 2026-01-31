@@ -20,23 +20,23 @@ pre code {
     width: 100% !important;
 }
 
-/* 复制按钮基础样式 */
+/* 复制按钮基础样式 - 使用蓝色主题 */
 .manager-copy-btn {
     display: flex;
     align-items: center;
     gap: 0.25rem;
     padding: 2px 6px;
-    border: 1px solid var(--vscode-editorWidget-border, transparent);
+    border: none;
     border-radius: 4px;
-    background: var(--vscode-editorWidget-background, transparent);
-    color: var(--vscode-editorWidget-foreground, currentColor);
+    background: #3b82f6;
+    color: #ffffff;
     font-size: 0.85em;
     line-height: 1.2;
     font-family: var(--vscode-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     cursor: pointer;
     box-sizing: border-box;
     appearance: none;
-    transition: opacity 0.12s ease, transform 0.1s ease;
+    transition: opacity 0.12s ease, transform 0.1s ease, background 0.12s ease;
 }
 
 .manager-copy-btn span {
@@ -62,41 +62,33 @@ pre code {
 
 .manager-copy-btn:hover {
     opacity: 1;
+    background: #2563eb;
 }
 
 .manager-copy-btn.copied {
-    color: #22c55e;
+    background: #22c55e;
+    color: #ffffff;
     opacity: 1;
+}
+
+/* 悬停时显示边框高亮 (使用原 outline 样式) */
+[data-manager-copy-bound='1']:hover {
+    outline: 1px solid var(--vscode-focusBorder, #007fd4);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 /* 内容区复制按钮 - 右上角悬停显示 */
 .manager-copy-button {
     position: absolute;
-    top: 0;
+    top: -2px;
     right: 0;
     opacity: 0;
-    z-index: 10;
-    background: #3b82f6;
-    color: #ffffff;
-    border: none;
-    border-radius: 0 6px 0 6px;
-    padding: 2px 6px;
-    font-size: 12px;
-    line-height: 1.5;
+    z-index: 1;
     pointer-events: none;
 }
 
-/* Hide the "Copy" text label for this specific button, keeping only the icon */
-.manager-copy-button span {
-    display: none;
-}
-
-[data-manager-copy-bound='1']:hover {
-    box-shadow: 0 0 0 1px #3b82f6;
-    border-radius: 6px;
-}
-
-[data-manager-copy-bound='1']:hover .manager-copy-button.manager-copy-button-visible,
+[data-manager-copy-bound='1']:hover .manager-copy-button,
 [data-manager-copy-bound='1']:focus-within .manager-copy-button {
     opacity: 1;
     pointer-events: auto;
@@ -104,27 +96,61 @@ pre code {
 
 .manager-copy-button:hover {
     opacity: 1 !important;
-    background: #2563eb;
 }
 
-/* Override default button styles for this specific button */
-.manager-copy-button.manager-copy-btn {
-    border: none;
-    background-color: #3b82f6;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.manager-copy-button.copied {
+    background: #22c55e;
+    color: #ffffff;
+    opacity: 1 !important;
+    pointer-events: auto;
 }
 
-.manager-copy-button.manager-copy-btn:hover {
-    background-color: #2563eb;
+/* 智能感应模式：默认隐藏，visible 类时显示 */
+.manager-copy-button.manager-copy-button-visible,
+.manager-copy-bottom.manager-copy-button-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
-.manager-copy-button.manager-copy-btn.copied {
-    background-color: #22c55e;
-    color: white;
-    border-radius: 0 6px 0 6px;
+/* 智能感应模式：默认隐藏，仅当 visible 类时显示 */
+[data-manager-copy-bound='1'].smart-hover .manager-copy-button,
+[data-manager-copy-bound='1'].smart-hover .manager-copy-bottom {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* 智能感应模式下 visible 状态 - 必须比上面的选择器更具体 */
+[data-manager-copy-bound='1'].smart-hover .manager-copy-button.manager-copy-button-visible,
+[data-manager-copy-bound='1'].smart-hover .manager-copy-bottom.manager-copy-button-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* 右下角复制按钮 - 悬停显示，使用 absolute 定位 */
+.manager-copy-bottom {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+[data-manager-copy-bound='1']:hover .manager-copy-bottom,
+[data-manager-copy-bound='1']:focus-within .manager-copy-bottom {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.manager-copy-bottom:hover {
+    opacity: 1 !important;
+}
+
+.manager-copy-bottom.copied {
+    background: #22c55e;
+    color: #ffffff;
+    opacity: 1 !important;
+    pointer-events: auto;
 }
 
 /* 反馈区复制按钮 */
@@ -172,7 +198,8 @@ pre code {
 }
 
 .manager-mermaid-copy.copied {
-    color: #22c55e;
+    background: #22c55e;
+    color: #ffffff;
     opacity: 1 !important;
 }
 

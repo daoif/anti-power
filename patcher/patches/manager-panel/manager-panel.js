@@ -124,6 +124,10 @@ const applyMaxWidth = (userConfig) => {
 
     // 加载配置
     const config = await loadConfig();
+
+    // 将配置设置到全局变量，供其他模块读取
+    window.__MANAGER_CONFIG__ = config;
+
     applyFontSize(config);
     applyMaxWidth(config);
 

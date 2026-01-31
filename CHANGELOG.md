@@ -6,6 +6,22 @@
 
 ---
 
+## v2.3.2 (2026-01-31)
+
+> 社区贡献: 感谢 [@mikessslxxx](https://github.com/mikessslxxx)
+
+### 优化
+- 数学公式渲染优化
+- 复制按钮样式优化
+
+### 新功能
+- 复制按钮提供更多自定义选项 (样式、位置等)
+
+### 修复
+- 修复 Manager 补丁导致 "安装似乎损坏" 提示的问题
+
+---
+
 ## v2.3.1 (2026-01-31)
 
 > 社区贡献: 感谢 [@Sophomoresty](https://github.com/Sophomoresty) 的 PR

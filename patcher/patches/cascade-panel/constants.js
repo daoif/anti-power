@@ -13,6 +13,7 @@
 export const CONTENT_SELECTOR = '.prose, .prose-sm, [data-in-html-content]';
 export const BOUND_ATTR = 'data-cascade-copy-bound';
 export const BUTTON_CLASS = 'cascade-copy-button'; // Main content copy button (top-right)
+export const BOTTOM_BUTTON_CLASS = 'cascade-copy-bottom'; // Bottom copy button
 export const COPY_BTN_CLASS = 'cascade-copy-btn'; // Generic copy button style
 export const MATH_ATTR = 'data-cascade-math-rendered';
 export const RAW_TEXT_PROP = '__cascadeRawText';

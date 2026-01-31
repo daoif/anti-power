@@ -9,9 +9,10 @@
  * - 绑定复制事件（带成功反馈状态）
  * - 内容区域复制按钮注入
  * - 反馈区域复制按钮注入
+ * - 支持配置化（智能感应、按钮位置、按钮样式）
  */
 
-import { BOUND_ATTR, BUTTON_CLASS } from './constants.js';
+import { BOUND_ATTR, BUTTON_CLASS, BOTTOM_BUTTON_CLASS } from './constants.js';
 import { CHECK_ICON_SVG, COPY_ICON_SVG } from './icons.js';
 import { extractFormattedContent } from './extract.js';
 import { captureRawText, isEditable, writeClipboard } from './utils.js';
@@ -19,12 +20,51 @@ import { captureRawText, isEditable, writeClipboard } from './utils.js';
 const copyTimers = new WeakMap();
 
 /**
+ * 获取配置（从全局变量读取）
+ * @returns {Object}
+ */
+const getConfig = () => {
+    return window.__CASCADE_CONFIG__ || {};
+};
+
+/**
+ * 根据配置获取按钮标签文字
+ * @param {boolean} copied - 是否已复制
+ * @param {'top'|'bottom'} position - 按钮位置
+ * @returns {string}
+ */
+const getLabelText = (copied, position) => {
+    if (copied) return 'Copied!';
+
+    const config = getConfig();
+    const style = config.copyButtonStyle || 'arrow';
+    const customText = config.copyButtonCustomText || '';
+
+    switch (style) {
+        case 'icon':
+            return ''; // 仅图标，无文字
+        case 'chinese':
+            return '复制';
+        case 'custom':
+            return customText || '复制';
+        case 'arrow':
+        default:
+            return position === 'top' ? '↓Copy' : '↑Copy';
+    }
+};
+
+/**
  * 生成按钮内部文本与图标的 HTML
  * @param {string} label
  * @param {string} icon
  * @returns {string}
  */
-const buttonMarkup = (label, icon) => `<span>${label}</span>${icon}`;
+const buttonMarkup = (label, icon) => {
+    if (label) {
+        return `<span>${label}</span>${icon}`;
+    }
+    return icon; // 仅图标模式
+};
 
 /**
  * 设置复制按钮的状态与可访问性标签
@@ -33,11 +73,20 @@ const buttonMarkup = (label, icon) => `<span>${label}</span>${icon}`;
  * @returns {void}
  */
 export const setCopyState = (button, copied) => {
-    const label = copied ? 'Copied!' : 'Copy';
-    const icon = copied ? CHECK_ICON_SVG : COPY_ICON_SVG;
+    const position = button.dataset.copyPosition || 'top';
+    const label = getLabelText(copied, position);
+    const config = getConfig();
+    const style = config.copyButtonStyle || 'arrow';
+
+    // 自定义模式不显示图标，其他模式显示图标
+    let icon = '';
+    if (style !== 'custom' || copied) {
+        icon = copied ? CHECK_ICON_SVG : COPY_ICON_SVG;
+    }
+
     button.innerHTML = buttonMarkup(label, icon);
     button.classList.toggle('copied', copied);
-    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-label', label || 'Copy');
 };
 
 /**
@@ -45,10 +94,11 @@ export const setCopyState = (button, copied) => {
  * @param {Object} [options]
  * @param {string} [options.className] - 额外类名
  * @param {string} [options.tag='button'] - 使用的标签名
+ * @param {'top'|'bottom'} [options.position='top'] - 按钮位置
  * @returns {HTMLElement}
  * 边界：当 tag 不是 button 时不会设置 type
  */
-export const createCopyButton = ({ className, tag = 'button' } = {}) => {
+export const createCopyButton = ({ className, tag = 'button', position = 'top' } = {}) => {
     const button = document.createElement(tag);
     if (tag === 'button') {
         button.type = 'button';
@@ -60,6 +110,7 @@ export const createCopyButton = ({ className, tag = 'button' } = {}) => {
         button.className = className;
     }
     button.classList.add('cascade-copy-btn');
+    button.dataset.copyPosition = position;
     setCopyState(button, false);
     return button;
 };
@@ -135,6 +186,43 @@ export const bindCopyButton = (
 };
 
 /**
+ * 绑定智能感应事件（鼠标在按钮附近才显示）
+ * @param {HTMLElement} contentEl - 内容容器
+ * @param {HTMLElement} topBtn - 右上角按钮
+ * @param {HTMLElement} bottomBtn - 右下角按钮（可选）
+ */
+const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
+    contentEl.addEventListener('mousemove', (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 右上角区域：右侧 120px, 顶部 60px
+        if (x > rect.width - 120 && y < 60) {
+            topBtn.classList.add('cascade-copy-button-visible');
+        } else {
+            topBtn.classList.remove('cascade-copy-button-visible');
+        }
+
+        // 右下角区域：右侧 120px, 底部 60px
+        if (bottomBtn) {
+            if (x > rect.width - 120 && y > rect.height - 60) {
+                bottomBtn.classList.add('cascade-copy-button-visible');
+            } else {
+                bottomBtn.classList.remove('cascade-copy-button-visible');
+            }
+        }
+    });
+
+    contentEl.addEventListener('mouseleave', () => {
+        topBtn.classList.remove('cascade-copy-button-visible');
+        if (bottomBtn) {
+            bottomBtn.classList.remove('cascade-copy-button-visible');
+        }
+    });
+};
+
+/**
  * 为内容区添加复制按钮并绑定处理逻辑
  * @param {Element} contentEl
  * @returns {void}
@@ -148,13 +236,18 @@ export const ensureContentCopyButton = (contentEl) => {
     // 标记已绑定，避免重复插入按钮
     contentEl.setAttribute(BOUND_ATTR, '1');
 
+    // 确保容器有相对定位（用于按钮的 absolute 定位）
     const pos = getComputedStyle(contentEl).position;
     if (pos === 'static') {
         contentEl.style.position = 'relative';
     }
 
+    const config = getConfig();
+    const smartHover = config.copyButtonSmartHover || false;
+    const bottomPosition = config.copyButtonBottomPosition || 'float';
+
     // 右上角按钮（悬停显示）
-    const topButton = createCopyButton({ className: BUTTON_CLASS });
+    const topButton = createCopyButton({ className: BUTTON_CLASS, position: 'top' });
     bindCopyButton(topButton, {
         getText: () => extractFormattedContent(contentEl, true),
         copiedDuration: 1200,
@@ -163,24 +256,24 @@ export const ensureContentCopyButton = (contentEl) => {
     });
     contentEl.appendChild(topButton);
 
-    // 智能感应：仅当鼠标移动到右上角附近时才显示按钮
-    // 阈值：右侧 120px, 顶部 60px
-    contentEl.addEventListener('mousemove', (e) => {
-        const rect = contentEl.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // 右下角按钮（悬浮模式）- 同样使用 absolute 定位
+    let bottomButton = null;
+    if (bottomPosition === 'float') {
+        bottomButton = createCopyButton({ className: BOTTOM_BUTTON_CLASS, position: 'bottom' });
+        bindCopyButton(bottomButton, {
+            getText: () => extractFormattedContent(contentEl, true),
+            copiedDuration: 1200,
+            preventDefault: true,
+            stopPropagation: true,
+        });
+        contentEl.appendChild(bottomButton);
+    }
 
-        // 检查是否在右上角区域
-        if (x > rect.width - 120 && y < 60) {
-            topButton.classList.add('cascade-copy-button-visible');
-        } else {
-            topButton.classList.remove('cascade-copy-button-visible');
-        }
-    });
-
-    contentEl.addEventListener('mouseleave', () => {
-        topButton.classList.remove('cascade-copy-button-visible');
-    });
+    // 如果启用智能感应，添加类名并绑定 mousemove 事件
+    if (smartHover) {
+        contentEl.classList.add('smart-hover');
+        bindSmartHover(contentEl, topButton, bottomButton);
+    }
 };
 
 /**

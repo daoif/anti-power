@@ -6,6 +6,22 @@ This document records the update content of each Anti-Power version.
 
 ---
 
+## v2.3.2 (2026-01-31)
+
+> Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx)
+
+### Improvements
+- Math formula rendering optimization
+- Copy button style optimization
+
+### New Features
+- Copy button offers more customization options (style, position, etc.)
+
+### Fixes
+- Fix "Installation appears corrupted" prompt caused by Manager patch
+
+---
+
 ## v2.3.1 (2026-01-31)
 
 > Community contribution: Thanks to [@Sophomoresty](https://github.com/Sophomoresty) for the PR

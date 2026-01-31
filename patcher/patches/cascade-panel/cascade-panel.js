@@ -61,6 +61,10 @@ const loadTableFix = () => {
 // 入口
 (async () => {
     const config = await loadConfig();
+
+    // 将配置设置到全局变量，供其他模块读取
+    window.__CASCADE_CONFIG__ = config;
+
     applyFontSize(config);
 
     // 表格颜色修复（CSS 动态加载）
@@ -72,3 +76,4 @@ const loadTableFix = () => {
     const { start } = await import('./scan.js');
     start(config);
 })();
+

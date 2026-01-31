@@ -185,10 +185,6 @@ const scan = (root) => {
     if (config.mermaid) {
         scanMermaid(root);
     }
-
-    if (config.copyButton) {
-        addFeedbackCopyButtons();
-    }
 };
 
 /**
@@ -279,6 +275,16 @@ const init = () => {
     });
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
+
+    // 如果配置为将底部按钮移动到反馈区，设置定时扫描
+    if (config.copyButton && config.copyButtonBottomPosition === 'feedback') {
+        const scanFeedback = () => {
+            addFeedbackCopyButtons();
+        };
+        scanFeedback();
+        setInterval(scanFeedback, 2000);
+    }
+
     console.log('[Manager Panel] 扫描模块已启动');
 };
 

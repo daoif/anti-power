@@ -15,7 +15,7 @@
  */
 
 import { CONTENT_SELECTOR } from './constants.js';
-import { addFeedbackCopyButtons, ensureContentCopyButton } from './copy.js';
+import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
@@ -211,10 +211,6 @@ const scan = (root) => {
             void renderMermaid(node);
         });
     }
-
-    if (config.copyButton) {
-        addFeedbackCopyButtons();
-    }
 };
 
 /**
@@ -319,6 +315,17 @@ const init = () => {
     });
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
+
+    // 如果配置为将底部按钮移动到反馈区，设置定时扫描
+    if (config.copyButton && config.copyButtonBottomPosition === 'feedback') {
+        const scanFeedback = () => {
+            addFeedbackCopyButtons();
+        };
+        // 初次扫描
+        scanFeedback();
+        // 定期扫描以处理新增内容
+        setInterval(scanFeedback, 2000);
+    }
 };
 
 /**

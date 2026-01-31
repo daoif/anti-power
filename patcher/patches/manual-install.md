@@ -102,5 +102,5 @@
 
 ## 注意事项
 
-- 修改 workbench-jetski-agent.html 会触发 扩展已损坏 提示, 但不影响使用
+- ~~修改 workbench-jetski-agent.html 会触发 扩展已损坏 提示~~ (v2.3.2+ 已修复)
 - Antigravity 官方更新可能覆盖补丁, 需要重新安装

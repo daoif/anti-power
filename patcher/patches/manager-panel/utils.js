@@ -298,7 +298,37 @@ export const loadScript = (src) => {
     });
 };
 
-const COPY_LABEL = 'Copy';
+/**
+ * 获取配置（从全局变量读取）
+ * @returns {Object}
+ */
+const getConfig = () => {
+    return window.__MANAGER_CONFIG__ || {};
+};
+
+/**
+ * 根据配置获取按钮标签文字
+ * @param {'top'|'bottom'} position - 按钮位置
+ * @returns {string}
+ */
+const getButtonLabel = (position) => {
+    const config = getConfig();
+    const style = config.copyButtonStyle || 'arrow';
+    const customText = config.copyButtonCustomText || '';
+
+    switch (style) {
+        case 'icon':
+            return ''; // 仅图标，无文字
+        case 'chinese':
+            return '复制';
+        case 'custom':
+            return customText || '复制';
+        case 'arrow':
+        default:
+            return position === 'top' ? '↓Copy' : '↑Copy';
+    }
+};
+
 const COPIED_LABEL = 'Copied!';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -341,28 +371,41 @@ const createCheckIcon = () => {
  */
 export const setCopyState = (btn, copied) => {
     if (!btn) return;
-    const label = copied ? COPIED_LABEL : COPY_LABEL;
+    const position = btn.dataset.copyPosition || 'top';
+    const label = copied ? COPIED_LABEL : getButtonLabel(position);
     const span = btn.querySelector('span');
     if (span) span.textContent = label;
     btn.classList.toggle('copied', copied);
-    btn.setAttribute('aria-label', label);
+    btn.setAttribute('aria-label', label || 'Copy');
 };
 
 /**
  * 创建复制按钮元素
  * @param {string} className
+ * @param {'top'|'bottom'} [position='top'] - 按钮位置
  * @returns {HTMLButtonElement}
  */
-export const createCopyButton = (className) => {
+export const createCopyButton = (className, position = 'top') => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = className;
+    btn.dataset.copyPosition = position;
+
+    const config = getConfig();
+    const style = config.copyButtonStyle || 'arrow';
+
+    const label = getButtonLabel(position);
     const span = document.createElement('span');
-    span.textContent = COPY_LABEL;
+    span.textContent = label;
 
     btn.appendChild(span);
-    btn.appendChild(createCopyIcon());
-    btn.appendChild(createCheckIcon());
+
+    // 自定义模式不添加图标，其他模式添加
+    if (style !== 'custom') {
+        btn.appendChild(createCopyIcon());
+        btn.appendChild(createCheckIcon());
+    }
+
     setCopyState(btn, false);
     return btn;
 };
