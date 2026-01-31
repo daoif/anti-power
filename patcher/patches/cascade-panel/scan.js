@@ -9,6 +9,7 @@ import { renderMermaid } from './mermaid.js';
 let config = {
     mermaid: true,
     math: true,
+    mathRenderMode: 'deferred', // 'classic' | 'deferred'
     copyButton: true,
     tableColor: true,
     fontSizeEnabled: true,
@@ -134,7 +135,9 @@ const scheduleDeferredRender = (contentEl) => {
 };
 
 /**
- * Defer rendering until content settles or feedback controls appear
+ * Classic mode preserves v2.0.1 immediate rendering
+ * Deferred mode waits for feedback controls or stable content
+ *
  * @param {Element} contentEl
  * @param {boolean} [force=false] - Skip the completion check when true
  * @returns {void}
@@ -146,6 +149,17 @@ const renderContentNode = (contentEl, force = false) => {
         ensureContentCopyButton(contentEl);
     }
 
+    // Use the v2.0.1 behavior in classic mode and render immediately
+    if (config.mathRenderMode === 'classic') {
+        clearDeferredRender(contentEl);
+        if (config.math) {
+            void renderMath(contentEl);
+        }
+        renderMermaidWithin(contentEl);
+        return;
+    }
+
+    // Render completed messages immediately and queue the rest until their content settles
     const ready = force || hasFeedbackButtons(contentEl);
     if (!ready) {
         scheduleDeferredRender(contentEl);
@@ -214,6 +228,10 @@ const flushScan = () => {
     nodes.forEach(node => {
         if (node.isConnected) scan(node);
     });
+
+    if (config.mathRenderMode === 'classic' && config.copyButton) {
+        addFeedbackCopyButtons();
+    }
 };
 
 /** @param {NodeList|Array} nodes */
@@ -241,9 +259,15 @@ const scheduleScan = (nodes) => {
     let hasElements = false;
     const enqueue = (target) => {
         if (!target) return;
-        const scanRoot = resolveScanRoot(target);
-        if (!scanRoot) return;
-        pendingNodes.add(scanRoot);
+        // Classic mode queues the nearest matching content area or the mutation target
+        if (config.mathRenderMode === 'classic') {
+            const contentRoot = target.closest ? target.closest(CONTENT_SELECTOR) : null;
+            pendingNodes.add(contentRoot || target);
+        } else {
+            const scanRoot = resolveScanRoot(target);
+            if (!scanRoot) return;
+            pendingNodes.add(scanRoot);
+        }
         hasElements = true;
     };
 
@@ -271,6 +295,10 @@ const init = () => {
     const root = getRoot();
     scan(root);
 
+    if (config.mathRenderMode === 'classic' && config.copyButton) {
+        addFeedbackCopyButtons();
+    }
+
     const observer = new MutationObserver((mutations) => {
         const nodesToScan = [];
         mutations.forEach((mutation) => {
@@ -291,8 +319,8 @@ const init = () => {
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
 
-    // Poll for new feedback rows when the bottom copy button is moved there
-    if (config.copyButton && config.copyButtonBottomPosition === 'feedback') {
+    // Poll for new feedback rows when deferred mode moves the bottom copy button there
+    if (config.mathRenderMode !== 'classic' && config.copyButton && config.copyButtonBottomPosition === 'feedback') {
         const scanFeedback = () => {
             addFeedbackCopyButtons();
         };
