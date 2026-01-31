@@ -13,10 +13,10 @@
 import {
     BOUND_ATTR,
     BUTTON_CLASS,
-    BOTTOM_BUTTON_CLASS,
     COPY_BTN_CLASS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
+    CONTENT_SELECTOR,
 } from './constants.js';
 import { createCopyButton, copyToClipboard, showCopySuccess } from './utils.js';
 
@@ -115,7 +115,7 @@ const extractListItemContent = (li) => {
             }
 
             // 跳过复制按钮
-            if (classString.includes(BUTTON_CLASS) || classString.includes(BOTTOM_BUTTON_CLASS) || classString.includes('manager-copy-btn')) {
+            if (classString.includes(BUTTON_CLASS) || classString.includes('manager-copy-btn')) {
                 skipUntil = node;
                 continue;
             }
@@ -143,7 +143,7 @@ const extractListItemContent = (li) => {
             // 跳过代码块内部文本
             if (parent && parent.closest('pre, .code-block, [class*="language-"]')) continue;
             // 跳过复制按钮内部文本
-            if (parent && parent.closest(`.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .manager-copy-btn`)) continue;
+            if (parent && parent.closest(`.${BUTTON_CLASS}, .manager-copy-btn`)) continue;
             content += node.textContent;
         }
     }
@@ -541,7 +541,7 @@ const extractFormattedText = (el) => {
                 }
 
                 // 跳过复制按钮内部文本
-                if (parent.closest(`.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .manager-copy-btn, .manager-feedback-copy`)) {
+                if (parent.closest(`.${BUTTON_CLASS}, .manager-copy-btn, .manager-feedback-copy`)) {
                     continue;
                 }
             }
@@ -555,23 +555,6 @@ const extractFormattedText = (el) => {
         .filter(line => line.trim() !== '')
         .join('\n')
         .trim();
-};
-
-// 高亮边框样式类名
-const HIGHLIGHT_CLASS = 'manager-copy-highlight';
-
-/**
- * 绑定复制按钮的悬停高亮事件
- * @param {HTMLElement} button - 复制按钮
- * @param {HTMLElement} contentEl - 要高亮的内容区域
- */
-const bindHighlightEvents = (button, contentEl) => {
-    button.addEventListener('mouseenter', () => {
-        contentEl.classList.add(HIGHLIGHT_CLASS);
-    });
-    button.addEventListener('mouseleave', () => {
-        contentEl.classList.remove(HIGHLIGHT_CLASS);
-    });
 };
 
 /**
@@ -590,14 +573,14 @@ export const ensureContentCopyButton = (contentEl) => {
 
     contentEl.setAttribute(BOUND_ATTR, '1');
 
-    // 确保容器有相对定位（用于按钮的 absolute 定位）
+    // 确保容器有相对定位
     const style = window.getComputedStyle(contentEl);
     if (style.position === 'static') {
         contentEl.style.position = 'relative';
     }
 
     // 右上角悬停按钮
-    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`, 'top');
+    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -605,18 +588,63 @@ export const ensureContentCopyButton = (contentEl) => {
         const success = await copyToClipboard(text);
         if (success) showCopySuccess(btn);
     });
-    bindHighlightEvents(btn, contentEl);
     contentEl.appendChild(btn);
 
-    // 右下角悬停按钮 - 同样使用 absolute 定位
-    const bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`, 'bottom');
-    bottomBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const text = extractFormattedText(contentEl);
-        const success = await copyToClipboard(text);
-        if (success) showCopySuccess(bottomBtn);
+    // 智能感应：仅当鼠标移动到右上角附近时才显示按钮
+    // 阈值：右侧 120px, 顶部 60px
+    contentEl.addEventListener('mousemove', (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 检查是否在右上角区域
+        if (x > rect.width - 120 && y < 60) {
+            btn.classList.add('manager-copy-button-visible');
+        } else {
+            btn.classList.remove('manager-copy-button-visible');
+        }
     });
-    bindHighlightEvents(bottomBtn, contentEl);
-    contentEl.appendChild(bottomBtn);
+
+    contentEl.addEventListener('mouseleave', () => {
+        btn.classList.remove('manager-copy-button-visible');
+    });
+};
+
+/**
+ * 为反馈区域添加复制按钮（Good/Bad 按钮旁边）
+ */
+export const addFeedbackCopyButtons = () => {
+    const feedbackContainers = document.querySelectorAll('[data-tooltip-id^="up-"]');
+
+    feedbackContainers.forEach((goodBtn) => {
+        const parent = goodBtn.parentElement;
+        if (!parent || parent.querySelector('.manager-feedback-copy')) return;
+
+        // 找到对应的内容区
+        let contentEl = null;
+        let node = parent;
+        for (let i = 0; i < 20 && node; i++) {
+            const candidates = node.querySelectorAll && node.querySelectorAll(CONTENT_SELECTOR);
+            if (candidates && candidates.length > 0) {
+                // 简单的可见性检查：offsetParent 不为 null
+                const visible = Array.from(candidates).filter((el) => el.offsetParent !== null);
+                contentEl = visible[visible.length - 1] || candidates[candidates.length - 1];
+                break;
+            }
+            node = node.parentElement;
+        }
+        if (!contentEl) return;
+
+        const btn = createCopyButton(`${COPY_BTN_CLASS} manager-feedback-copy`);
+        btn.style.marginRight = '0.5rem';
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const text = extractFormattedText(contentEl);
+            const success = await copyToClipboard(text);
+            if (success) showCopySuccess(btn);
+        });
+
+        parent.insertBefore(btn, goodBtn);
+    });
 };

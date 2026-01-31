@@ -13,7 +13,6 @@
 
 import {
     BUTTON_CLASS,
-    BOTTOM_BUTTON_CLASS,
     COMMON_LANGS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
@@ -105,7 +104,6 @@ const extractNodeContent = (element, context = {}) => {
     // 跳过复制按钮
     if (
         classString.includes(BUTTON_CLASS) ||
-        classString.includes(BOTTOM_BUTTON_CLASS) ||
         classString.includes('custom-copy-btn') ||
         classString.includes('cascade-copy-btn')
     ) {
@@ -387,7 +385,6 @@ const extractChildrenContent = (element, context = {}) => {
 
             if (
                 parent?.closest(`.${BUTTON_CLASS}`) ||
-                parent?.closest(`.${BOTTOM_BUTTON_CLASS}`) ||
                 parent?.closest('.custom-copy-btn')
             ) {
                 continue;

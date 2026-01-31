@@ -41,12 +41,8 @@ export const ensureMathEngine = () => {
         }
 
         try {
-            // 并行加载 CSS 和主 JS，加快首次渲染速度
-            await Promise.all([
-                loadStyle(KATEX_CSS_URL),
-                loadScript(KATEX_JS_URL),
-            ]);
-            // auto-render 依赖 katex，必须串行加载
+            await loadStyle(KATEX_CSS_URL);
+            await loadScript(KATEX_JS_URL);
             await loadScript(KATEX_AUTO_URL);
             if (window.katex && window.renderMathInElement) {
                 mathEngine = 'katex';
@@ -97,10 +93,9 @@ export const ensureMathEngine = () => {
 export const renderMath = async (contentEl) => {
     if (!contentEl || isEditable(contentEl)) return;
 
+    captureRawText(contentEl);
     const text = contentEl.textContent || '';
     if (!MATH_HINT_RE.test(text)) return;
-
-    captureRawText(contentEl);
 
     await ensureMathEngine();
 
