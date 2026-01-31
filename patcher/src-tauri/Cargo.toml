@@ -1,6 +1,6 @@
 [package]
 name = "anti-power"
-version = "2.3.2"
+version = "2.3.3"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"

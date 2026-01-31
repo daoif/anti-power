@@ -9,7 +9,7 @@ import { renderMermaid } from './mermaid.js';
 let config = {
     mermaid: true,
     math: true,
-    mathRenderMode: 'deferred', // 'classic' | 'deferred'
+    mathRenderMode: 'classic', // 'classic' | 'deferred'
     copyButton: true,
     tableColor: true,
     fontSizeEnabled: true,
@@ -135,8 +135,7 @@ const scheduleDeferredRender = (contentEl) => {
 };
 
 /**
- * Classic mode preserves v2.0.1 immediate rendering
- * Deferred mode waits for feedback controls or stable content
+ * Defer rendering until content settles or feedback controls appear
  *
  * @param {Element} contentEl
  * @param {boolean} [force=false] - Skip the completion check when true
@@ -147,16 +146,6 @@ const renderContentNode = (contentEl, force = false) => {
 
     if (config.copyButton) {
         ensureContentCopyButton(contentEl);
-    }
-
-    // Use the v2.0.1 behavior in classic mode and render immediately
-    if (config.mathRenderMode === 'classic') {
-        clearDeferredRender(contentEl);
-        if (config.math) {
-            void renderMath(contentEl);
-        }
-        renderMermaidWithin(contentEl);
-        return;
     }
 
     // Render completed messages immediately and queue the rest until their content settles
@@ -178,7 +167,7 @@ const renderContentNode = (contentEl, force = false) => {
  * @param {Element} root
  * @returns {void}
  */
-const scan = (root) => {
+const scanDeferred = (root) => {
     if (!root || !root.isConnected) return;
 
     // Include the root because the mutated node can itself be a content region
@@ -217,21 +206,135 @@ const getRoot = () =>
     document.getElementById('react-app') ||
     document.body;
 
-let pendingNodes = new Set();
-let scheduled = false;
+// Classic mode (v2.0.1)
 
-const flushScan = () => {
-    scheduled = false;
-    const nodes = [...pendingNodes];
-    pendingNodes.clear();
+/**
+ * Preserve the immediate scan behavior from v2.0.1
+ * @param {Element} root
+ * @returns {void}
+ */
+const scanClassic = (root) => {
+    if (!root || !root.isConnected) return;
 
-    nodes.forEach(node => {
-        if (node.isConnected) scan(node);
+    // Include the root because the mutated node can itself be a content region
+    const contentNodes = [];
+    if (root.matches && root.matches(CONTENT_SELECTOR)) {
+        contentNodes.push(root);
+    }
+    contentNodes.push(...root.querySelectorAll(CONTENT_SELECTOR));
+
+    contentNodes.forEach((node) => {
+        if (config.copyButton) {
+            ensureContentCopyButton(node);
+        }
+        if (config.math) {
+            void renderMath(node);
+        }
     });
 
-    if (config.mathRenderMode === 'classic' && config.copyButton) {
+    if (config.mermaid) {
+        const mermaidNodes = [];
+        if (root.matches && root.matches('[class*="language-mermaid"]')) {
+            mermaidNodes.push(root);
+        }
+        mermaidNodes.push(...root.querySelectorAll('[class*="language-mermaid"]'));
+
+        mermaidNodes.forEach((node) => {
+            void renderMermaid(node);
+        });
+    }
+};
+
+let pendingNodesClassic = new Set();
+let scheduledClassic = false;
+
+/** Flush queued classic scans together, as in v2.0.1 */
+const flushScanClassic = () => {
+    scheduledClassic = false;
+    const nodes = [...pendingNodesClassic];
+    pendingNodesClassic.clear();
+
+    nodes.forEach((node) => {
+        if (node.isConnected) scanClassic(node);
+    });
+
+    if (config.copyButton) {
         addFeedbackCopyButtons();
     }
+};
+
+/**
+ * Queue classic scans using the v2.0.1 rules
+ * @param {NodeList|Array} nodes
+ */
+const scheduleScanClassic = (nodes) => {
+    let hasElements = false;
+    const enqueue = (target) => {
+        if (!target) return;
+        const contentRoot = target.closest ? target.closest(CONTENT_SELECTOR) : null;
+        pendingNodesClassic.add(contentRoot || target);
+        hasElements = true;
+    };
+
+    nodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            enqueue(node);
+            return;
+        }
+        if (node.parentElement) {
+            enqueue(node.parentElement);
+        }
+    });
+
+    if (hasElements && !scheduledClassic) {
+        scheduledClassic = true;
+        requestAnimationFrame(flushScanClassic);
+    }
+};
+
+/**
+ * Run the initial classic scan before observing mutations, as in v2.0.1
+ * @returns {void}
+ */
+const initClassic = () => {
+    const root = getRoot();
+    scanClassic(root);
+    if (config.copyButton) {
+        addFeedbackCopyButtons();
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        const nodesToScan = [];
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'characterData') {
+                if (mutation.target.parentElement) {
+                    nodesToScan.push(mutation.target.parentElement);
+                }
+                return;
+            }
+            if (mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach((node) => nodesToScan.push(node));
+            }
+        });
+        if (nodesToScan.length > 0) {
+            scheduleScanClassic(nodesToScan);
+        }
+    });
+
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
+};
+
+let pendingNodesDeferred = new Set();
+let scheduledDeferred = false;
+
+const flushScanDeferred = () => {
+    scheduledDeferred = false;
+    const nodes = [...pendingNodesDeferred];
+    pendingNodesDeferred.clear();
+
+    nodes.forEach(node => {
+        if (node.isConnected) scanDeferred(node);
+    });
 };
 
 /** @param {NodeList|Array} nodes */
@@ -255,19 +358,13 @@ const resolveScanRoot = (target) => {
     return target;
 };
 
-const scheduleScan = (nodes) => {
+const scheduleScanDeferred = (nodes) => {
     let hasElements = false;
     const enqueue = (target) => {
         if (!target) return;
-        // Classic mode queues the nearest matching content area or the mutation target
-        if (config.mathRenderMode === 'classic') {
-            const contentRoot = target.closest ? target.closest(CONTENT_SELECTOR) : null;
-            pendingNodes.add(contentRoot || target);
-        } else {
-            const scanRoot = resolveScanRoot(target);
-            if (!scanRoot) return;
-            pendingNodes.add(scanRoot);
-        }
+        const scanRoot = resolveScanRoot(target);
+        if (!scanRoot) return;
+        pendingNodesDeferred.add(scanRoot);
         hasElements = true;
     };
 
@@ -281,9 +378,9 @@ const scheduleScan = (nodes) => {
         }
     });
 
-    if (hasElements && !scheduled) {
-        scheduled = true;
-        requestAnimationFrame(flushScan);
+    if (hasElements && !scheduledDeferred) {
+        scheduledDeferred = true;
+        requestAnimationFrame(flushScanDeferred);
     }
 };
 
@@ -291,13 +388,9 @@ const scheduleScan = (nodes) => {
  * Scan existing content before observing DOM mutations
  * @returns {void}
  */
-const init = () => {
+const initDeferred = () => {
     const root = getRoot();
-    scan(root);
-
-    if (config.mathRenderMode === 'classic' && config.copyButton) {
-        addFeedbackCopyButtons();
-    }
+    scanDeferred(root);
 
     const observer = new MutationObserver((mutations) => {
         const nodesToScan = [];
@@ -313,14 +406,14 @@ const init = () => {
             }
         });
         if (nodesToScan.length > 0) {
-            scheduleScan(nodesToScan);
+            scheduleScanDeferred(nodesToScan);
         }
     });
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
 
     // Poll for new feedback rows when deferred mode moves the bottom copy button there
-    if (config.mathRenderMode !== 'classic' && config.copyButton && config.copyButtonBottomPosition === 'feedback') {
+    if (config.copyButton && config.copyButtonBottomPosition === 'feedback') {
         const scanFeedback = () => {
             addFeedbackCopyButtons();
         };
@@ -337,8 +430,18 @@ export const start = (userConfig = {}) => {
     config = { ...config, ...userConfig };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (config.mathRenderMode === 'classic') {
+                initClassic();
+            } else {
+                initDeferred();
+            }
+        });
     } else {
-        init();
+        if (config.mathRenderMode === 'classic') {
+            initClassic();
+        } else {
+            initDeferred();
+        }
     }
 };

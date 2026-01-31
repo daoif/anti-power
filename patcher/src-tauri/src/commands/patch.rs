@@ -20,6 +20,8 @@ pub struct FeatureConfig {
     pub enabled: bool,
     pub mermaid: bool,
     pub math: bool,
+    #[serde(rename = "mathRenderMode")]
+    pub math_render_mode: String,
     #[serde(rename = "copyButton")]
     pub copy_button: bool,
     #[serde(rename = "tableColor")]
@@ -45,6 +47,7 @@ impl Default for FeatureConfig {
             enabled: true,
             mermaid: true,
             math: true,
+            math_render_mode: "classic".to_string(),
             copy_button: true,
             table_color: true,
             font_size_enabled: true,
@@ -406,6 +409,7 @@ fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
         "math": features.math,
+        "mathRenderMode": features.math_render_mode,
         "copyButton": features.copy_button,
         "tableColor": features.table_color,
         "fontSizeEnabled": features.font_size_enabled,

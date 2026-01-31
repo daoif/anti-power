@@ -9,7 +9,7 @@ import ManagerFeatureCard from "./components/ManagerFeatureCard.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
-const APP_VERSION = "2.3.2";
+const APP_VERSION = "2.3.3";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 // Files shown in the install confirmation
@@ -38,6 +38,7 @@ const features = ref({
   enabled: true,
   mermaid: true,
   math: true,
+  mathRenderMode: 'classic' as 'classic' | 'deferred',
   copyButton: true,
   tableColor: true,
   fontSizeEnabled: true,

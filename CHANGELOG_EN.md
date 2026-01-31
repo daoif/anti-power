@@ -4,6 +4,15 @@
 
 ---
 
+## v2.3.3 (2026-01-31)
+
+### Fixes
+- Fix critical bug where math formula rendering fails
+- Temporarily restored the stable v2.0.1 formula rendering logic
+- Add formula rendering mode switch (Classic / Deferred)
+
+---
+
 ## v2.3.2 (2026-01-31)
 
 > Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx)
