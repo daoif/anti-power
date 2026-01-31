@@ -35,7 +35,7 @@ English | [中文](AGENTS-zh.md)
 
 - Sidebar: `resources/app/extensions/antigravity/cascade-panel.html`
 - Manager window: `resources/app/out/vs/code/electron-browser/workbench/workbench-jetski-agent.html`
-- Note: Modifying `workbench-jetski-agent.html` triggers "Extension corrupted" prompt, but does not affect usage.
+- ~~Note: Modifying `workbench-jetski-agent.html` triggers "Extension corrupted" prompt~~ (Fixed in v2.3.2+)
 
 ## Runtime Logic Overview (Sidebar Patch)
 

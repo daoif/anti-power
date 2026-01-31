@@ -1,7 +1,7 @@
 /** Observe content mutations and defer rendering until the message has finished or the content settles */
 
 import { CONTENT_SELECTOR } from './constants.js';
-import { addFeedbackCopyButtons, ensureContentCopyButton } from './copy.js';
+import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
@@ -192,10 +192,6 @@ const scan = (root) => {
             void renderMermaid(node);
         });
     }
-
-    if (config.copyButton) {
-        addFeedbackCopyButtons();
-    }
 };
 
 /**
@@ -294,6 +290,15 @@ const init = () => {
     });
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
+
+    // Poll for new feedback rows when the bottom copy button is moved there
+    if (config.copyButton && config.copyButtonBottomPosition === 'feedback') {
+        const scanFeedback = () => {
+            addFeedbackCopyButtons();
+        };
+        scanFeedback();
+        setInterval(scanFeedback, 2000);
+    }
 };
 
 /**

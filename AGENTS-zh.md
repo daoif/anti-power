@@ -35,7 +35,7 @@
 
 - 侧边栏: `resources/app/extensions/antigravity/cascade-panel.html`
 - Manager 窗口: `resources/app/out/vs/code/electron-browser/workbench/workbench-jetski-agent.html`
-- 注意: 修改 `workbench-jetski-agent.html` 会触发 "扩展已损坏" 提示, 但不影响使用.
+- ~~注意: 修改 `workbench-jetski-agent.html` 会触发 "扩展已损坏" 提示~~ (v2.3.2+ 已修复)
 
 ## 运行逻辑速览 (侧边栏补丁)
 

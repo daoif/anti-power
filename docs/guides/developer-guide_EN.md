@@ -286,6 +286,6 @@ Build output: `src-tauri/target/release/anti-power.exe`
 
 ## Notes
 
-- Modifying `workbench-jetski-agent.html` will trigger "Extension corrupted" prompt at Antigravity startup, but does not affect normal use
+- ~~Modifying `workbench-jetski-agent.html` triggers "Extension corrupted" prompt~~ (Fixed in v2.3.2+)
 - Manager window uses React + TailwindCSS stack
 - Sidebar panel loads `cascade-panel.html` via iframe

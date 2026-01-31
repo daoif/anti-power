@@ -107,6 +107,10 @@ const applyMaxWidth = (userConfig) => {
     }
 
     const config = await loadConfig();
+
+    // Publish the configuration for modules that read it directly
+    window.__MANAGER_CONFIG__ = config;
+
     applyFontSize(config);
     applyMaxWidth(config);
 

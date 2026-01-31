@@ -25,13 +25,68 @@
         <input type="checkbox" v-model="model.math" class="checkbox" :disabled="!model.enabled">
       </label>
 
-      <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
-        <div class="feature-info">
-          <span class="feature-name">一键复制按钮</span>
-          <p class="feature-desc">在内容区域添加复制按钮</p>
+      <div class="feature-item-group" :class="{ 'item-disabled': !model.enabled }">
+        <label class="feature-item">
+          <div class="feature-info">
+            <span class="feature-name">一键复制按钮</span>
+            <p class="feature-desc">在内容区域添加复制按钮</p>
+          </div>
+          <input type="checkbox" v-model="model.copyButton" class="checkbox" :disabled="!model.enabled">
+        </label>
+        
+        <button 
+          v-if="model.copyButton" 
+          type="button"
+          class="expand-btn"
+          @click="copyOptionsExpanded = !copyOptionsExpanded"
+          :disabled="!model.enabled"
+        >
+          <span class="expand-icon">{{ copyOptionsExpanded ? '▼' : '▶' }}</span>
+          <span>{{ copyOptionsExpanded ? '收起选项' : '展开选项' }}</span>
+        </button>
+        
+        <div v-if="model.copyButton && copyOptionsExpanded" class="sub-options">
+          <label class="sub-option">
+            <input type="checkbox" v-model="model.copyButtonSmartHover" class="checkbox" :disabled="!model.enabled">
+            <span class="sub-option-text">智能感应（鼠标在按钮附近才显示）</span>
+          </label>
+          
+          <label class="sub-option">
+            <input type="checkbox" v-model="copyBottomToFeedback" class="checkbox" :disabled="!model.enabled">
+            <span class="sub-option-text">将底部按钮移动到反馈区</span>
+          </label>
+          
+          <div class="sub-option-group">
+            <span class="sub-option-label">按钮样式</span>
+            <div class="style-options">
+              <label class="style-option">
+                <input type="radio" v-model="model.copyButtonStyle" value="arrow" :disabled="!model.enabled">
+                <span>↓Copy 📋</span>
+              </label>
+              <label class="style-option">
+                <input type="radio" v-model="model.copyButtonStyle" value="icon" :disabled="!model.enabled">
+                <span>📋</span>
+              </label>
+              <label class="style-option">
+                <input type="radio" v-model="model.copyButtonStyle" value="chinese" :disabled="!model.enabled">
+                <span>复制 📋</span>
+              </label>
+              <label class="style-option custom-style">
+                <input type="radio" v-model="model.copyButtonStyle" value="custom" :disabled="!model.enabled">
+                <input 
+                  type="text" 
+                  v-model="model.copyButtonCustomText" 
+                  class="custom-text-input"
+                  placeholder="自定义文字"
+                  :disabled="!model.enabled"
+                  @click="model.copyButtonStyle = 'custom'"
+                  @focus="model.copyButtonStyle = 'custom'"
+                >
+              </label>
+            </div>
+          </div>
         </div>
-        <input type="checkbox" v-model="model.copyButton" class="checkbox" :disabled="!model.enabled">
-      </label>
+      </div>
 
       <label class="feature-item" :class="{ 'item-disabled': !model.enabled }">
         <div class="feature-info">
@@ -64,6 +119,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
+
 export interface FeatureFlags {
   enabled: boolean;
   mermaid: boolean;
@@ -72,9 +129,22 @@ export interface FeatureFlags {
   tableColor: boolean;
   fontSizeEnabled: boolean;
   fontSize: number;
+  copyButtonSmartHover: boolean;
+  copyButtonBottomPosition: 'float' | 'feedback';
+  copyButtonStyle: 'arrow' | 'icon' | 'chinese' | 'custom';
+  copyButtonCustomText: string;
 }
 
 const model = defineModel<FeatureFlags>({ required: true });
+
+const copyOptionsExpanded = ref(false);
+
+const copyBottomToFeedback = computed({
+  get: () => model.value.copyButtonBottomPosition === 'feedback',
+  set: (val: boolean) => {
+    model.value.copyButtonBottomPosition = val ? 'feedback' : 'float';
+  }
+});
 </script>
 
 <style scoped>
@@ -87,9 +157,7 @@ const model = defineModel<FeatureFlags>({ required: true });
   transition: opacity 0.2s;
 }
 
-.card.is-disabled {
-  opacity: 0.6;
-}
+.card.is-disabled { opacity: 0.6; }
 
 .card-header {
   display: flex;
@@ -134,17 +202,12 @@ const model = defineModel<FeatureFlags>({ required: true });
   transition: opacity 0.2s;
 }
 
-.feature-item.item-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.feature-item.item-disabled,
+.feature-item-group.item-disabled { opacity: 0.5; cursor: not-allowed; }
 
 .feature-info { flex: 1; }
 
-.feature-name {
-  font-size: 14px;
-  font-weight: 400;
-}
+.feature-name { font-size: 14px; font-weight: 400; }
 
 .feature-desc {
   font-size: 12px;
@@ -159,15 +222,9 @@ const model = defineModel<FeatureFlags>({ required: true });
   cursor: pointer;
 }
 
-.checkbox:disabled {
-  cursor: not-allowed;
-}
+.checkbox:disabled { cursor: not-allowed; }
 
-.feature-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.feature-controls { display: flex; align-items: center; gap: 8px; }
 
 .font-size-input {
   width: 64px;
@@ -180,8 +237,99 @@ const model = defineModel<FeatureFlags>({ required: true });
   text-align: center;
 }
 
-.font-size-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.font-size-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin-top: 4px;
+  background: var(--ag-surface-2);
+  border: 1px solid var(--ag-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ag-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.expand-btn:hover:not(:disabled) {
+  background: var(--ag-border);
+  color: var(--ag-text);
+}
+
+.expand-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.expand-icon { font-size: 10px; }
+
+.sub-options {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--ag-surface-2);
+  border: 1px solid var(--ag-border);
+  border-radius: 8px;
+}
+
+.sub-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.sub-option-text { font-size: 13px; color: var(--ag-text); }
+
+.sub-option-group { padding: 8px 0; }
+
+.sub-option-label {
+  font-size: 12px;
+  color: var(--ag-text-secondary);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.style-options { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.style-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--ag-surface);
+  border: 1px solid var(--ag-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+
+.style-option:hover { border-color: var(--ag-accent); }
+
+.style-option input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--ag-accent);
+}
+
+.style-option.custom-style { flex: 1; min-width: 120px; }
+
+.custom-text-input {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--ag-bg);
+  border: 1px solid var(--ag-border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--ag-text);
+  min-width: 60px;
+}
+
+.custom-text-input:disabled { opacity: 0.5; }
+
+.custom-text-input:focus {
+  outline: none;
+  border-color: var(--ag-accent);
 }
 </style>

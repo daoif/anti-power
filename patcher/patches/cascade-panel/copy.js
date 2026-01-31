@@ -1,6 +1,6 @@
-/** Inject copy controls into Cascade message content and feedback rows */
+/** Inject copy controls into message content and feedback rows, with configurable labels and hover behavior */
 
-import { BOUND_ATTR, BUTTON_CLASS } from './constants.js';
+import { BOUND_ATTR, BUTTON_CLASS, BOTTOM_BUTTON_CLASS } from './constants.js';
 import { CHECK_ICON_SVG, COPY_ICON_SVG } from './icons.js';
 import { extractFormattedContent } from './extract.js';
 import { captureRawText, isEditable, writeClipboard } from './utils.js';
@@ -8,11 +8,49 @@ import { captureRawText, isEditable, writeClipboard } from './utils.js';
 const copyTimers = new WeakMap();
 
 /**
+ * Read the configuration published by the patch entry point
+ * @returns {Object}
+ */
+const getConfig = () => {
+    return window.__CASCADE_CONFIG__ || {};
+};
+
+/**
+ * @param {boolean} copied - Whether to show the copied state
+ * @param {'top'|'bottom'} position - Top or bottom button position
+ * @returns {string}
+ */
+const getLabelText = (copied, position) => {
+    if (copied) return 'Copied!';
+
+    const config = getConfig();
+    const style = config.copyButtonStyle || 'arrow';
+    const customText = config.copyButtonCustomText || '';
+
+    switch (style) {
+        case 'icon':
+            return '';
+        case 'chinese':
+            return '复制';
+        case 'custom':
+            return customText || '复制';
+        case 'arrow':
+        default:
+            return position === 'top' ? '↓Copy' : '↑Copy';
+    }
+};
+
+/**
  * @param {string} label
  * @param {string} icon
  * @returns {string}
  */
-const buttonMarkup = (label, icon) => `<span>${label}</span>${icon}`;
+const buttonMarkup = (label, icon) => {
+    if (label) {
+        return `<span>${label}</span>${icon}`;
+    }
+    return icon;
+};
 
 /**
  * Update the visible copy state and the accessible label together
@@ -21,11 +59,20 @@ const buttonMarkup = (label, icon) => `<span>${label}</span>${icon}`;
  * @returns {void}
  */
 export const setCopyState = (button, copied) => {
-    const label = copied ? 'Copied!' : 'Copy';
-    const icon = copied ? CHECK_ICON_SVG : COPY_ICON_SVG;
+    const position = button.dataset.copyPosition || 'top';
+    const label = getLabelText(copied, position);
+    const config = getConfig();
+    const style = config.copyButtonStyle || 'arrow';
+
+    // Use a text-only custom label until the success checkmark is shown
+    let icon = '';
+    if (style !== 'custom' || copied) {
+        icon = copied ? CHECK_ICON_SVG : COPY_ICON_SVG;
+    }
+
     button.innerHTML = buttonMarkup(label, icon);
     button.classList.toggle('copied', copied);
-    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-label', label || 'Copy');
 };
 
 /**
@@ -34,9 +81,10 @@ export const setCopyState = (button, copied) => {
  * @param {Object} [options]
  * @param {string} [options.className] - Extra CSS class
  * @param {string} [options.tag='button'] - HTML tag for the copy control
+ * @param {'top'|'bottom'} [options.position='top'] - Top or bottom button position
  * @returns {HTMLElement}
  */
-export const createCopyButton = ({ className, tag = 'button' } = {}) => {
+export const createCopyButton = ({ className, tag = 'button', position = 'top' } = {}) => {
     const button = document.createElement(tag);
     if (tag === 'button') {
         button.type = 'button';
@@ -48,6 +96,7 @@ export const createCopyButton = ({ className, tag = 'button' } = {}) => {
         button.className = className;
     }
     button.classList.add('cascade-copy-btn');
+    button.dataset.copyPosition = position;
     setCopyState(button, false);
     return button;
 };
@@ -122,6 +171,41 @@ export const bindCopyButton = (
 };
 
 /**
+ * Show each copy button only while the pointer is near its corner
+ * @param {HTMLElement} contentEl - Message content container
+ * @param {HTMLElement} topBtn - Top-right copy button
+ * @param {HTMLElement} bottomBtn - Optional bottom-right button
+ */
+const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
+    contentEl.addEventListener('mousemove', (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (x > rect.width - 120 && y < 60) {
+            topBtn.classList.add('cascade-copy-button-visible');
+        } else {
+            topBtn.classList.remove('cascade-copy-button-visible');
+        }
+
+        if (bottomBtn) {
+            if (x > rect.width - 120 && y > rect.height - 60) {
+                bottomBtn.classList.add('cascade-copy-button-visible');
+            } else {
+                bottomBtn.classList.remove('cascade-copy-button-visible');
+            }
+        }
+    });
+
+    contentEl.addEventListener('mouseleave', () => {
+        topBtn.classList.remove('cascade-copy-button-visible');
+        if (bottomBtn) {
+            bottomBtn.classList.remove('cascade-copy-button-visible');
+        }
+    });
+};
+
+/**
  * Skip editable and previously bound content
  *
  * @param {Element} contentEl
@@ -134,13 +218,18 @@ export const ensureContentCopyButton = (contentEl) => {
     if (contentEl.getAttribute(BOUND_ATTR) === '1') return;
     contentEl.setAttribute(BOUND_ATTR, '1');
 
+    // Keep absolute positioning relative to the content container
     const pos = getComputedStyle(contentEl).position;
     if (pos === 'static') {
         contentEl.style.position = 'relative';
     }
 
+    const config = getConfig();
+    const smartHover = config.copyButtonSmartHover || false;
+    const bottomPosition = config.copyButtonBottomPosition || 'float';
+
     // Top-right hover button
-    const topButton = createCopyButton({ className: BUTTON_CLASS });
+    const topButton = createCopyButton({ className: BUTTON_CLASS, position: 'top' });
     bindCopyButton(topButton, {
         getText: () => extractFormattedContent(contentEl, true),
         copiedDuration: 1200,
@@ -149,22 +238,23 @@ export const ensureContentCopyButton = (contentEl) => {
     });
     contentEl.appendChild(topButton);
 
-    // Reveal the copy button only while the pointer is near the top-right corner
-    contentEl.addEventListener('mousemove', (e) => {
-        const rect = contentEl.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // The floating bottom-right button shares the content container as its positioning anchor
+    let bottomButton = null;
+    if (bottomPosition === 'float') {
+        bottomButton = createCopyButton({ className: BOTTOM_BUTTON_CLASS, position: 'bottom' });
+        bindCopyButton(bottomButton, {
+            getText: () => extractFormattedContent(contentEl, true),
+            copiedDuration: 1200,
+            preventDefault: true,
+            stopPropagation: true,
+        });
+        contentEl.appendChild(bottomButton);
+    }
 
-        if (x > rect.width - 120 && y < 60) {
-            topButton.classList.add('cascade-copy-button-visible');
-        } else {
-            topButton.classList.remove('cascade-copy-button-visible');
-        }
-    });
-
-    contentEl.addEventListener('mouseleave', () => {
-        topButton.classList.remove('cascade-copy-button-visible');
-    });
+    if (smartHover) {
+        contentEl.classList.add('smart-hover');
+        bindSmartHover(contentEl, topButton, bottomButton);
+    }
 };
 
 /**

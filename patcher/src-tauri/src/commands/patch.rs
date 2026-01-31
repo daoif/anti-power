@@ -1,9 +1,16 @@
 // Patch installation and removal
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 use crate::embedded;
+
+/// File paths whose checksums must be removed from `product.json`
+/// Antigravity reports patched files as corrupt if their original checksums remain
+const CHECKSUMS_TO_REMOVE: &[&str] = &[
+    "vs/code/electron-browser/workbench/workbench-jetski-agent.html",
+];
 
 /// Sidebar feature toggles
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,6 +28,15 @@ pub struct FeatureConfig {
     pub font_size_enabled: bool,
     #[serde(rename = "fontSize")]
     pub font_size: f32,
+    // Copy button options
+    #[serde(rename = "copyButtonSmartHover")]
+    pub copy_button_smart_hover: bool,
+    #[serde(rename = "copyButtonBottomPosition")]
+    pub copy_button_bottom_position: String,
+    #[serde(rename = "copyButtonStyle")]
+    pub copy_button_style: String,
+    #[serde(rename = "copyButtonCustomText")]
+    pub copy_button_custom_text: String,
 }
 
 impl Default for FeatureConfig {
@@ -33,6 +49,10 @@ impl Default for FeatureConfig {
             table_color: true,
             font_size_enabled: true,
             font_size: 20.0,
+            copy_button_smart_hover: false,
+            copy_button_bottom_position: "float".to_string(),
+            copy_button_style: "arrow".to_string(),
+            copy_button_custom_text: "".to_string(),
         }
     }
 }
@@ -55,6 +75,15 @@ pub struct ManagerFeatureConfig {
     pub font_size_enabled: bool,
     #[serde(rename = "fontSize")]
     pub font_size: f32,
+    // Copy button options
+    #[serde(rename = "copyButtonSmartHover")]
+    pub copy_button_smart_hover: bool,
+    #[serde(rename = "copyButtonBottomPosition")]
+    pub copy_button_bottom_position: String,
+    #[serde(rename = "copyButtonStyle")]
+    pub copy_button_style: String,
+    #[serde(rename = "copyButtonCustomText")]
+    pub copy_button_custom_text: String,
 }
 
 impl Default for ManagerFeatureConfig {
@@ -68,6 +97,10 @@ impl Default for ManagerFeatureConfig {
             max_width_ratio: 75.0,
             font_size_enabled: false,
             font_size: 16.0,
+            copy_button_smart_hover: false,
+            copy_button_bottom_position: "float".to_string(),
+            copy_button_style: "arrow".to_string(),
+            copy_button_custom_text: "".to_string(),
         }
     }
 }
@@ -114,6 +147,13 @@ pub fn install_patch(
     if manager_features.enabled {
         backup_manager_files(&workbench_dir)?;
         write_manager_patches(&workbench_dir, &manager_features)?;
+        
+        // Clear stale checksums to prevent Antigravity's corruption warning
+        let product_json_path = antigravity_path
+            .join("resources")
+            .join("app")
+            .join("product.json");
+        clean_checksums(&product_json_path)?;
     } else {
         restore_manager_files(&workbench_dir)?;
     }
@@ -369,7 +409,11 @@ fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<
         "copyButton": features.copy_button,
         "tableColor": features.table_color,
         "fontSizeEnabled": features.font_size_enabled,
-        "fontSize": features.font_size
+        "fontSize": features.font_size,
+        "copyButtonSmartHover": features.copy_button_smart_hover,
+        "copyButtonBottomPosition": features.copy_button_bottom_position,
+        "copyButtonStyle": features.copy_button_style,
+        "copyButtonCustomText": features.copy_button_custom_text
     });
     
     fs::write(config_path, serde_json::to_string_pretty(&config_content).unwrap())
@@ -387,7 +431,11 @@ fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureCon
         "maxWidthEnabled": features.max_width_enabled,
         "maxWidthRatio": features.max_width_ratio,
         "fontSizeEnabled": features.font_size_enabled,
-        "fontSize": features.font_size
+        "fontSize": features.font_size,
+        "copyButtonSmartHover": features.copy_button_smart_hover,
+        "copyButtonBottomPosition": features.copy_button_bottom_position,
+        "copyButtonStyle": features.copy_button_style,
+        "copyButtonCustomText": features.copy_button_custom_text
     });
     
     fs::write(config_path, serde_json::to_string_pretty(&config_content).unwrap())
@@ -436,5 +484,42 @@ fn restore_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
 fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
     restore_cascade_files(extensions_dir)?;
     restore_manager_files(workbench_dir)?;
+    Ok(())
+}
+
+/// Remove the listed checksums from `product.json`
+/// This prevents Antigravity from flagging patched files as corrupt
+fn clean_checksums(product_json_path: &PathBuf) -> Result<(), String> {
+    if !product_json_path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(product_json_path)
+        .map_err(|e| format!("读取 product.json 失败: {}", e))?;
+    
+    let mut json: Value = serde_json::from_str(&content)
+        .map_err(|e| format!("解析 product.json 失败: {}", e))?;
+
+    if let Some(checksums) = json.get_mut("checksums") {
+        if let Some(checksums_obj) = checksums.as_object_mut() {
+            let mut removed_count = 0;
+            
+            for key in CHECKSUMS_TO_REMOVE {
+                if checksums_obj.remove(*key).is_some() {
+                    removed_count += 1;
+                }
+            }
+            
+            // Leave product.json untouched when no checksums were removed
+            if removed_count > 0 {
+                let new_content = serde_json::to_string_pretty(&json)
+                    .map_err(|e| format!("序列化 product.json 失败: {}", e))?;
+                
+                fs::write(product_json_path, new_content)
+                    .map_err(|e| format!("写入 product.json 失败: {}", e))?;
+            }
+        }
+    }
+
     Ok(())
 }

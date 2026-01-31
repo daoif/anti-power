@@ -53,6 +53,10 @@ const loadTableFix = () => {
 
 (async () => {
     const config = await loadConfig();
+
+    // Publish the configuration for modules that read it directly
+    window.__CASCADE_CONFIG__ = config;
+
     applyFontSize(config);
 
     if (config.tableColor) {
@@ -62,3 +66,4 @@ const loadTableFix = () => {
     const { start } = await import('./scan.js');
     start(config);
 })();
+

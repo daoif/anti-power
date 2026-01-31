@@ -159,10 +159,6 @@ const scan = (root) => {
     if (config.mermaid) {
         scanMermaid(root);
     }
-
-    if (config.copyButton) {
-        addFeedbackCopyButtons();
-    }
 };
 
 /** @returns {HTMLElement} */
@@ -240,6 +236,16 @@ const init = () => {
     });
 
     observer.observe(root, { childList: true, subtree: true, characterData: true });
+
+    // Poll for new feedback rows when the bottom copy button is moved there
+    if (config.copyButton && config.copyButtonBottomPosition === 'feedback') {
+        const scanFeedback = () => {
+            addFeedbackCopyButtons();
+        };
+        scanFeedback();
+        setInterval(scanFeedback, 2000);
+    }
+
     console.log('[Manager Panel] 扫描模块已启动');
 };
 

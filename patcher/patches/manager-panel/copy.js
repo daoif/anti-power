@@ -6,6 +6,7 @@
 import {
     BOUND_ATTR,
     BUTTON_CLASS,
+    BOTTOM_BUTTON_CLASS,
     COPY_BTN_CLASS,
     MERMAID_SOURCE_PROP,
     RAW_TEXT_PROP,
@@ -532,6 +533,49 @@ const extractFormattedText = (el) => {
         .trim();
 };
 
+/**
+ * Read the configuration published by the patch entry point
+ * @returns {Object}
+ */
+const getConfig = () => {
+    return window.__MANAGER_CONFIG__ || {};
+};
+
+/**
+ * Show each copy button only while the pointer is near its corner
+ * @param {HTMLElement} contentEl - Message content container
+ * @param {HTMLElement} topBtn - Top-right copy button
+ * @param {HTMLElement} bottomBtn - Optional bottom-right button
+ */
+const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
+    contentEl.addEventListener('mousemove', (e) => {
+        const rect = contentEl.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (x > rect.width - 120 && y < 60) {
+            topBtn.classList.add('manager-copy-button-visible');
+        } else {
+            topBtn.classList.remove('manager-copy-button-visible');
+        }
+
+        if (bottomBtn) {
+            if (x > rect.width - 120 && y > rect.height - 60) {
+                bottomBtn.classList.add('manager-copy-button-visible');
+            } else {
+                bottomBtn.classList.remove('manager-copy-button-visible');
+            }
+        }
+    });
+
+    contentEl.addEventListener('mouseleave', () => {
+        topBtn.classList.remove('manager-copy-button-visible');
+        if (bottomBtn) {
+            bottomBtn.classList.remove('manager-copy-button-visible');
+        }
+    });
+};
+
 /** @param {HTMLElement} contentEl */
 export const ensureContentCopyButton = (contentEl) => {
     if (!contentEl || contentEl.getAttribute(BOUND_ATTR) === '1') return;
@@ -551,8 +595,12 @@ export const ensureContentCopyButton = (contentEl) => {
         contentEl.style.position = 'relative';
     }
 
+    const config = getConfig();
+    const smartHover = config.copyButtonSmartHover || false;
+    const bottomPosition = config.copyButtonBottomPosition || 'float';
+
     // Top-right hover button
-    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`);
+    const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`, 'top');
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -562,22 +610,24 @@ export const ensureContentCopyButton = (contentEl) => {
     });
     contentEl.appendChild(btn);
 
-    // Reveal the copy button only while the pointer is near the top-right corner
-    contentEl.addEventListener('mousemove', (e) => {
-        const rect = contentEl.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // Bottom-right hover button
+    let bottomBtn = null;
+    if (bottomPosition === 'float') {
+        bottomBtn = createCopyButton(`${COPY_BTN_CLASS} ${BOTTOM_BUTTON_CLASS}`, 'bottom');
+        bottomBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const text = extractFormattedText(contentEl);
+            const success = await copyToClipboard(text);
+            if (success) showCopySuccess(bottomBtn);
+        });
+        contentEl.appendChild(bottomBtn);
+    }
 
-        if (x > rect.width - 120 && y < 60) {
-            btn.classList.add('manager-copy-button-visible');
-        } else {
-            btn.classList.remove('manager-copy-button-visible');
-        }
-    });
-
-    contentEl.addEventListener('mouseleave', () => {
-        btn.classList.remove('manager-copy-button-visible');
-    });
+    if (smartHover) {
+        contentEl.classList.add('smart-hover');
+        bindSmartHover(contentEl, btn, bottomBtn);
+    }
 };
 
 /** Insert copy buttons beside the Good/Bad feedback controls */

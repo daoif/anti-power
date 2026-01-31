@@ -9,7 +9,7 @@ import ManagerFeatureCard from "./components/ManagerFeatureCard.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.3.2";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 // Files shown in the install confirmation
@@ -42,6 +42,10 @@ const features = ref({
   tableColor: true,
   fontSizeEnabled: true,
   fontSize: 20,
+  copyButtonSmartHover: false,
+  copyButtonBottomPosition: 'float' as 'float' | 'feedback',
+  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonCustomText: '',
 });
 
 // Manager has independent settings and starts enabled
@@ -54,6 +58,10 @@ const managerFeatures = ref({
   maxWidthRatio: 75,
   fontSizeEnabled: false,
   fontSize: 16,
+  copyButtonSmartHover: false,
+  copyButtonBottomPosition: 'float' as 'float' | 'feedback',
+  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonCustomText: '',
 });
 
 async function detectPath() {
