@@ -27,7 +27,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: anti-power-windows.exe
             artifact_path: patcher/src-tauri/target/release/anti-power.exe
-          - platform: macos-13
+          - platform: macos-15
             target: x86_64-apple-darwin
             artifact_name: anti-power-macos-x64.dmg
             artifact_path: patcher/src-tauri/target/release/bundle/dmg/*.dmg
@@ -50,8 +50,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: patcher/package-lock.json
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
