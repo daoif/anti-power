@@ -25,18 +25,22 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: anti-power-windows.exe
+            bundle: nsis
+            artifact_name: anti-power-windows
             artifact_path: patcher/src-tauri/target/x86_64-pc-windows-msvc/release/anti-power.exe
           - platform: macos-15
             target: x86_64-apple-darwin
-            artifact_name: anti-power-macos-x64.dmg
+            bundle: dmg
+            artifact_name: anti-power-macos-x64
             artifact_path: patcher/src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           - platform: macos-latest
             target: aarch64-apple-darwin
-            artifact_name: anti-power-macos-arm64.dmg
+            bundle: dmg
+            artifact_name: anti-power-macos-arm64
             artifact_path: patcher/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            bundle: appimage
             artifact_name: anti-power-linux
             artifact_path: patcher/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
 
@@ -71,7 +75,7 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
-        run: npm run tauri:build -- --target ${{ matrix.target }}
+        run: npm run tauri:build -- --target ${{ matrix.target }} --bundles ${{ matrix.bundle }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -118,11 +122,11 @@ jobs:
         run: |
           mkdir -p release-files
           # Windows
-          cp artifacts/anti-power-windows.exe/anti-power.exe release-files/anti-power-windows.exe
+          cp artifacts/anti-power-windows/anti-power.exe release-files/anti-power-windows.exe
           # macOS x64
-          cp artifacts/anti-power-macos-x64.dmg/*.dmg release-files/anti-power-macos-x64.dmg
+          cp artifacts/anti-power-macos-x64/*.dmg release-files/anti-power-macos-x64.dmg
           # macOS ARM64
-          cp artifacts/anti-power-macos-arm64.dmg/*.dmg release-files/anti-power-macos-arm64.dmg
+          cp artifacts/anti-power-macos-arm64/*.dmg release-files/anti-power-macos-arm64.dmg
           # Linux AppImage
           cp artifacts/anti-power-linux/*.AppImage release-files/anti-power-linux.AppImage
           # Patches
