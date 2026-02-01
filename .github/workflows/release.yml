@@ -1,0 +1,157 @@
+# Build installers and publish them with the patch ZIP
+# Run on v* tags or manual dispatch
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '发布的版本号 (如 v2.3.3)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: anti-power-windows.exe
+            artifact_path: patcher/src-tauri/target/release/anti-power.exe
+          - platform: macos-13
+            target: x86_64-apple-darwin
+            artifact_name: anti-power-macos-x64.dmg
+            artifact_path: patcher/src-tauri/target/release/bundle/dmg/*.dmg
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: anti-power-macos-arm64.dmg
+            artifact_path: patcher/src-tauri/target/release/bundle/dmg/*.dmg
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            artifact_name: anti-power-linux
+            artifact_path: patcher/src-tauri/target/release/bundle/appimage/*.AppImage
+
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: patcher/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        working-directory: patcher
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: patcher
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: npm run tauri:build -- --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+
+  # Package patches independently of installer builds
+  package-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create patches zip
+        run: |
+          cd patcher/patches
+          zip -r ../../anti-power-patches.zip .
+
+      - name: Upload patches artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: anti-power-patches.zip
+          path: anti-power-patches.zip
+
+  # Publish the installers and patch ZIP together
+  release:
+    needs: [build, package-patches]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          # Windows
+          cp artifacts/anti-power-windows.exe/anti-power.exe release-files/anti-power-windows.exe
+          # macOS x64
+          cp artifacts/anti-power-macos-x64.dmg/*.dmg release-files/anti-power-macos-x64.dmg
+          # macOS ARM64
+          cp artifacts/anti-power-macos-arm64.dmg/*.dmg release-files/anti-power-macos-arm64.dmg
+          # Linux AppImage
+          cp artifacts/anti-power-linux/*.AppImage release-files/anti-power-linux.AppImage
+          # Patches
+          cp artifacts/anti-power-patches.zip/anti-power-patches.zip release-files/
+
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+          files: |
+            release-files/anti-power-windows.exe
+            release-files/anti-power-macos-x64.dmg
+            release-files/anti-power-macos-arm64.dmg
+            release-files/anti-power-linux.AppImage
+            release-files/anti-power-patches.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

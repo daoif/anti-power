@@ -14,7 +14,66 @@
 
 ---
 
-## 编译
+## 发布流程 (GitHub Actions 自动化)
+
+### 1. 更新版本号
+
+按上表同步所有文件中的版本号。
+
+### 2. 编写发布说明
+
+在 `release-notes.md` 中填写本次发布说明。
+
+```markdown
+## 新功能
+- 功能描述
+
+## 修复
+- 修复描述
+
+## 致谢
+- 感谢 @mikessslxxx
+
+## 安装
+- **Windows**: 下载 `anti-power-windows.exe`
+- **macOS (Intel)**: 下载 `anti-power-macos-x64.dmg`
+- **macOS (Apple Silicon)**: 下载 `anti-power-macos-arm64.dmg`
+- **Linux**: 下载 `anti-power-linux.AppImage` 或 `.deb`
+- **手动安装**: 下载 `anti-power-patches.zip`
+```
+
+### 3. 提交并打 Tag
+
+```powershell
+# 提交代码
+git add -A
+git commit -m "release: vX.Y.Z"
+
+# 创建标签并推送
+git tag vX.Y.Z
+git push origin master
+git push origin vX.Y.Z
+```
+
+### 4. 等待 CI 自动构建
+
+推送 tag 后，GitHub Actions 会自动:
+1. 在 Windows、macOS、Linux 三平台并行编译
+2. 生成补丁压缩包
+3. 创建 GitHub Release 并上传所有产物
+
+在仓库的 **Actions** 页面查看构建进度。
+
+### 5. 完善 Release 说明 (可选)
+
+CI 创建的 Release 使用 `release-notes.md` 的内容。
+如需修改，可在 GitHub Release 页面直接编辑。
+
+---
+
+## 手动构建 (本地调试用)
+
+如需在本地编译，仍可使用以下命令:
 
 ```powershell
 cd patcher
@@ -35,69 +94,12 @@ npm run tauri:build
 
 ---
 
-## 生成补丁压缩包
-
-发布时附上用于手动安装的补丁压缩包，支持 macOS。
+## 手动生成补丁压缩包
 
 ```powershell
 # 以项目根目录执行
 Compress-Archive -Path patcher\patches\* -DestinationPath anti-power-patches.zip -Force
 ```
-
-压缩包应包含:
-- `cascade-panel.html`
-- `cascade-panel/`
-- `workbench-jetski-agent.html`
-- `manager-panel/`
-- `manual-install.md`
-
-> 💡 `-Force` 参数会自动覆盖已存在的文件, 无需手动删除旧的压缩包.
-
----
-
-## 发布流程
-
-```powershell
-# 1. 提交代码
-git add -A
-git commit -m "release: vX.Y.Z"
-
-# 2. 创建标签并推送
-git tag vX.Y.Z
-git push origin master
-git push origin vX.Y.Z
-
-# 3. 使用 gh 发布
-gh release create vX.Y.Z `
-  "patcher/src-tauri/target/release/anti-power.exe" `
-  "anti-power-patches.zip" `
-  --title "vX.Y.Z" `
-  --notes-file release-notes.md
-
-# 4. 清理临时文件 (可选, 这些文件已在 .gitignore 中)
-Remove-Item release-notes.md
-Remove-Item anti-power-patches.zip
-```
-
-> ⚠️ 关于 release-notes.md
->
-> 发布说明较长或包含特殊字符时, 手动创建 `release-notes.md` 文件 (使用编辑器), 避免在命令行中拼接内容导致解析问题.
->
-> 模板:
-> ```markdown
-> ## 新功能
-> - 功能描述
-> 
-> ## 修复
-> - 修复描述
-> 
-> ## 致谢
-> - 感谢 @mikessslxxx
-> 
-> ## 安装
-> - Windows: 下载 `anti-power.exe` 安装
-> - macOS: 下载 `anti-power-patches.zip` 手动安装
-> ```
 
 ---
 
@@ -106,3 +108,35 @@ Remove-Item anti-power-patches.zip
 - **Major**: 不兼容的重大变更
 - **Minor**: 新增功能
 - **Patch**: Bug 修复
+
+---
+
+## 故障排除
+
+### CI 构建失败
+
+1. 查看 Actions 页面的错误日志
+2. 常见问题:
+   - 依赖安装失败：检查 `package.json` 和 `Cargo.toml`
+   - 签名问题：macOS 构建可能需要配置签名证书（当前跳过签名）
+
+### 手动发布
+
+如 CI 不可用，参考旧版流程手动发布:
+
+```powershell
+# 1. 本地编译
+cd patcher
+npm run tauri:build
+
+# 2. 生成补丁包
+cd ..
+Compress-Archive -Path patcher\patches\* -DestinationPath anti-power-patches.zip -Force
+
+# 3. 使用 gh 发布
+gh release create vX.Y.Z `
+  "patcher/src-tauri/target/release/anti-power.exe" `
+  "anti-power-patches.zip" `
+  --title "vX.Y.Z" `
+  --notes-file release-notes.md
+```

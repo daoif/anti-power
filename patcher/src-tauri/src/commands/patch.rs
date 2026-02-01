@@ -725,7 +725,10 @@ fn handle_privileged_or_error(
 
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
-        Err(permission_denied_message(dir))
+        Err(format!(
+            "权限不足：无法写入目录 {}。请以管理员身份运行或将应用安装到可写位置。",
+            dir.display()
+        ))
     }
 }
 
