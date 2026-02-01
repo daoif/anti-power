@@ -23,14 +23,13 @@ Antigravity 的 Markdown 解析器会把 `|` 当作表格分隔符, 导致公式
 
 ---
 
-## Manager 字号调节暂未生效
+## ~~Manager 字号调节暂未生效~~ (已修复)
 
-**问题描述**: Manager 窗口的字体大小开关与数值目前不会影响实际渲染.
+> ✅ **此问题已在 v2.1.0 中修复**。启用字体大小开关后会生效。
 
-**影响范围**:
-- Manager 窗口设置中的 "字体大小"
-
-**备注**: 该功能保留为占位, 后续会在 Manager 渲染链路稳定后补齐.
+如仍未生效, 可检查:
+- `manager-panel/config.json` 中 `fontSizeEnabled` 是否为 `true`
+- Antigravity 更新后 Manager DOM 结构是否变化 (可能导致样式选择器失效)
 
 ---
 

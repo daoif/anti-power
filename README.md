@@ -53,26 +53,55 @@
 查看[效果截图](docs/reference/screenshots.md)。
 
 ---
-
 ## 📥 下载安装
+<details>
+<summary> 展开查看( Windows, Mac, Linux ) </summary>
 
 ### Windows（推荐）
 
-1. 前往 Releases 页面下载 `anti-power.exe`
+1. 前往 Releases 页面下载 `anti-power-windows.exe`
 2. 双击运行, 无需安装
 3. 安装器自动检测 Antigravity 安装路径
 4. 选择需要的功能, 点击 "安装补丁"
 5. 重启 Antigravity 或重新打开 Manager 窗口以加载补丁
 
-如需手动安装, 下载 Release 中的补丁压缩包 (例如 `anti-power-patches.zip`), 并参考 [manual-install.md](patcher/patches/manual-install.md).
+如需手动安装, 下载 Release 中的补丁压缩包 ( `anti-power-patches.zip`), 并参考 [manual-install.md](patcher/patches/manual-install.md).
 
-### macOS & Linux
+### macOS（推荐）
 
-运行 [anti-power.sh](patcher/patches/anti-power.sh) 安装补丁.
+1. 下载 `anti-power-macos-x64.dmg` (Intel) 或 `anti-power-macos-arm64.dmg` (Apple Silicon)
+2. 打开 DMG, 将 `anti-power.app` 拖到 Applications (应用程序) 文件夹
+3. 运行 `anti-power.app`, 按提示安装补丁
 
-> ⚠️ 受权限限制, 建议在 macOS 自带的 **Terminal (终端)** 中运行脚本.
+#### macOS 提示 "已损坏" 的临时方案
+
+首次打开时若提示 "已损坏" 或 "无法打开", 可尝试以下临时方案.
 
 ```bash
+# 清除隔离属性 (请按实际安装路径调整)
+xattr -cr /Applications/anti-power.app
+```
+
+也可以右键点击应用，选择 "打开"。
+
+### Linux（推荐）
+
+1. 下载 `anti-power-linux.AppImage`
+2. 赋予执行权限并运行, 按提示安装补丁
+
+```bash
+chmod +x ./anti-power-linux.AppImage
+./anti-power-linux.AppImage
+```
+
+### macOS & Linux（脚本方式, 备用）
+
+安装器无法使用或需要命令行安装、批量安装时，从 Release 下载并解压 `anti-power-patches.zip`，再运行 `anti-power.sh`。
+
+> ⚠️ 请在终端中以管理员权限运行脚本.
+
+```bash
+# 在补丁包解压目录执行
 chmod +x ./anti-power.sh
 sudo ./anti-power.sh
 ```
@@ -80,6 +109,7 @@ sudo ./anti-power.sh
 如需手动安装，请参考 [manual-install.md](patcher/patches/manual-install.md).
 
 ---
+</details>
 
 ## 注意事项
 
@@ -92,12 +122,11 @@ sudo ./anti-power.sh
 
 ## 文档导航
 
-- 项目结构与分类说明: [project-structure.md](docs/reference/project-structure.md)
+- [文档索引与项目结构](docs/README.md)
 - 效果截图: [screenshots.md](docs/reference/screenshots.md)
 - 已知问题: [known-issues.md](docs/reference/known-issues.md)
 - 开发者文档: [developer-guide.md](docs/guides/developer-guide.md) | [English](docs/guides/developer-guide_EN.md)
 - 发布指南: [release-guide.md](docs/guides/release-guide.md)
-- 文档索引: [README.md](docs/README.md)
 
 ---
 
@@ -124,12 +153,14 @@ sudo ./anti-power.sh
 
 ## 🙏 致谢
 
-- [@mikessslxxx](https://github.com/mikessslxxx) - 数学公式渲染、Manager 功能增强
-- [@syanle](https://github.com/syanle) - Linux 支持
-- [@Sophomoresty](https://github.com/Sophomoresty) - 复制功能优化、开发者文档
+- [@mikessslxxx](https://github.com/mikessslxxx) 
+- [@syanle](https://github.com/syanle) 
+- [@Sophomoresty](https://github.com/Sophomoresty)
 
 ---
 
 ## ⚖️ 开源协议
 
 MIT License
+
+

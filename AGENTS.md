@@ -8,7 +8,7 @@ English | [中文](AGENTS-zh.md)
 
 - Anti-Power is an enhancement patch for Antigravity AI IDE.
 - Main enhancements for sidebar dialog area (cascade-panel) and Manager window: Mermaid rendering, math formula rendering, one-click copy, table color fix, font size control, etc.
-- Currently focuses on Windows support; macOS only has manual installation process (see `README.md` / `patcher/patches/manual-install.md`).
+- Supports Windows/macOS/Linux; on macOS/Linux you can use installer builds or `patcher/patches/anti-power.sh` (see `README.md` / `patcher/patches/manual-install.md`).
 
 ## Patch Deployment Flow (Core Chain)
 

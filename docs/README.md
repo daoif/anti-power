@@ -8,7 +8,6 @@
 
 ## Reference / 参考
 
-- `reference/project-structure.md`: File categorization and structure description / 文件分类与结构说明
 - `reference/known-issues.md`: Known issues and limitations / 已知问题与限制
 - `reference/screenshots.md`: Effect screenshots and examples / 效果截图与示例
 

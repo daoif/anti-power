@@ -58,7 +58,7 @@ View the [screenshots](docs/reference/screenshots.md).
 
 ### Windows (Recommended)
 
-1. Go to the Releases page and download `anti-power.exe`.
+1. Go to the Releases page and download `anti-power-windows.exe`.
 2. Double-click to run without installing.
 3. The patcher detects the Antigravity installation directory.
 4. Select the desired features and click "Install Patch".
@@ -66,13 +66,36 @@ View the [screenshots](docs/reference/screenshots.md).
 
 For manual installation, download the patch zip file from Releases (e.g., `anti-power-patches.zip`) and refer to [manual-install.md](patcher/patches/manual-install.md).
 
-### macOS & Linux
+### macOS (Recommended)
 
-Run [anti-power.sh](patcher/patches/anti-power.sh) to install the patch.
+1. Download `anti-power-macos-x64.dmg` (Intel) or `anti-power-macos-arm64.dmg` (Apple Silicon)
+2. Open the DMG and drag `anti-power.app` to Applications
+3. Run it and install the patch as prompted
 
-> ⚠️ On macOS, use the built-in **Terminal** if possible to avoid permission issues.
+#### Temporary fix for macOS "is damaged"
+
+If macOS shows "is damaged" or "can't be opened" on first launch, try the following workaround.
 
 ```bash
+# Remove the quarantine attribute (adjust the path if needed)
+xattr -cr /Applications/anti-power.app
+```
+
+You can also right-click the app and choose "Open".
+
+### Linux (Recommended)
+
+1. Download `anti-power-linux.AppImage`
+2. Make it executable and run it, then install the patch as prompted
+
+### macOS & Linux (Script, Optional)
+
+If the installer app isn't usable, or you prefer CLI / batch installs, download `anti-power-patches.zip` from Releases, unzip it, and run `anti-power.sh` inside.
+
+> ⚠️ Run the script in a terminal with administrator privileges.
+
+```bash
+# Run inside the extracted patches folder
 chmod +x ./anti-power.sh
 sudo ./anti-power.sh
 ```
@@ -92,12 +115,11 @@ For manual installation, please refer to [manual-install.md](patcher/patches/man
 
 ## Documentation
 
-- Project Structure & Classification: [project-structure.md](docs/reference/project-structure.md)
+- [Documentation index and project structure](docs/README.md)
 - Screenshots: [screenshots.md](docs/reference/screenshots.md)
 - Known Issues: [known-issues.md](docs/reference/known-issues.md)
 - Developer Guide: [developer-guide_EN.md](docs/guides/developer-guide_EN.md) | [中文](docs/guides/developer-guide.md)
 - Release Guide: [release-guide.md](docs/guides/release-guide.md)
-- Index: [README.md](docs/README.md)
 
 ---
 

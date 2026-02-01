@@ -8,7 +8,7 @@
 
 - Anti-Power 是 Antigravity AI IDE 的增强补丁.
 - 主要增强侧边栏对话区域 (cascade-panel) 和 Manager 窗口: Mermaid 渲染, 数学公式渲染, 一键复制, 表格颜色修复, 字体大小控制等.
-- 当前重点支持 Windows, macOS 仅手动安装流程 (见 `README.md` / `patcher/patches/manual-install.md`).
+- 现已支持 Windows/macOS/Linux; 在 macOS/Linux 上可使用安装器产物或 `patcher/patches/anti-power.sh`, 也可走手动安装流程 (见 `README.md` / `patcher/patches/manual-install.md`).
 
 ## 补丁落地流程 (核心链路)
 

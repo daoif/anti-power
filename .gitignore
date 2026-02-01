@@ -20,6 +20,5 @@ patcher/src-tauri/gen/
 
 # 构建产物
 anti-power-patches.zip
-release-notes.md
 
 .DS_Store
