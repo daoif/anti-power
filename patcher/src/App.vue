@@ -75,9 +75,10 @@ async function detectPath() {
   isDetecting.value = true;
   try {
     const path = await invoke<string | null>("detect_antigravity_path");
-    antigravityPath.value = path;
-    if (path) {
-      await checkPatchStatus(path);
+    const normalized = path ? await normalizePath(path) : null;
+    antigravityPath.value = normalized ?? path;
+    if (normalized) {
+      await checkPatchStatus(normalized);
     }
   } catch (e) {
     console.error("检测失败:", e);
@@ -131,7 +132,11 @@ async function browsePath() {
       title: "选择 Antigravity 安装目录",
     });
     if (selected) {
-      antigravityPath.value = selected as string;
+      const normalized = await normalizePath(selected as string);
+      antigravityPath.value = normalized ?? (selected as string);
+      if (normalized) {
+        await checkPatchStatus(normalized);
+      }
     }
   } catch (e) {
     console.error("选择目录失败:", e);
@@ -158,7 +163,7 @@ async function confirmInstall() {
     showToast('✓ 补丁安装成功');
   } catch (e) {
     console.error("安装失败:", e);
-    showToast('✗ 安装失败');
+    showToast(`✗ 安装失败: ${getErrorMessage(e)}`);
   }
 }
 
@@ -171,7 +176,7 @@ async function uninstallPatch() {
     showToast('✓ 已恢复原版');
   } catch (e) {
     console.error("卸载失败:", e);
-    showToast('✗ 恢复失败');
+    showToast(`✗ 恢复失败: ${getErrorMessage(e)}`);
   }
 }
 
@@ -187,6 +192,27 @@ function showToast(message: string) {
   }, 3000);
 }
 
+function getErrorMessage(error: unknown): string {
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message?: unknown }).message ?? '未知错误');
+  }
+  return '未知错误';
+}
+
+// 规范化 Antigravity 路径 (兼容 macOS/Linux 目录结构)
+async function normalizePath(path: string): Promise<string | null> {
+  try {
+    const normalized = await invoke<string | null>("normalize_antigravity_path", { path });
+    return normalized;
+  } catch (e) {
+    console.error("路径规范化失败:", e);
+    return null;
+  }
+}
+
 // 仅更新配置
 async function updateConfigOnly() {
   if (!antigravityPath.value) return;
@@ -199,7 +225,7 @@ async function updateConfigOnly() {
     showToast('✓ 配置已更新');
   } catch (e) {
     console.error("更新配置失败:", e);
-    showToast('✗ 更新失败');
+    showToast(`✗ 更新失败: ${getErrorMessage(e)}`);
   }
 }
 
