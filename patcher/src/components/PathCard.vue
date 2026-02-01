@@ -71,17 +71,50 @@ const props = defineProps<{
 
 defineEmits(['detect', 'browse', 'update:modelValue']);
 
+function normalizeBasePath(path: string): string {
+  const sep = path.includes('/') ? '/' : '\\';
+  const lower = path.toLowerCase();
+  const resourcesAppSuffix = `${sep}resources${sep}app`;
+  const resourcesSuffix = `${sep}resources`;
+
+  if (lower.endsWith(resourcesAppSuffix)) {
+    return path.slice(0, -resourcesAppSuffix.length);
+  }
+
+  if (lower.endsWith(resourcesSuffix)) {
+    return path.slice(0, -resourcesSuffix.length);
+  }
+
+  if (lower.endsWith('.app')) {
+    return `${path}${sep}Contents`;
+  }
+
+  return path;
+}
+
+function getResourcesDir(basePath: string): string {
+  const sep = basePath.includes('/') ? '/' : '\\';
+  const lower = basePath.toLowerCase();
+  if (lower.includes('.app') || lower.includes(`${sep}contents`)) {
+    return 'Resources';
+  }
+  return 'resources';
+}
+
 const targetPath = computed(() => {
   if (!props.modelValue) return '';
-  // Use the separator from the selected path
-  const sep = props.modelValue.includes('/') ? '/' : '\\';
-  return `${props.modelValue}${sep}resources${sep}app${sep}extensions${sep}antigravity`;
+  const basePath = normalizeBasePath(props.modelValue);
+  const sep = basePath.includes('/') ? '/' : '\\';
+  const resourcesDir = getResourcesDir(basePath);
+  return `${basePath}${sep}${resourcesDir}${sep}app${sep}extensions${sep}antigravity`;
 });
 
 const managerTargetPath = computed(() => {
   if (!props.modelValue) return '';
-  const sep = props.modelValue.includes('/') ? '/' : '\\';
-  return `${props.modelValue}${sep}resources${sep}app${sep}out${sep}vs${sep}code${sep}electron-browser${sep}workbench`;
+  const basePath = normalizeBasePath(props.modelValue);
+  const sep = basePath.includes('/') ? '/' : '\\';
+  const resourcesDir = getResourcesDir(basePath);
+  return `${basePath}${sep}${resourcesDir}${sep}app${sep}out${sep}vs${sep}code${sep}electron-browser${sep}workbench`;
 });
 
 async function openTargetDir(path: string) {

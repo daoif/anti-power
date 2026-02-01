@@ -1,5 +1,5 @@
 <template>
-  <div class="titlebar" data-tauri-drag-region>
+  <div class="titlebar" :class="{ 'is-mac': isMac }" data-tauri-drag-region>
     <div class="titlebar-left" data-tauri-drag-region>
       <img class="titlebar-icon" src="../assets/logo.png" alt="logo" />
       <span class="titlebar-title">{{ title }}</span>
@@ -60,6 +60,7 @@ onMounted(async () => {
     unlistenResize = await appWindow.onResized(async () => {
       isMaximized.value = await appWindow.isMaximized();
     });
+
   } catch (error) {
     console.error('TitleBar init error:', error);
   }
@@ -91,6 +92,8 @@ const closeWindow = async () => {
   const win = await getWindow();
   if (win) await win.close();
 };
+
+const isMac = navigator.platform.toLowerCase().includes('mac');
 </script>
 
 <style scoped>
@@ -106,6 +109,7 @@ const closeWindow = async () => {
   flex-shrink: 0;
 }
 
+
 .titlebar-left {
   flex: 1;
   display: flex;
@@ -115,9 +119,14 @@ const closeWindow = async () => {
   min-width: 0;
 }
 
-.titlebar-left > * {
-  -webkit-app-region: no-drag;
+.titlebar.is-mac .titlebar-left {
+  width: 100%;
+  justify-content: center;
+  padding-left: 80px;
+  padding-right: 80px;
+  box-sizing: border-box;
 }
+
 
 .titlebar-icon {
   width: 20px;
@@ -147,9 +156,14 @@ const closeWindow = async () => {
   -webkit-app-region: no-drag;
 }
 
+
 .titlebar-window-controls {
   display: flex;
   height: 100%;
+}
+
+.titlebar.is-mac .titlebar-window-controls {
+  display: none;
 }
 
 .titlebar-btn {

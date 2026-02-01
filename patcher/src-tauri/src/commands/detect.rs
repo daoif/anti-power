@@ -1,8 +1,9 @@
 // Antigravity installation discovery
 // Windows: query the registry and scan common paths
-// macOS: return `None` when standard paths fail
+// macOS/Linux: return `None` when standard paths fail
 
 use std::path::PathBuf;
+use super::paths;
 
 // Keep platform code here to avoid submodule path issues
 
@@ -20,23 +21,27 @@ pub fn detect_antigravity_path() -> Option<String> {
         detect_macos()
     }
 
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    #[cfg(target_os = "linux")]
+    {
+        detect_linux()
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     {
         None
     }
 }
 
-/// Check whether the path is a valid Antigravity installation root
-fn is_valid_antigravity_path(path: &PathBuf) -> bool {
-    // Use the sidebar entry point to identify the installation root
-    let cascade_panel_path = path
-        .join("resources")
-        .join("app")
-        .join("extensions")
-        .join("antigravity")
-        .join("cascade-panel.html");
-    
-    cascade_panel_path.exists()
+/// Normalize the Antigravity installation path
+#[tauri::command]
+pub fn normalize_antigravity_path(path: String) -> Option<String> {
+    let input = PathBuf::from(path);
+    normalize_path(&input)
+}
+
+fn normalize_path(path: &PathBuf) -> Option<String> {
+    paths::normalize_antigravity_root(path)
+        .and_then(|normalized| normalized.to_str().map(|s| s.to_string()))
 }
 
 // Windows detection
@@ -68,9 +73,8 @@ fn try_registry() -> Option<String> {
     for reg_path in paths {
         if let Ok(key) = hklm.open_subkey(reg_path) {
             if let Ok(install_location) = key.get_value::<String, _>("InstallLocation") {
-                let path = PathBuf::from(&install_location);
-                if is_valid_antigravity_path(&path) {
-                    return Some(install_location);
+                if let Some(normalized) = normalize_path(&PathBuf::from(&install_location)) {
+                    return Some(normalized);
                 }
             }
         }
@@ -80,9 +84,8 @@ fn try_registry() -> Option<String> {
     for reg_path in paths {
         if let Ok(key) = hkcu.open_subkey(reg_path) {
             if let Ok(install_location) = key.get_value::<String, _>("InstallLocation") {
-                let path = PathBuf::from(&install_location);
-                if is_valid_antigravity_path(&path) {
-                    return Some(install_location);
+                if let Some(normalized) = normalize_path(&PathBuf::from(&install_location)) {
+                    return Some(normalized);
                 }
             }
         }
@@ -100,16 +103,15 @@ fn try_common_paths_windows() -> Option<String> {
     ];
 
     for path_str in literal_paths {
-        let path = PathBuf::from(path_str);
-        if is_valid_antigravity_path(&path) {
-            return Some(path_str.to_string());
+        if let Some(normalized) = normalize_path(&PathBuf::from(path_str)) {
+            return Some(normalized);
         }
     }
 
     if let Some(local_data) = dirs::data_local_dir() {
         let user_path = local_data.join("Programs").join("Antigravity");
-        if is_valid_antigravity_path(&user_path) {
-            return user_path.to_str().map(String::from);
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
         }
     }
 
@@ -121,19 +123,60 @@ fn try_common_paths_windows() -> Option<String> {
 fn detect_macos() -> Option<String> {
     let standard_paths = [
         "/Applications/Antigravity.app",
+        "/Applications/Antigravity.app/Contents",
     ];
 
     for path_str in standard_paths {
-        let path = PathBuf::from(path_str);
-        if is_valid_antigravity_path(&path) {
-            return Some(path_str.to_string());
+        if let Some(normalized) = normalize_path(&PathBuf::from(path_str)) {
+            return Some(normalized);
         }
     }
 
     if let Some(home) = dirs::home_dir() {
         let user_app = home.join("Applications").join("Antigravity.app");
-        if is_valid_antigravity_path(&user_app) {
-            return user_app.to_str().map(String::from);
+        if let Some(normalized) = normalize_path(&user_app) {
+            return Some(normalized);
+        }
+
+        let user_app_contents = home.join("Applications").join("Antigravity.app").join("Contents");
+        if let Some(normalized) = normalize_path(&user_app_contents) {
+            return Some(normalized);
+        }
+    }
+
+    None
+}
+
+// Linux detection
+#[cfg(target_os = "linux")]
+fn detect_linux() -> Option<String> {
+    let standard_paths = [
+        "/usr/share/antigravity",
+        "/usr/share/Antigravity",
+        "/usr/local/share/antigravity",
+        "/opt/antigravity",
+        "/opt/Antigravity",
+        "/usr/lib/antigravity",
+        "/usr/lib64/antigravity",
+    ];
+
+    for path_str in standard_paths {
+        if let Some(normalized) = normalize_path(&PathBuf::from(path_str)) {
+            return Some(normalized);
+        }
+    }
+
+    if let Some(data_dir) = dirs::data_dir() {
+        let user_path = data_dir.join("antigravity");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
+        }
+    }
+
+    if let Some(local_data) = dirs::data_local_dir() {
+        let user_path = local_data.join("antigravity");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
         }
     }
 

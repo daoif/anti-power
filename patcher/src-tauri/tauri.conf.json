@@ -15,7 +15,7 @@
         "title": "Anti-Power Patcher",
         "width": 780,
         "height": 680,
-        "decorations": false
+        "decorations": true
       }
     ],
     "security": {
