@@ -12,7 +12,6 @@ tests/playwright-report/
 # Patcher 前端
 patcher/node_modules/
 patcher/dist/
-patcher/package-lock.json
 
 # Patcher Tauri (Rust)
 patcher/src-tauri/target/
