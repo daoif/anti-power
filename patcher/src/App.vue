@@ -9,7 +9,7 @@ import ManagerFeatureCard from "./components/ManagerFeatureCard.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
-const APP_VERSION = "2.3.3";
+const APP_VERSION = "2.3.4";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 // Files shown in the install confirmation

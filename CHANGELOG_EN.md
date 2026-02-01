@@ -4,6 +4,23 @@
 
 ---
 
+## v2.3.4 (2026-02-01)
+
+> Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx) for PR #18
+
+### New Features
+- macOS / Linux cross-platform support
+- Cross-platform path normalization and detection
+- Unix privileged installation flow (sudo/pkexec)
+- GitHub Actions automated build and release
+
+### Improvements
+- Added Linux support to path detection
+- Frontend adapts to macOS Resources path
+- Adjusted window decorations to fit the macOS system title bar
+
+---
+
 ## v2.3.3 (2026-01-31)
 
 ### Fixes
