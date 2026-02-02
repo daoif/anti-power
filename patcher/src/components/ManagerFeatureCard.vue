@@ -55,8 +55,8 @@
           </label>
           
           <label class="sub-option">
-            <input type="checkbox" v-model="copyBottomToFeedback" class="checkbox" :disabled="!model.enabled">
-            <span class="sub-option-text">将底部按钮移动到反馈区</span>
+            <input type="checkbox" v-model="showBottomButton" class="checkbox" :disabled="!model.enabled">
+            <span class="sub-option-text">显示底部按钮</span>
           </label>
           
           <div class="sub-option-group">
@@ -145,7 +145,7 @@ export interface ManagerFeatureFlags {
   fontSizeEnabled: boolean;
   fontSize: number;
   copyButtonSmartHover: boolean;
-  copyButtonBottomPosition: 'float' | 'feedback';
+  copyButtonShowBottom: 'float' | 'feedback';
   copyButtonStyle: 'arrow' | 'icon' | 'chinese' | 'custom';
   copyButtonCustomText: string;
 }
@@ -154,10 +154,10 @@ const model = defineModel<ManagerFeatureFlags>({ required: true });
 
 const copyOptionsExpanded = ref(false);
 
-const copyBottomToFeedback = computed({
-  get: () => model.value.copyButtonBottomPosition === 'feedback',
+const showBottomButton = computed({
+  get: () => model.value.copyButtonShowBottom === 'float',
   set: (val: boolean) => {
-    model.value.copyButtonBottomPosition = val ? 'feedback' : 'float';
+    model.value.copyButtonShowBottom = val ? 'float' : 'feedback';
   }
 });
 </script>

@@ -7,7 +7,7 @@
 如果你下载的是对应平台的安装器/应用, 建议优先使用它:
 
 - Windows: `anti-power-windows.exe`
-- macOS: `anti-power-macos-*.dmg` -> `anti-power.app`
+- macOS: `anti-power-macos-universal.dmg` -> `anti-power.app`
 - Linux: `anti-power-linux.AppImage`
 
 本文件主要用于 "补丁包 (anti-power-patches.zip)" 场景:

@@ -75,7 +75,7 @@ Anti-Power 以补丁方式增强 Antigravity 的侧边栏和 Manager 窗口, 提
 
 ### macOS（推荐）
 
-1. 下载 `anti-power-macos-x64.dmg` (Intel) 或 `anti-power-macos-arm64.dmg` (Apple Silicon)
+1. 下载 `anti-power-macos-universal.dmg` (Intel / Apple Silicon)
 2. 打开 DMG, 将 `anti-power.app` 拖拽到 Applications (把应用复制到系统应用程序目录)
 3. 运行 `anti-power.app`, 按提示安装补丁
 
@@ -179,5 +179,3 @@ MIT License
 <p align="center">
   💡 如果这个项目对你有帮助, 欢迎 Star ⭐
 </p>
-
-

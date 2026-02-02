@@ -46,8 +46,6 @@ pub struct FeatureConfig {
     pub enabled: bool,
     pub mermaid: bool,
     pub math: bool,
-    #[serde(rename = "mathRenderMode")]
-    pub math_render_mode: String,
     #[serde(rename = "copyButton")]
     pub copy_button: bool,
     #[serde(rename = "tableColor")]
@@ -59,7 +57,7 @@ pub struct FeatureConfig {
     // 复制按钮子选项
     #[serde(rename = "copyButtonSmartHover")]
     pub copy_button_smart_hover: bool,
-    #[serde(rename = "copyButtonBottomPosition")]
+    #[serde(rename = "copyButtonShowBottom")]
     pub copy_button_bottom_position: String,
     #[serde(rename = "copyButtonStyle")]
     pub copy_button_style: String,
@@ -73,7 +71,6 @@ impl Default for FeatureConfig {
             enabled: true,
             mermaid: true,
             math: true,
-            math_render_mode: "classic".to_string(),
             copy_button: true,
             table_color: true,
             font_size_enabled: true,
@@ -107,7 +104,7 @@ pub struct ManagerFeatureConfig {
     // 复制按钮子选项
     #[serde(rename = "copyButtonSmartHover")]
     pub copy_button_smart_hover: bool,
-    #[serde(rename = "copyButtonBottomPosition")]
+    #[serde(rename = "copyButtonShowBottom")]
     pub copy_button_bottom_position: String,
     #[serde(rename = "copyButtonStyle")]
     pub copy_button_style: String,
@@ -547,13 +544,12 @@ fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
         "math": features.math,
-        "mathRenderMode": features.math_render_mode,
         "copyButton": features.copy_button,
         "tableColor": features.table_color,
         "fontSizeEnabled": features.font_size_enabled,
         "fontSize": features.font_size,
         "copyButtonSmartHover": features.copy_button_smart_hover,
-        "copyButtonBottomPosition": features.copy_button_bottom_position,
+        "copyButtonShowBottom": features.copy_button_bottom_position,
         "copyButtonStyle": features.copy_button_style,
         "copyButtonCustomText": features.copy_button_custom_text
     });
@@ -575,7 +571,7 @@ fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureCon
         "fontSizeEnabled": features.font_size_enabled,
         "fontSize": features.font_size,
         "copyButtonSmartHover": features.copy_button_smart_hover,
-        "copyButtonBottomPosition": features.copy_button_bottom_position,
+        "copyButtonShowBottom": features.copy_button_bottom_position,
         "copyButtonStyle": features.copy_button_style,
         "copyButtonCustomText": features.copy_button_custom_text
     });

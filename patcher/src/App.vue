@@ -35,20 +35,22 @@ const isDetecting = ref(false);
 const isInstalled = ref(false);
 const showAbout = ref(false);
 const showConfirm = ref(false);
+const platform = navigator.platform.toLowerCase();
+const isCleanSupported = platform.includes('mac') || platform.includes('linux');
+const isCleaning = ref(false);
 
 // 侧边栏功能开关
 const features = ref({
   enabled: true,
   mermaid: true,
   math: true,
-  mathRenderMode: 'classic' as 'classic' | 'deferred',
   copyButton: true,
   tableColor: true,
   fontSizeEnabled: true,
   fontSize: 20,
   // 复制按钮子选项
   copyButtonSmartHover: false,
-  copyButtonBottomPosition: 'float' as 'float' | 'feedback',
+  copyButtonShowBottom: 'float' as 'float' | 'feedback',
   copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
   copyButtonCustomText: '',
 });
@@ -65,7 +67,7 @@ const managerFeatures = ref({
   fontSize: 16,
   // 复制按钮子选项
   copyButtonSmartHover: false,
-  copyButtonBottomPosition: 'float' as 'float' | 'feedback',
+  copyButtonShowBottom: 'float' as 'float' | 'feedback',
   copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
   copyButtonCustomText: '',
 });
@@ -180,6 +182,30 @@ async function uninstallPatch() {
   }
 }
 
+// 清理对话缓存（仅 macOS）
+async function runAntiClean(force = false) {
+  if (!isCleanSupported || isCleaning.value) return;
+  const message = force
+    ? '将强制清理（忽略运行中检测），可能影响正在运行的 Antigravity。确定继续？'
+    : '将清理对话标题记录与缓存，建议先关闭 Antigravity。确定继续？';
+  if (!window.confirm(message)) {
+    return;
+  }
+  isCleaning.value = true;
+  try {
+    const output = await invoke<string>("run_anti_clean", { force });
+    if (output) {
+      console.log("[anti-clean]", output);
+    }
+    showToast('✓ 清理完成');
+  } catch (e) {
+    console.error("清理失败:", e);
+    showToast(`✗ 清理失败: ${getErrorMessage(e)}`);
+  } finally {
+    isCleaning.value = false;
+  }
+}
+
 // Toast 提示
 const toastMessage = ref('');
 const showToastFlag = ref(false);
@@ -277,6 +303,31 @@ onMounted(() => {
         </button>
       </section>
 
+      <section v-if="isCleanSupported" class="clean-area">
+        <div class="clean-header">
+          <h3 class="clean-title">清理工具（仅 macOS / Linux）</h3>
+          <p class="clean-desc">用于清理对话标题记录与缓存。</p>
+        </div>
+        <div class="clean-actions">
+          <button 
+            @click="runAntiClean(false)"
+            :disabled="isCleaning"
+            class="secondary-btn"
+            title="清理对话标题记录与缓存（仅 macOS / Linux）"
+          >
+            {{ isCleaning ? '清理中...' : '清理对话缓存' }}
+          </button>
+          <button 
+            @click="runAntiClean(true)"
+            :disabled="isCleaning"
+            class="secondary-btn danger"
+            title="强制清理（忽略运行中检测）"
+          >
+            强制清理
+          </button>
+        </div>
+      </section>
+
       <footer class="footer">
         <p>v{{ APP_VERSION }} · 
           <a :href="GITHUB_URL" target="_blank" class="link">GitHub</a>
@@ -331,6 +382,35 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 16px;
+}
+
+.clean-area {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--ag-border);
+  border-radius: 10px;
+  background: var(--ag-surface);
+}
+
+.clean-header {
+  margin-bottom: 12px;
+}
+
+.clean-title {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.clean-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ag-text-secondary);
+}
+
+.clean-actions {
+  display: flex;
+  gap: 12px;
 }
 
 .primary-btn {

@@ -74,7 +74,7 @@ For manual installation, download the patch zip file from Releases (e.g., `anti-
 
 ### macOS (Recommended)
 
-1. Download `anti-power-macos-x64.dmg` (Intel) or `anti-power-macos-arm64.dmg` (Apple Silicon)
+1. Download `anti-power-macos-universal.dmg` (Intel / Apple Silicon)
 2. Open the DMG and drag `anti-power.app` to Applications
 3. Run it and install the patch as prompted
 

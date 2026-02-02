@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-power Icon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
+            border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        canvas:hover {
+            transform: scale(1.02);
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-btn.active {
+            box-shadow: 0 0 0 2px #1a1a1a, 0 0 0 4px white;
+            border-color: white;
+        }
+
+        /* Custom Select Style */
+        select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-8">
+
+    <div class="flex flex-col md:flex-row gap-12 items-center">
+
+        <!-- Icon Canvas -->
+        <div class="relative group">
+            <canvas id="iconCanvas" width="512" height="512" class="cursor-pointer"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <div class="w-full max-w-sm space-y-8">
+            <h1
+                class="text-2xl font-bold text-center tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-200 to-gray-500">
+                Anti-Power
+            </h1>
+
+            <div class="control-panel p-6 rounded-2xl space-y-6">
+
+                <!-- Color Themes -->
+                <div class="grid grid-cols-4 gap-3">
+                    <button onclick="setTheme('spectrum')" id="btn-spectrum"
+                        class="theme-btn active h-10 rounded-lg bg-gradient-to-r from-[#8EC5FC] via-[#91EAE4] to-[#E0C3FC] border border-transparent hover:scale-105 transition">
+                    </button>
+                    <button onclick="setTheme('cool')" id="btn-cool"
+                        class="theme-btn h-10 rounded-lg bg-gradient-to-r from-[#4facfe] to-[#00f2fe] border border-transparent hover:scale-105 transition">
+                    </button>
+                    <button onclick="setTheme('warm')" id="btn-warm"
+                        class="theme-btn h-10 rounded-lg bg-gradient-to-r from-[#fad0c4] to-[#ff9a9e] border border-transparent hover:scale-105 transition">
+                    </button>
+                    <button onclick="setTheme('metal')" id="btn-metal"
+                        class="theme-btn h-10 rounded-lg bg-gradient-to-r from-gray-200 to-gray-500 border border-transparent hover:scale-105 transition">
+                    </button>
+                </div>
+
+                <!-- Sliders -->
+                <div class="space-y-5">
+                    <div>
+                        <div
+                            class="flex justify-between text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">
+                            <span>Shape</span>
+                            <span id="shapeLabel" class="text-gray-300">Unified</span>
+                        </div>
+                        <input type="range" id="morphSlider" min="0" max="100" value="0"
+                            class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-white">
+                    </div>
+
+                    <div>
+                        <div
+                            class="flex justify-between text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">
+                            <span>Glow</span>
+                        </div>
+                        <input type="range" id="glowSlider" min="0" max="50" value="0"
+                            class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-white">
+                    </div>
+                </div>
+
+                <!-- Download & Resolution -->
+                <div class="flex gap-3 pt-2 border-t border-gray-700/50">
+                    <div class="relative flex-1">
+                        <select id="resSelect"
+                            class="w-full h-10 pl-3 pr-8 bg-gray-800 border border-gray-700 rounded-xl text-xs text-gray-300 appearance-none focus:outline-none focus:border-gray-500 transition cursor-pointer font-mono">
+                            <option value="256">256 px</option>
+                            <option value="512">512 px</option>
+                            <option value="1024" selected>1024 px (Default)</option>
+                            <option value="2048">2048 px</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadIcon()"
+                        class="h-10 w-12 flex items-center justify-center bg-gray-800 hover:bg-gray-600 border border-gray-700 rounded-xl text-gray-200 transition group"
+                        title="下载图片">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('iconCanvas');
+        const ctx = canvas.getContext('2d');
+        const morphSlider = document.getElementById('morphSlider');
+        const glowSlider = document.getElementById('glowSlider');
+        const shapeLabel = document.getElementById('shapeLabel');
+        const resSelect = document.getElementById('resSelect');
+
+        // Constants
+        const PHI = (1 + Math.sqrt(5)) / 2;
+        const MAX_GLOW = 50;
+
+        // Configuration
+        let config = {
+            morph: 0,
+            glow: MAX_GLOW * (1 - 1 / PHI), // Golden Ratio: (1 - 0.618) * Max
+            bg: '#202124',
+            theme: 'spectrum'
+        };
+
+        // Initialize UI from Config
+        glowSlider.max = MAX_GLOW;
+        glowSlider.value = config.glow;
+
+        // Theme Definitions
+        const themes = {
+            spectrum: {
+                stops: [
+                    { pos: 0, color: '#8EC5FC' },
+                    { pos: 0.382, color: '#91EAE4' }, // 1 - 0.618
+                    { pos: 0.618, color: '#E0C3FC' }, // Golden Section
+                    { pos: 1, color: '#FF9A9E' }
+                ],
+                glowColor: 'rgba(145, 234, 228, 0.5)'
+            },
+            cool: {
+                stops: [
+                    { pos: 0, color: '#005bea' },
+                    { pos: 0.382, color: '#00c6fb' },
+                    { pos: 0.618, color: '#a2ef44' }, // Slightly adjusted green
+                    { pos: 1, color: '#d4fc79' }
+                ],
+                glowColor: 'rgba(0, 198, 251, 0.5)'
+            },
+            warm: {
+                stops: [
+                    { pos: 0, color: '#ff0844' },
+                    { pos: 0.382, color: '#ff8177' }, // Smoother transition red-orange
+                    { pos: 0.618, color: '#ffb199' },
+                    { pos: 1, color: '#ffecb3' }
+                ],
+                glowColor: 'rgba(255, 177, 153, 0.5)'
+            },
+            metal: {
+                stops: [
+                    { pos: 0, color: '#e5e7eb' },
+                    { pos: 0.382, color: '#d1d5db' },
+                    { pos: 0.618, color: '#9ca3af' },
+                    { pos: 1, color: '#6b7280' }
+                ],
+                glowColor: 'rgba(229, 231, 235, 0.4)'
+            }
+        };
+
+        function setTheme(themeName) {
+            config.theme = themeName;
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.remove('ring-2');
+            });
+            document.getElementById(`btn-${themeName}`).classList.add('active');
+            update();
+        }
+
+        // Drawing Logic
+        function drawBackground(targetCtx) {
+            const radius = 90;
+            targetCtx.fillStyle = config.bg;
+
+            targetCtx.beginPath();
+            targetCtx.roundRect(0, 0, 512, 512, radius);
+            targetCtx.fill();
+
+            targetCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+            targetCtx.lineWidth = 1;
+            targetCtx.stroke();
+        }
+
+        function getGradient(targetCtx, x, y, h) {
+            const currentTheme = themes[config.theme];
+            // Extended gradient range for better coverage
+            const grad = targetCtx.createLinearGradient(x, y + h, x, y - h * 0.4);
+            currentTheme.stops.forEach(stop => {
+                grad.addColorStop(stop.pos, stop.color);
+            });
+            return grad;
+        }
+
+        function drawShape(targetCtx, morphValue) {
+            // Logic coordinate system is 512x512
+            const w = 512;
+            const h = 512;
+            const t = morphValue / 100;
+            const currentTheme = themes[config.theme];
+
+            const startX = 140 * (1 - t) + 120 * t;
+            const startY = 400 * (1 - t) + 400 * t;
+            const cp1x = 180 * (1 - t) + 120 * t;
+            const cp1y = 200 * (1 - t) + 200 * t;
+            const cp2x = 220 * (1 - t) + 200 * t;
+            const cp2y = 100 * (1 - t) + 80 * t;
+            const topX = 256 * (1 - t) + 280 * t;
+            const topY = 100 * (1 - t) + 120 * t;
+            const cp3x = 292 * (1 - t) + 360 * t;
+            const cp3y = 100 * (1 - t) + 150 * t;
+            const cp4x = 332 * (1 - t) + 360 * t;
+            const cp4y = 200 * (1 - t) + 250 * t;
+            const endX = 372 * (1 - t) + 280 * t;
+            const endY = 400 * (1 - t) + 300 * t;
+            const innerCp1x = 300 * (1 - t) + 250 * t;
+            const innerCp1y = 300 * (1 - t) + 250 * t;
+            const innerCp2x = 212 * (1 - t) + 250 * t;
+            const innerCp2y = 300 * (1 - t) + 250 * t;
+
+            const traceMainShape = () => {
+                targetCtx.beginPath();
+                targetCtx.moveTo(startX, startY);
+                targetCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, topX, topY);
+                targetCtx.bezierCurveTo(cp3x, cp3y, cp4x, cp4y, endX, endY);
+                targetCtx.bezierCurveTo(innerCp1x, innerCp1y, innerCp2x, innerCp2y, startX, startY);
+            };
+
+            const drawDot = (renderShadow) => {
+                if (t <= 0.1) return;
+
+                targetCtx.save();
+                // Position: Exact 3/4 width
+                const dotX = w * 0.75;
+                const dotY = 360;
+
+                // Size: Harmonic scaling (Width / Φ⁵ & Width / Φ⁶)
+                const radiusY = (w / Math.pow(PHI, 5)) * t;
+                const radiusX = (w / Math.pow(PHI, 6)) * t;
+
+                targetCtx.translate(dotX, dotY);
+
+                // Dynamic Rotation
+                const startAngle = -10 * (Math.PI / 180);
+                const endAngle = -Math.PI / 5;
+                const currentAngle = startAngle + (endAngle - startAngle) * t;
+
+                targetCtx.rotate(currentAngle);
+
+                targetCtx.beginPath();
+                targetCtx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+
+                const dotGrad = targetCtx.createLinearGradient(0, radiusY, 0, -radiusY);
+                const stops = currentTheme.stops;
+                stops.forEach(stop => {
+                    dotGrad.addColorStop(stop.pos, stop.color);
+                });
+
+                if (renderShadow) {
+                    targetCtx.shadowBlur = config.glow * 2;
+                    targetCtx.shadowColor = currentTheme.glowColor;
+                    targetCtx.fillStyle = dotGrad;
+                    targetCtx.fill();
+                } else {
+                    targetCtx.fillStyle = dotGrad;
+                    targetCtx.fill();
+                }
+                targetCtx.restore();
+            };
+
+            // Pass 1: Light (Shadows)
+            targetCtx.save();
+
+            traceMainShape();
+            targetCtx.shadowBlur = config.glow * 2;
+            targetCtx.shadowColor = currentTheme.glowColor;
+            targetCtx.fillStyle = currentTheme.stops[0].color;
+            targetCtx.fill();
+
+            drawDot(true);
+
+            targetCtx.restore();
+
+            // Pass 2: Body
+
+            traceMainShape();
+            targetCtx.fillStyle = getGradient(targetCtx, w / 2, h / 2, 200);
+            targetCtx.fill();
+
+            drawDot(false);
+        }
+
+        function drawNoise(targetCtx) {
+            targetCtx.save();
+            targetCtx.globalCompositeOperation = 'overlay';
+            targetCtx.globalAlpha = 0.04;
+            // Noise density based on 512x512
+            for (let i = 0; i < 512; i += 3) {
+                for (let j = 0; j < 512; j += 3) {
+                    if (Math.random() > 0.5) {
+                        targetCtx.fillStyle = '#fff';
+                        targetCtx.fillRect(i, j, 1.5, 1.5);
+                    }
+                }
+            }
+            targetCtx.restore();
+        }
+
+        function update() {
+            config.morph = parseFloat(morphSlider.value);
+            config.glow = parseFloat(glowSlider.value);
+
+            if (config.morph < 50) {
+                shapeLabel.innerText = "Unified";
+            } else {
+                shapeLabel.innerText = "Split";
+            }
+
+            // Clear and draw on main canvas (no scaling needed for preview)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground(ctx);
+            drawShape(ctx, config.morph);
+        }
+
+        // Interaction & Export
+        morphSlider.addEventListener('input', update);
+        glowSlider.addEventListener('input', update);
+        canvas.addEventListener('click', () => {
+            const target = config.morph > 50 ? 0 : 100;
+            animateSlider(target);
+        });
+
+        function animateSlider(targetValue) {
+            const startValue = parseFloat(morphSlider.value);
+            const duration = 500;
+            const startTime = performance.now();
+
+            function step(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+
+                morphSlider.value = startValue + (targetValue - startValue) * ease;
+                update();
+
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function downloadIcon() {
+            const targetSize = parseInt(resSelect.value);
+
+            // Create offscreen canvas
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = targetSize;
+            tempCanvas.height = targetSize;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Scale context to match target size
+            const scaleFactor = targetSize / 512;
+            tempCtx.scale(scaleFactor, scaleFactor);
+
+            // Draw content
+            drawBackground(tempCtx);
+            drawShape(tempCtx, config.morph);
+
+            // Export
+            const link = document.createElement('a');
+            link.download = `Anti-Power-Icon-${targetSize}px.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        update();
+
+    </script>
+</body>
+
+</html>

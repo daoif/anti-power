@@ -35,7 +35,6 @@
 ## 安装 / Installation
 
 - **Windows**: 下载 `anti-power-windows.exe` 运行
-- **macOS (Intel)**: 下载 `anti-power-macos-x64.dmg` 安装
-- **macOS (Apple Silicon)**: 下载 `anti-power-macos-arm64.dmg` 安装
+- **macOS (Universal)**: 下载 `anti-power-macos-universal.dmg` 安装
 - **Linux**: 下载 `anti-power-linux.AppImage` 运行
 - **手动安装**: 下载 `anti-power-patches.zip` 手动安装
