@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v2.3.4-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v2.4.0-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/支持_Antigravity-v1.15.8-green.svg" alt="Antigravity">
@@ -139,7 +139,7 @@ sudo ./anti-power.sh
 
 ## 📋 版本信息
 
-当前版本: **v2.3.4** | 支持 Antigravity: **v1.15.8**
+当前版本: **v2.4.0** | 支持 Antigravity: **v1.15.8**
 
 完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
 

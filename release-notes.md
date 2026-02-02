@@ -1,34 +1,28 @@
 ## 新功能
 
-> 社区贡献: 感谢 [@mikessslxxx](https://github.com/mikessslxxx) 的 PR #18
+- macOS 通用构建 (Universal Build) 支持
+- 新增 `icon-gen` 图标生成工具脚本
+- 新增 `npm run clean` 清理命令
+- 依赖库升级
 
-- macOS / Linux 跨平台支持
-- 跨平台路径规范化与检测
-- Unix 系统提权安装流程 (sudo/pkexec)
-- GitHub Actions 自动化构建与发布
+## 文档
 
-## 优化
-
-- 路径检测增强，支持 Linux 探测
-- 前端适配 macOS Resources 路径
-- 窗口装饰策略调整，适配 macOS 系统标题栏
+- 同步跨平台安装说明
+- 修正文档遗留问题
 
 ---
 
 ## New Features
 
-> Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx) for PR #18
+- macOS Universal Build support
+- Added `icon-gen` icon generation script
+- Added `npm run clean` command
+- Dependency updates
 
-- macOS / Linux cross-platform support
-- Cross-platform path normalization and detection
-- Unix privileged installation flow (sudo/pkexec)
-- GitHub Actions automated build and release
+## Documentation
 
-## Improvements
-
-- Enhanced path detection with Linux support
-- Frontend adapts to macOS Resources path
-- Window decoration strategy adjusted for macOS system title bar
+- Synced cross-platform installation instructions
+- Fixed legacy documentation issues
 
 ---
 

@@ -6,6 +6,20 @@
 
 ---
 
+## v2.4.0 (2026-02-02)
+
+### 新功能
+- macOS 通用构建 (Universal Build) 支持
+- 新增 `icon-gen` 图标生成工具脚本
+- 新增 `npm run clean` 清理命令
+- 依赖库升级
+
+### 文档
+- 同步跨平台安装说明
+- 修正文档遗留问题
+
+---
+
 ## v2.3.4 (2026-02-01)
 
 > 社区贡献: 感谢 [@mikessslxxx](https://github.com/mikessslxxx) 的 PR #18

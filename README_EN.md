@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/Version-v2.3.4-blue.svg" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v2.4.0-blue.svg" alt="Version">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/Supports_Antigravity-v1.15.8-green.svg" alt="Antigravity">
@@ -132,7 +132,7 @@ For manual installation, please refer to [manual-install.md](patcher/patches/man
 
 ## 📋 Version Info
 
-Current Version: **v2.3.4** | Supports Antigravity: **v1.15.8**
+Current Version: **v2.4.0** | Supports Antigravity: **v1.15.8**
 
 For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 

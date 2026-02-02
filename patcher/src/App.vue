@@ -10,7 +10,7 @@ import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
 // 常量
-const APP_VERSION = "2.3.4";
+const APP_VERSION = "2.4.0";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 // 补丁文件清单

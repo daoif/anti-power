@@ -6,6 +6,20 @@ This document records the update content of each Anti-Power version.
 
 ---
 
+## v2.4.0 (2026-02-02)
+
+### New Features
+- macOS Universal Build support
+- Added `icon-gen` icon generation script
+- Added `npm run clean` command
+- Dependency updates
+
+### Documentation
+- Synced cross-platform installation instructions
+- Fixed legacy documentation issues
+
+---
+
 ## v2.3.4 (2026-02-01)
 
 > Community contribution: Thanks to [@mikessslxxx](https://github.com/mikessslxxx) for PR #18
