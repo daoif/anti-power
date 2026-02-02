@@ -4,7 +4,7 @@
 mod commands;
 mod embedded;
 
-use commands::{detect_antigravity_path, normalize_antigravity_path, install_patch, uninstall_patch, update_config, check_patch_status, read_patch_config, read_manager_patch_config, get_config, save_config};
+use commands::{detect_antigravity_path, normalize_antigravity_path, install_patch, uninstall_patch, update_config, check_patch_status, read_patch_config, read_manager_patch_config, get_config, save_config, run_anti_clean};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -37,7 +37,8 @@ pub fn run() {
             read_patch_config,
             read_manager_patch_config,
             get_config,
-            save_config
+            save_config,
+            run_anti_clean
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

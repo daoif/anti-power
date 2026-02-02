@@ -597,7 +597,7 @@ export const ensureContentCopyButton = (contentEl) => {
 
     const config = getConfig();
     const smartHover = config.copyButtonSmartHover || false;
-    const bottomPosition = config.copyButtonBottomPosition || 'float';
+    const bottomPosition = config.copyButtonShowBottom || 'float';
 
     // Top-right hover button
     const btn = createCopyButton(`${COPY_BTN_CLASS} ${BUTTON_CLASS}`, 'top');
@@ -638,26 +638,29 @@ export const addFeedbackCopyButtons = () => {
         const parent = goodBtn.parentElement;
         if (!parent || parent.querySelector('.manager-feedback-copy')) return;
 
-        let contentEl = null;
+        let contentEls = null;
         let node = parent;
         for (let i = 0; i < 20 && node; i++) {
             const candidates = node.querySelectorAll && node.querySelectorAll(CONTENT_SELECTOR);
             if (candidates && candidates.length > 0) {
                 // Prefer candidates with a non-null offsetParent, then fall back to all matches
                 const visible = Array.from(candidates).filter((el) => el.offsetParent !== null);
-                contentEl = visible[visible.length - 1] || candidates[candidates.length - 1];
+                contentEls = visible.length > 0 ? visible : Array.from(candidates);
                 break;
             }
             node = node.parentElement;
         }
-        if (!contentEl) return;
+        if (!contentEls || contentEls.length === 0) return;
 
-        const btn = createCopyButton(`${COPY_BTN_CLASS} manager-feedback-copy`);
+        const btn = createCopyButton(`${COPY_BTN_CLASS} manager-feedback-copy`, 'bottom');
         btn.style.marginRight = '0.5rem';
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const text = extractFormattedText(contentEl);
+            const text = contentEls
+                .map((el) => extractFormattedText(el))
+                .filter((part) => part && part.trim())
+                .join('\n\n');
             const success = await copyToClipboard(text);
             if (success) showCopySuccess(btn);
         });

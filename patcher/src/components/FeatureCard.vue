@@ -25,21 +25,6 @@
           </div>
           <input type="checkbox" v-model="model.math" class="checkbox" :disabled="!model.enabled">
         </label>
-        
-        <div v-if="model.math" class="sub-options math-mode-options">
-          <span class="sub-option-label">渲染模式（测试用）</span>
-          <div class="style-options">
-            <label class="style-option">
-              <input type="radio" v-model="model.mathRenderMode" value="classic" :disabled="!model.enabled">
-              <span>经典模式 (v2.0.1)</span>
-            </label>
-            <label class="style-option">
-              <input type="radio" v-model="model.mathRenderMode" value="deferred" :disabled="!model.enabled">
-              <span>延迟模式 (当前)</span>
-            </label>
-          </div>
-          <p class="mode-hint">经典模式立即渲染，延迟模式等待内容稳定后渲染</p>
-        </div>
       </div>
 
       <div class="feature-item-group" :class="{ 'item-disabled': !model.enabled }">
@@ -69,8 +54,8 @@
           </label>
           
           <label class="sub-option">
-            <input type="checkbox" v-model="copyBottomToFeedback" class="checkbox" :disabled="!model.enabled">
-            <span class="sub-option-text">将底部按钮移动到反馈区</span>
+            <input type="checkbox" v-model="showBottomButton" class="checkbox" :disabled="!model.enabled">
+            <span class="sub-option-text">显示底部按钮</span>
           </label>
           
           <div class="sub-option-group">
@@ -142,13 +127,12 @@ export interface FeatureFlags {
   enabled: boolean;
   mermaid: boolean;
   math: boolean;
-  mathRenderMode: 'classic' | 'deferred';
   copyButton: boolean;
   tableColor: boolean;
   fontSizeEnabled: boolean;
   fontSize: number;
   copyButtonSmartHover: boolean;
-  copyButtonBottomPosition: 'float' | 'feedback';
+  copyButtonShowBottom: 'float' | 'feedback';
   copyButtonStyle: 'arrow' | 'icon' | 'chinese' | 'custom';
   copyButtonCustomText: string;
 }
@@ -157,10 +141,10 @@ const model = defineModel<FeatureFlags>({ required: true });
 
 const copyOptionsExpanded = ref(false);
 
-const copyBottomToFeedback = computed({
-  get: () => model.value.copyButtonBottomPosition === 'feedback',
+const showBottomButton = computed({
+  get: () => model.value.copyButtonShowBottom === 'float',
   set: (val: boolean) => {
-    model.value.copyButtonBottomPosition = val ? 'feedback' : 'float';
+    model.value.copyButtonShowBottom = val ? 'float' : 'feedback';
   }
 });
 </script>
@@ -351,14 +335,4 @@ const copyBottomToFeedback = computed({
   border-color: var(--ag-accent);
 }
 
-.math-mode-options {
-  margin-top: 8px;
-}
-
-.mode-hint {
-  font-size: 11px;
-  color: var(--ag-text-secondary);
-  margin: 8px 0 0;
-  opacity: 0.8;
-}
 </style>

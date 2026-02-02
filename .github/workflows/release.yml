@@ -25,21 +25,19 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
+            rust_targets: x86_64-pc-windows-msvc
             bundle: nsis
             artifact_name: anti-power-windows
             artifact_path: patcher/src-tauri/target/x86_64-pc-windows-msvc/release/anti-power.exe
           - platform: macos-15
-            target: x86_64-apple-darwin
+            target: universal-apple-darwin
+            rust_targets: x86_64-apple-darwin, aarch64-apple-darwin
             bundle: dmg
-            artifact_name: anti-power-macos-x64
-            artifact_path: patcher/src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-            bundle: dmg
-            artifact_name: anti-power-macos-arm64
-            artifact_path: patcher/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            artifact_name: anti-power-macos-universal
+            artifact_path: patcher/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            rust_targets: x86_64-unknown-linux-gnu
             bundle: appimage
             artifact_name: anti-power-linux
             artifact_path: patcher/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
@@ -58,7 +56,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.rust_targets }}
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -123,10 +121,8 @@ jobs:
           mkdir -p release-files
           # Windows
           cp artifacts/anti-power-windows/anti-power.exe release-files/anti-power-windows.exe
-          # macOS x64
-          cp artifacts/anti-power-macos-x64/*.dmg release-files/anti-power-macos-x64.dmg
-          # macOS ARM64
-          cp artifacts/anti-power-macos-arm64/*.dmg release-files/anti-power-macos-arm64.dmg
+          # macOS Universal
+          cp artifacts/anti-power-macos-universal/*.dmg release-files/anti-power-macos-universal.dmg
           # Linux AppImage
           cp artifacts/anti-power-linux/*.AppImage release-files/anti-power-linux.AppImage
           # Patches
@@ -151,8 +147,7 @@ jobs:
           prerelease: false
           files: |
             release-files/anti-power-windows.exe
-            release-files/anti-power-macos-x64.dmg
-            release-files/anti-power-macos-arm64.dmg
+            release-files/anti-power-macos-universal.dmg
             release-files/anti-power-linux.AppImage
             release-files/anti-power-patches.zip
         env:
