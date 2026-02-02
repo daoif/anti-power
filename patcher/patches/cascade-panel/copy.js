@@ -226,7 +226,7 @@ export const ensureContentCopyButton = (contentEl) => {
 
     const config = getConfig();
     const smartHover = config.copyButtonSmartHover || false;
-    const bottomPosition = config.copyButtonBottomPosition || 'float';
+    const bottomPosition = config.copyButtonShowBottom || 'float';
 
     // Top-right hover button
     const topButton = createCopyButton({ className: BUTTON_CLASS, position: 'top' });
@@ -271,7 +271,7 @@ export const addFeedbackCopyButtons = () => {
             return;
         }
 
-        const copyBtn = createCopyButton({ className: 'custom-copy-btn', tag: 'div' });
+        const copyBtn = createCopyButton({ className: 'custom-copy-btn', tag: 'div', position: 'bottom' });
         bindCopyButton(copyBtn, {
             getText: () => {
                 let content = '';
@@ -283,8 +283,12 @@ export const addFeedbackCopyButtons = () => {
 
                     const proseElements = searchNode.querySelectorAll('.prose.prose-sm');
                     if (proseElements.length > 0) {
-                        const lastProse = proseElements[proseElements.length - 1];
-                        content = extractFormattedContent(lastProse);
+                        const parts = [];
+                        proseElements.forEach((prose) => {
+                            const text = extractFormattedContent(prose);
+                            if (text) parts.push(text);
+                        });
+                        content = parts.join('\n\n');
                         break;
                     }
                 }

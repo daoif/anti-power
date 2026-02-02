@@ -8,7 +8,7 @@
     "fontSizeEnabled": true,
     "fontSize": 16,
     "copyButtonSmartHover": false,
-    "copyButtonBottomPosition": "float",
+    "copyButtonShowBottom": "float",
     "copyButtonStyle": "arrow",
     "copyButtonCustomText": ""
 }

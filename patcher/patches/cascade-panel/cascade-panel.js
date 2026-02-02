@@ -5,7 +5,6 @@ import { loadStyle } from './utils.js';
 const DEFAULT_CONFIG = {
     mermaid: true,
     math: true,
-    mathRenderMode: 'classic', // 'classic' | 'deferred'
     copyButton: true,
     tableColor: true,
     fontSizeEnabled: true,

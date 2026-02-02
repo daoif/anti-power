@@ -69,7 +69,7 @@
 
 ### macOS（推荐）
 
-1. 下载 `anti-power-macos-x64.dmg` (Intel) 或 `anti-power-macos-arm64.dmg` (Apple Silicon)
+1. 下载 `anti-power-macos-universal.dmg` (Intel / Apple Silicon)
 2. 打开 DMG, 将 `anti-power.app` 拖到 Applications (应用程序) 文件夹
 3. 运行 `anti-power.app`, 按提示安装补丁
 
@@ -162,5 +162,3 @@ sudo ./anti-power.sh
 ## ⚖️ 开源协议
 
 MIT License
-
-
