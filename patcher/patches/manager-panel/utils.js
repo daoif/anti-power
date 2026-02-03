@@ -71,7 +71,6 @@ const getTrustedTypesPolicy = () => {
                 });
                 return cachedPolicy;
             } catch {
-                // Try the next policy name
             }
         }
     }
@@ -104,9 +103,11 @@ const createTrustedHTML = (html, policy) => {
 };
 
 /**
- * Apply the supplied Trusted Types policy during DOM operations
+ * Wrap innerHTML and insertAdjacentHTML with the policy during the callback, then restore the originals
+ *
  * @param {Function} fn - DOM operation to run with the policy
- * @param {Object} externalPolicy - Optional external Trusted Types policy
+ * @param {Object} [externalPolicy] - Optional external Trusted Types policy
+ * @returns {Promise<*>} Result of the callback
  */
 export const withTrustedHTML = async (fn, externalPolicy = null) => {
     const policy = externalPolicy || getTrustedTypesPolicy();
@@ -226,13 +227,11 @@ const suspendAmd = () => {
                 try {
                     window.define = amdSnapshot.defineFn;
                 } catch {
-                    // Ignore restore errors
                 }
             }
             try {
                 amdSnapshot.defineFn.amd = amdSnapshot.amd;
             } catch {
-                // Ignore restore errors
             }
             amdSnapshot = null;
         }
@@ -240,8 +239,10 @@ const suspendAmd = () => {
 };
 
 /**
+ * Reuse an existing link for the same URL to avoid duplicate requests
+ *
  * @param {string} href
- * @returns {Promise<void>}
+ * @returns {Promise<void>} Resolves when the resource is available
  */
 export const loadStyle = (href) => {
     return new Promise((resolve, reject) => {
@@ -259,8 +260,10 @@ export const loadStyle = (href) => {
 };
 
 /**
+ * Reuse existing scripts and support Trusted Types while the AMD loader is paused
+ *
  * @param {string} src
- * @returns {Promise<void>}
+ * @returns {Promise<void>} Resolves when the resource is available
  */
 export const loadScript = (src) => {
     return new Promise((resolve, reject) => {
@@ -294,7 +297,7 @@ const getConfig = () => {
 
 /**
  * @param {'top'|'bottom'} position - Top or bottom button position
- * @returns {string}
+ * @returns {string} Button label
  */
 const getButtonLabel = (position) => {
     const config = getConfig();
@@ -351,7 +354,8 @@ const createCheckIcon = () => {
 
 /**
  * @param {HTMLElement} btn
- * @param {boolean} copied
+ * @param {boolean} copied - Whether to show the copied state
+ * @returns {void}
  */
 export const setCopyState = (btn, copied) => {
     if (!btn) return;
@@ -364,7 +368,7 @@ export const setCopyState = (btn, copied) => {
 };
 
 /**
- * @param {string} className
+ * @param {string} className - CSS class for the copy control
  * @param {'top'|'bottom'} [position='top'] - Top or bottom button position
  * @returns {HTMLButtonElement}
  */
@@ -393,8 +397,10 @@ export const createCopyButton = (className, position = 'top') => {
 };
 
 /**
+ * Fall back to execCommand if the Clipboard API fails
+ *
  * @param {string} text
- * @returns {Promise<boolean>}
+ * @returns {Promise<boolean>} True if the clipboard write succeeds
  */
 export const copyToClipboard = async (text) => {
     try {
@@ -413,7 +419,12 @@ export const copyToClipboard = async (text) => {
     }
 };
 
-/** @param {HTMLElement} btn */
+/**
+ * Reset the success state after 1.5 seconds
+ *
+ * @param {HTMLElement} btn
+ * @returns {void}
+ */
 export const showCopySuccess = (btn) => {
     setCopyState(btn, true);
     setTimeout(() => {

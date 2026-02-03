@@ -1,5 +1,6 @@
-// Anti-Power Patcher Rust backend
-// Find installations, apply and remove patches, and manage configuration
+//! Anti-Power Patcher Rust backend
+//!
+//! Find installations, apply and remove patches, and manage configuration
 
 mod commands;
 mod embedded;

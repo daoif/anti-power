@@ -11,6 +11,11 @@ const DEFAULT_CONFIG = {
     fontSize: 20,
 };
 
+/**
+ * Read config.json and fall back to defaults if loading fails
+ *
+ * @returns {Promise<Object>}
+ */
 const loadConfig = async () => {
     try {
         const res = await fetch('./cascade-panel/config.json', { cache: 'no-store' });
@@ -27,6 +32,12 @@ const loadConfig = async () => {
     }
 };
 
+/**
+ * Set --cascade-panel-font-size for the legacy sidebar
+ *
+ * @param {Object} userConfig
+ * @returns {void}
+ */
 const applyFontSize = (userConfig) => {
     const root = document.documentElement;
     if (!root) return;
@@ -45,6 +56,7 @@ const applyFontSize = (userConfig) => {
     root.style.setProperty('--cascade-panel-font-size', `${size}px`);
 };
 
+/** @returns {void} */
 const loadTableFix = () => {
     void loadStyle('./cascade-panel/table-fix.css').catch((error) => {
         console.warn('[Cascade] 表格样式加载失败:', error);

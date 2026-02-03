@@ -1,5 +1,11 @@
+//! Antigravity installation paths
+//!
+//! Normalize and validate installation paths
+
 use std::path::{Path, PathBuf};
 
+/// Return the platform's resource directory name
+/// Use `Resources` on macOS and `resources` elsewhere
 fn resources_dir_name() -> &'static str {
     if cfg!(target_os = "macos") {
         "Resources"
@@ -8,6 +14,8 @@ fn resources_dir_name() -> &'static str {
     }
 }
 
+/// Locate the app root inside the resources directory
+/// Use the resource directory casing for the current platform
 pub fn resources_app_root(root: &Path) -> PathBuf {
     #[cfg(target_os = "macos")]
     {
@@ -25,6 +33,8 @@ pub fn resources_app_root(root: &Path) -> PathBuf {
     }
 }
 
+/// Check whether the path is a valid Antigravity installation root
+/// Use `cascade-panel.html` as the installation marker
 pub fn is_valid_antigravity_root(root: &Path) -> bool {
     resources_app_root(root)
         .join("extensions")
@@ -33,10 +43,13 @@ pub fn is_valid_antigravity_root(root: &Path) -> bool {
         .exists()
 }
 
+/// Normalize the Antigravity installation path
+/// Resolve user-supplied paths to the installation root
 pub fn normalize_antigravity_root(input: &Path) -> Option<PathBuf> {
     let mut seeds = Vec::new();
     seeds.push(input.to_path_buf());
 
+    // A macOS app bundle contains the install root under `Contents`
     if is_app_bundle(input) {
         seeds.push(input.join("Contents"));
     }
@@ -49,6 +62,7 @@ pub fn normalize_antigravity_root(input: &Path) -> Option<PathBuf> {
         seeds.push(base);
     }
 
+    // Accept paths nested inside an installation by checking ancestors
     for seed in seeds {
         for ancestor in seed.ancestors() {
             if is_valid_antigravity_root(ancestor) {
@@ -60,6 +74,7 @@ pub fn normalize_antigravity_root(input: &Path) -> Option<PathBuf> {
     None
 }
 
+/// Check whether the path names a macOS app bundle
 fn is_app_bundle(path: &Path) -> bool {
     path.file_name()
         .and_then(|name| name.to_str())
@@ -67,6 +82,7 @@ fn is_app_bundle(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+/// Strip trailing path components using a case-insensitive match
 fn strip_tail_components_ci(path: &Path, tail: &[&str]) -> Option<PathBuf> {
     if !ends_with_components_ci(path, tail) {
         return None;
@@ -75,6 +91,7 @@ fn strip_tail_components_ci(path: &Path, tail: &[&str]) -> Option<PathBuf> {
     strip_tail_components(path, tail.len())
 }
 
+/// Strip the specified number of trailing path components
 fn strip_tail_components(path: &Path, count: usize) -> Option<PathBuf> {
     let components: Vec<_> = path.components().collect();
     if components.len() < count {
@@ -89,6 +106,7 @@ fn strip_tail_components(path: &Path, count: usize) -> Option<PathBuf> {
     Some(base)
 }
 
+/// Match trailing path components case-insensitively
 fn ends_with_components_ci(path: &Path, tail: &[&str]) -> bool {
     let tail_lower: Vec<String> = tail.iter().map(|item| item.to_ascii_lowercase()).collect();
     let components: Vec<String> = path

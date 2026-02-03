@@ -15,7 +15,6 @@ patcher/dist/
 
 # Patcher Tauri (Rust)
 patcher/src-tauri/target/
-patcher/src-tauri/Cargo.lock
 patcher/src-tauri/gen/
 
 # 构建产物

@@ -1,5 +1,8 @@
-// Capture live StreamCascadeReactiveUpdates response bytes
-// Paste into the browser console, then switch or reload the conversation
+/**
+ * Capture live StreamCascadeReactiveUpdates response bytes
+ *
+ * Paste into the browser console, then switch or reload the conversation
+ */
 
 (function () {
     console.log('[Hook] 开始监听...');

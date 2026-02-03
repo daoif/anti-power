@@ -1,6 +1,8 @@
-// Antigravity installation discovery
-// Windows: query the registry and scan common paths
-// macOS/Linux: return `None` when standard paths fail
+//! Antigravity installation discovery
+//!
+//! Find the Antigravity installation automatically
+//! - Windows: query the registry and scan common paths
+//! - macOS/Linux: check standard paths and return `None` if none match
 
 use std::path::PathBuf;
 use super::paths;

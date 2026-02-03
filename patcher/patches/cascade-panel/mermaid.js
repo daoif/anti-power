@@ -69,8 +69,8 @@ export const ensureMermaid = () => {
 };
 
 /**
- * @param {Element} codeBlockContainer
- * @returns {string}
+ * @param {Element} codeBlockContainer - Container that owns the source block
+ * @returns {string} Mermaid source
  */
 const extractMermaidSource = (codeBlockContainer) => {
     const codeBlock = codeBlockContainer.querySelector('.code-block');
@@ -87,7 +87,8 @@ const extractMermaidSource = (codeBlockContainer) => {
 
 /**
  * Keep the original code block and insert the rendered diagram alongside it
- * @param {Element} codeBlockContainer
+ *
+ * @param {Element} codeBlockContainer - Container that owns the source block
  * @returns {Promise<void>}
  */
 export const renderMermaid = async (codeBlockContainer) => {

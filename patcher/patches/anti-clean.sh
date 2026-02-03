@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Run manually
-# 1. chmod +x ./antigravity.sh
-# 2. sudo ./antigravity.sh
+# 1. chmod +x ./anti-clean.sh
+# 2. sudo ./anti-clean.sh
 #
 # Default paths
 # - macOS: $HOME/Library/Application Support/Antigravity

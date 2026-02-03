@@ -22,9 +22,12 @@ let config = {
     copyButton: true,
 };
 
-// Classic scan (current)
-
-/** @param {HTMLElement} root */
+/**
+ * Render matching content nodes beneath the scan root
+ *
+ * @param {HTMLElement} root
+ * @returns {void}
+ */
 const scanClassic = (root) => {
     if (!root || !root.isConnected) return;
 
@@ -48,7 +51,7 @@ const scanClassic = (root) => {
     }
 };
 
-/** @returns {HTMLElement} */
+/** @returns {HTMLElement} Document body */
 const getRoot = () => document.body;
 
 let pendingNodes = new Set();
@@ -66,7 +69,9 @@ const flushScan = () => {
 };
 
 /**
- * @param {Node} target
+ * Use the nearest content container or section for a mutation target
+ *
+ * @param {Node} target - Mutation target
  * @returns {HTMLElement|null}
  */
 const resolveScanRoot = (target) => {
@@ -84,7 +89,12 @@ const resolveScanRoot = (target) => {
     return target;
 };
 
-/** @param {NodeList|Array} nodes */
+/**
+ * Batch scan requests into the next animation frame
+ *
+ * @param {NodeList|Array} nodes
+ * @returns {void}
+ */
 const scheduleScan = (nodes) => {
     let hasElements = false;
 
@@ -136,7 +146,10 @@ const init = () => {
     console.log('[Manager Panel] 扫描模块已启动');
 };
 
-/** @param {Object} userConfig */
+/**
+ * @param {Object} [userConfig={}] - Feature overrides
+ * @returns {void}
+ */
 export const start = (userConfig = {}) => {
     config = { ...config, ...userConfig };
 

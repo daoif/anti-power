@@ -24,6 +24,12 @@ const DEFAULT_CONFIG = {
     fontSize: 16,
 };
 
+/**
+ * Reuse an existing link for the resolved URL to avoid duplicate loads
+ *
+ * @param {string} href - Stylesheet path relative to the patch entry script
+ * @returns {Promise<void>} Resolves when the resource is available
+ */
 const loadStyle = (href) => {
     return new Promise((resolve, reject) => {
         const fullHref = new URL(href, SCRIPT_BASE).href;
@@ -40,6 +46,11 @@ const loadStyle = (href) => {
     });
 };
 
+/**
+ * Read config.json and fall back to defaults if loading fails
+ *
+ * @returns {Promise<Object>}
+ */
 const loadConfig = async () => {
     try {
         const configUrl = new URL('config.json', SCRIPT_BASE).href;
@@ -57,6 +68,12 @@ const loadConfig = async () => {
     }
 };
 
+/**
+ * Set --manager-panel-font-size from the Manager font preference
+ *
+ * @param {Object} userConfig
+ * @returns {void}
+ */
 const applyFontSize = (userConfig) => {
     const root = document.documentElement;
     if (!root) return;
@@ -75,6 +92,12 @@ const applyFontSize = (userConfig) => {
     root.style.setProperty('--manager-panel-font-size', `${size}px`);
 };
 
+/**
+ * Set --manager-panel-max-width-ratio from the Manager width preference
+ *
+ * @param {Object} userConfig
+ * @returns {void}
+ */
 const applyMaxWidth = (userConfig) => {
     const root = document.documentElement;
     if (!root) return;

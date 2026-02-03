@@ -26,6 +26,7 @@ const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
 
 /**
  * Handle SVGAnimatedString as well as string class names
+ *
  * @param {Element} el
  * @returns {string}
  */
@@ -39,7 +40,8 @@ const getClassString = (el) => {
 
 /**
  * Recover LaTeX from KaTeX or MathJax output
- * @param {Element} mathEl
+ *
+ * @param {Element} mathEl - Rendered math element
  * @returns {string|null} Null if the original LaTeX cannot be recovered
  */
 const extractLatexFromMath = (mathEl) => {
@@ -65,6 +67,7 @@ const extractLatexFromMath = (mathEl) => {
 /**
  * Extract the item's own text, inline code, and math
  * The caller handles nested lists and code blocks separately
+ *
  * @param {HTMLLIElement} li
  * @returns {string}
  */
@@ -184,10 +187,11 @@ const extractCodeBlockContent = (codeBlockContainer) => {
 };
 
 /**
- * Preserve nested ordered lists
+ * Preserve nested lists and fenced code within each list item
+ *
  * @param {HTMLOListElement} olEl
- * @param {number} depth - List nesting depth
- * @returns {string}
+ * @param {number} [depth=0] - List nesting depth
+ * @returns {string} Markdown list
  */
 const extractOrderedList = (olEl, depth = 0) => {
     let markdown = '\n';
@@ -226,10 +230,11 @@ const extractOrderedList = (olEl, depth = 0) => {
 };
 
 /**
- * Preserve nested unordered lists
+ * Preserve nested lists and fenced code within each list item
+ *
  * @param {HTMLUListElement} ulEl
- * @param {number} depth - List nesting depth
- * @returns {string}
+ * @param {number} [depth=0] - List nesting depth
+ * @returns {string} Markdown list
  */
 const extractUnorderedList = (ulEl, depth = 0) => {
     let markdown = '\n';
@@ -266,9 +271,8 @@ const extractUnorderedList = (ulEl, depth = 0) => {
 };
 
 /**
- * Convert the table to Markdown
  * @param {HTMLTableElement} tableEl
- * @returns {string}
+ * @returns {string} Markdown table
  */
 const extractTable = (tableEl) => {
     let markdown = '';
@@ -296,8 +300,9 @@ const extractTable = (tableEl) => {
 
 /**
  * Serialize code, tables, math, Mermaid and lists as Markdown
+ *
  * @param {HTMLElement} el
- * @returns {string}
+ * @returns {string} Markdown text
  */
 const extractFormattedText = (el) => {
     if (!el) return '';
@@ -535,6 +540,7 @@ const extractFormattedText = (el) => {
 
 /**
  * Read the configuration published by the patch entry point
+ *
  * @returns {Object}
  */
 const getConfig = () => {
@@ -542,10 +548,12 @@ const getConfig = () => {
 };
 
 /**
- * Show each copy button only while the pointer is near its corner
+ * Reveal each copy button only while the pointer is near its corner
+ *
  * @param {HTMLElement} contentEl - Message content container
  * @param {HTMLElement} topBtn - Top-right copy button
- * @param {HTMLElement} bottomBtn - Optional bottom-right button
+ * @param {HTMLElement} [bottomBtn] - Optional bottom-right button
+ * @returns {void}
  */
 const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
     contentEl.addEventListener('mousemove', (e) => {
@@ -576,7 +584,12 @@ const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
     });
 };
 
-/** @param {HTMLElement} contentEl */
+/**
+ * Skip previously bound content to avoid duplicate copy buttons
+ *
+ * @param {HTMLElement} contentEl - Message content container
+ * @returns {void}
+ */
 export const ensureContentCopyButton = (contentEl) => {
     if (!contentEl || contentEl.getAttribute(BOUND_ATTR) === '1') return;
 
@@ -630,7 +643,11 @@ export const ensureContentCopyButton = (contentEl) => {
     }
 };
 
-/** Insert copy buttons beside the Good/Bad feedback controls */
+/**
+ * Find the message by walking up from the Good/Bad feedback controls
+ *
+ * @returns {void}
+ */
 export const addFeedbackCopyButtons = () => {
     const feedbackContainers = document.querySelectorAll('[data-tooltip-id^="up-"]');
 

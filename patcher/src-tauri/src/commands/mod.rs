@@ -1,4 +1,6 @@
-// Tauri commands
+//! Tauri commands
+//!
+//! Export commands used by the installer UI
 
 mod detect;
 mod patch;

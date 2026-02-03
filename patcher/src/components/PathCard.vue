@@ -1,13 +1,13 @@
 <template>
   <section class="card">
     <div class="card-header">
-      <h2 class="card-title">安装目录</h2>
+      <h2 class="card-title">{{ $t('pathCard.title') }}</h2>
       <button 
         @click="$emit('detect')"
         :disabled="isDetecting"
         class="link-btn"
       >
-        {{ isDetecting ? '检测中...' : '重新检测' }}
+        {{ isDetecting ? $t('pathCard.detecting') : $t('pathCard.detectButton') }}
       </button>
     </div>
     
@@ -18,21 +18,21 @@
         :class="{ placeholder: !modelValue }"
         :value="modelValue || ''"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-        placeholder="未检测到 Antigravity 安装目录"
+        :placeholder="$t('pathCard.placeholder')"
       >
-      <button class="secondary-btn" @click="$emit('browse')">浏览...</button>
+      <button class="secondary-btn" @click="$emit('browse')">{{ $t('actions.browse') }}</button>
     </div>
 
     <details v-if="modelValue" class="target-details">
       <summary class="details-summary">
         <span class="summary-icon">▶</span>
-        查看目标路径
+        {{ $t('pathCard.viewTarget') }}
       </summary>
       <div class="target-list">
         <div class="target-item">
           <div class="target-header">
-            <span class="target-label">cascade-panel 增强</span>
-            <button class="open-btn" @click="openTargetDir(targetPath)" title="打开目录">
+            <span class="target-label">{{ $t('pathCard.targetLabelCascade') }}</span>
+            <button class="open-btn" @click="openTargetDir(targetPath)" :title="$t('pathCard.openDir')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -44,8 +44,8 @@
         </div>
         <div class="target-item">
           <div class="target-header">
-            <span class="target-label">Agent Manager 窗口增强</span>
-            <button class="open-btn" @click="openTargetDir(managerTargetPath)" title="打开目录">
+            <span class="target-label">{{ $t('pathCard.targetLabelManager') }}</span>
+            <button class="open-btn" @click="openTargetDir(managerTargetPath)" :title="$t('pathCard.openDir')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                 <polyline points="15 3 21 3 21 9"></polyline>
@@ -63,6 +63,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { openPath } from '@tauri-apps/plugin-opener';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   modelValue: string | null;
@@ -71,6 +74,12 @@ const props = defineProps<{
 
 defineEmits(['detect', 'browse', 'update:modelValue']);
 
+/**
+ * Trim resource-directory suffixes and resolve macOS app bundles
+ *
+ * @param path - Path entered or selected by the user
+ * @returns Base directory used to build the patch paths
+ */
 function normalizeBasePath(path: string): string {
   const sep = path.includes('/') ? '/' : '\\';
   const lower = path.toLowerCase();
@@ -92,6 +101,12 @@ function normalizeBasePath(path: string): string {
   return path;
 }
 
+/**
+ * macOS bundles use Resources and other installs use resources
+ *
+ * @param basePath - Base install directory
+ * @returns Resource directory name with platform-specific casing
+ */
 function getResourcesDir(basePath: string): string {
   const sep = basePath.includes('/') ? '/' : '\\';
   const lower = basePath.toLowerCase();
@@ -101,6 +116,9 @@ function getResourcesDir(basePath: string): string {
   return 'resources';
 }
 
+/**
+ * The legacy Cascade entry lives under extensions/antigravity
+ */
 const targetPath = computed(() => {
   if (!props.modelValue) return '';
   const basePath = normalizeBasePath(props.modelValue);
@@ -109,6 +127,9 @@ const targetPath = computed(() => {
   return `${basePath}${sep}${resourcesDir}${sep}app${sep}extensions${sep}antigravity`;
 });
 
+/**
+ * The Manager entry lives in the Electron workbench directory
+ */
 const managerTargetPath = computed(() => {
   if (!props.modelValue) return '';
   const basePath = normalizeBasePath(props.modelValue);
@@ -117,12 +138,17 @@ const managerTargetPath = computed(() => {
   return `${basePath}${sep}${resourcesDir}${sep}app${sep}out${sep}vs${sep}code${sep}electron-browser${sep}workbench`;
 });
 
+/**
+ * Reveal the patch location in the system file manager
+ *
+ * @param path - Directory to open
+ */
 async function openTargetDir(path: string) {
   if (!path) return;
   try {
     await openPath(path);
   } catch (e) {
-    console.error('打开目录失败:', e);
+    console.error(t('pathCard.error.openDir'), e);
   }
 }
 </script>
@@ -130,25 +156,66 @@ async function openTargetDir(path: string) {
 <style scoped>
 .card {
   background: var(--ag-surface);
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
+  background-image: var(--ag-gradient-surface);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
   border: 1px solid var(--ag-border);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  animation: card-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  pointer-events: none;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.card:hover {
+  border-color: var(--ag-border-hover);
+}
+
+.card:hover::after {
+  opacity: 1;
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin: -18px -20px 0;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--ag-border);
 }
 
 .card-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ag-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ag-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
   margin: 0;
 }
 
@@ -157,13 +224,30 @@ async function openTargetDir(path: string) {
   border: none;
   color: var(--ag-accent);
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 0;
-  transition: color 0.15s;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.link-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ag-accent);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
 .link-btn:hover {
   color: var(--ag-accent-hover);
+}
+
+.link-btn:hover::before {
+  opacity: 0.1;
 }
 
 .link-btn:disabled {
@@ -173,62 +257,88 @@ async function openTargetDir(path: string) {
 
 .path-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .path-input {
   flex: 1;
   padding: 12px 16px;
   background: var(--ag-surface-2);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--ag-border);
   font-size: 13px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  color: var(--ag-text);
+  font-family: var(--ag-font-mono);
+  color: var(--ag-text-strong);
   outline: none;
-  transition: border-color 0.15s;
+  transition: all var(--transition-fast);
+}
+
+.path-input:hover {
+  border-color: var(--ag-border-hover);
+  background: var(--ag-surface-3);
 }
 
 .path-input:focus {
   border-color: var(--ag-accent);
+  box-shadow: var(--ag-ring);
+  background: var(--ag-surface-2);
 }
 
 .path-input::placeholder {
-  color: var(--ag-text-secondary);
+  color: var(--ag-text-muted);
   font-style: italic;
-  font-family: inherit;
+  font-family: var(--ag-font-sans);
 }
 
 .secondary-btn {
-  padding: 12px 16px;
+  padding: 12px 18px;
   background: var(--ag-surface-2);
   border: 1px solid var(--ag-border);
-  border-radius: 6px;
-  color: var(--ag-text);
+  border-radius: var(--radius-md);
+  color: var(--ag-text-secondary);
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.secondary-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .secondary-btn:hover:not(:disabled) {
-  background: var(--ag-border);
+  background: var(--ag-surface-3);
+  border-color: var(--ag-border-hover);
+  color: var(--ag-text);
+  transform: translateY(-1px);
 }
 
-
+.secondary-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
 
 .target-details {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .details-summary {
-  font-size: 12px;
-  color: var(--ag-text-secondary);
+  font-size: 11px;
+  color: var(--ag-text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   user-select: none;
   list-style: none;
+  padding: 8px 0;
+  transition: color var(--transition-fast);
 }
 
 .details-summary::-webkit-details-marker {
@@ -236,12 +346,13 @@ async function openTargetDir(path: string) {
 }
 
 .details-summary:hover {
-  color: var(--ag-text);
+  color: var(--ag-text-secondary);
 }
 
 .summary-icon {
-  font-size: 8px;
-  transition: transform 0.15s;
+  font-size: 11px;
+  transition: transform var(--transition-fast);
+  color: var(--ag-accent);
 }
 
 .target-details[open] .summary-icon {
@@ -249,36 +360,39 @@ async function openTargetDir(path: string) {
 }
 
 .target-list {
-  margin-top: 8px;
-  padding: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
   background: var(--ag-surface-2);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--ag-border);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .target-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .target-label {
-  font-size: 11px;
-  color: var(--ag-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ag-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
 
 .target-path {
-  font-size: 12px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  font-family: var(--ag-font-mono);
   color: var(--ag-accent);
   word-break: break-all;
   background: transparent;
   padding: 0;
+  line-height: 1.5;
 }
 
 .target-header {
@@ -290,18 +404,19 @@ async function openTargetDir(path: string) {
 .open-btn {
   background: none;
   border: none;
-  color: var(--ag-text-secondary);
+  color: var(--ag-text-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 5px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: all var(--transition-fast);
 }
 
 .open-btn:hover {
-  background: var(--ag-border);
+  background: var(--ag-surface-3);
   color: var(--ag-accent);
+  transform: scale(1.05);
 }
 </style>

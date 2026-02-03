@@ -25,7 +25,7 @@ Antigravity 的 Markdown 解析器会把 `|` 当作表格分隔符, 导致公式
 
 ## ~~Manager 字号调节暂未生效~~ (已修复)
 
-> ✅ **此问题已在 v2.1.0 中修复**。启用字体大小开关后会生效。
+> ✅ **此问题已在 v2.1.0 中修复**. 启用字体大小开关后会生效.
 
 如仍未生效, 可检查:
 - `manager-panel/config.json` 中 `fontSizeEnabled` 是否为 `true`
@@ -35,9 +35,9 @@ Antigravity 的 Markdown 解析器会把 `|` 当作表格分隔符, 导致公式
 
 ## ~~Manager 补丁导致 "安装损坏" 提示~~ (已修复)
 
-> ✅ **此问题已在 v2.3.2 中修复**。Patcher 安装补丁时会自动清理 `product.json` 中的相关校验和，不再触发此警告。
+> ✅ **此问题已在 v2.3.2 中修复**. Patcher 安装补丁时会自动清理 `product.json` 中的相关校验和, 不再触发此警告.
 
-**历史问题描述**: 启用 Manager 补丁后, 打开 Antigravity 时左下角会弹出 "Antigravity 安装似乎损坏. 请重新安装." 的提示。
+**历史问题描述**: 启用 Manager 补丁后, 打开 Antigravity 时左下角会弹出 "Antigravity 安装似乎损坏. 请重新安装." 的提示.
 
 ---
 

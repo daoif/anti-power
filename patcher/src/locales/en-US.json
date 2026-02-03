@@ -1,0 +1,151 @@
+{
+    "app": {
+        "title": "Anti-Power",
+        "version": "Version v{version}",
+        "github": "GitHub",
+        "files": {
+            "cascadePanelLabel": "(Sidebar Module)",
+            "managerPanelLabel": "(Manager Module)"
+        },
+        "error": {
+            "unknown": "Unknown Error",
+            "detect": "Detection failed",
+            "checkPatch": "Failed to check patch status",
+            "selectPath": "Failed to select directory",
+            "install": "Installation failed",
+            "uninstall": "Uninstallation failed",
+            "clean": "Cleanup failed",
+            "normalizePath": "Path normalization failed",
+            "updateConfig": "Failed to update configuration"
+        }
+    },
+    "actions": {
+        "install": "Install Patch",
+        "reinstall": "Reinstall",
+        "updateConfig": "Update Config",
+        "restore": "Restore",
+        "browse": "Browse..."
+    },
+    "status": {
+        "installed": "Installed",
+        "notInstalled": "Not Installed",
+        "installedHint": "Patch detected. You can update config without reinstalling.",
+        "notInstalledHint": "Please select a path, configure options, then install."
+    },
+    "cleanTool": {
+        "title": "Conversation Clean Tool (macOS/Linux)",
+        "cleanCache": "Clean Cache",
+        "forceClean": "Force Clean",
+        "cleaning": "Cleaning...",
+        "confirmTitle": "Clean Confirmation",
+        "confirmMessage": "This will clean conversation title records and cache. It is recommended to close Antigravity first. Continue?",
+        "forceConfirmTitle": "Force Clean",
+        "forceConfirmMessage": "This will force clean (ignoring running checks), which may affect running Antigravity instances. Continue?"
+    },
+    "pathCard": {
+        "title": "Install Path",
+        "detectButton": "Redetect",
+        "placeholder": "Antigravity installation not detected",
+        "selectTitle": "Select Antigravity Installation Directory",
+        "viewTarget": "View Target Path",
+        "openDir": "Open Directory",
+        "targetLabelCascade": "Cascade Panel Enhancement",
+        "targetLabelManager": "Manager Window Enhancement",
+        "error": {
+            "openDir": "Failed to open directory"
+        }
+    },
+    "featureCard": {
+        "title": "Sidebar Settings",
+        "enablePatch": "Enable Patch",
+        "mermaid": {
+            "title": "Mermaid Rendering",
+            "desc": "Automatically render Mermaid code blocks"
+        },
+        "math": {
+            "title": "Math Formula",
+            "desc": "Render LaTeX formulas using KaTeX/MathJax"
+        },
+        "copyButton": {
+            "title": "Copy Button",
+            "desc": "Add copy button to messages",
+            "expand": "Show Options",
+            "collapse": "Hide Options",
+            "smartHover": "Smart Hover (Only show when mouse near)",
+            "showBottom": "Show Bottom Button",
+            "styleLabel": "Button Style",
+            "styleChinese": "Copy 📋",
+            "customPlaceholder": "Custom text"
+        },
+        "tableColor": {
+            "title": "Table Color Fix",
+            "desc": "Fix invisible table text in dark mode"
+        },
+        "fontSize": {
+            "title": "Font Size",
+            "desc": "Adjust Cascade panel font size"
+        }
+    },
+    "managerCard": {
+        "title": "Manager Window Settings",
+        "maxWidth": {
+            "title": "Max Width",
+            "desc": "Set message area max width ratio (%)"
+        },
+        "fontSize": {
+            "title": "Font Size",
+            "desc": "Custom font size for message area (px)"
+        }
+    },
+    "aboutModal": {
+        "title": "About",
+        "desc": "Antigravity AI IDE enhancement patch manager tool.",
+        "qqGroup": "QQ Group: ",
+        "checkUpdate": "Check Update",
+        "checking": "Checking...",
+        "repo": "GitHub Repo",
+        "newVersion": "🎉 New Version Found: v{version}",
+        "download": "Download",
+        "latest": "✓ Up to date",
+        "checkFailed": "Check Failed",
+        "networkError": "Network Error",
+        "copyright": "© 2026 Anti-Power · MIT License",
+        "error": {
+            "checkUpdate": "Failed to check for updates"
+        }
+    },
+    "confirmModal": {
+        "title": "Confirm Installation",
+        "message": "Installing Anti-Power patch. Please confirm the following file changes: ",
+        "modified": "Files to be Modified",
+        "added": "Files/Dirs to be Added",
+        "deprecated": "Files to be Removed",
+        "note": "Note: ",
+        "noteContent": "If you have customized the above original files, your changes will be overwritten. A backup (.bak) will be created on first install.",
+        "confirm": "Confirm Install",
+        "cancel": "Cancel",
+        "badgeModified": "Modified",
+        "badgeAdded": "Added",
+        "badgeDeprecated": "Deprecated"
+    },
+    "toast": {
+        "installSuccess": "✓ Patch Installed",
+        "installFailed": "✗ Install Failed: {error}",
+        "restoreSuccess": "✓ Restored Original",
+        "restoreFailed": "✗ Restore Failed: {error}",
+        "cleanSuccess": "✓ Cleaned Successfully",
+        "cleanFailed": "✗ Clean Failed: {error}",
+        "configUpdated": "✓ Config Updated",
+        "updateFailed": "✗ Update Failed: {error}"
+    },
+    "titleBar": {
+        "toggleThemeLight": "Switch to light theme",
+        "toggleThemeDark": "Switch to dark theme",
+        "about": "About",
+        "minimize": "Minimize",
+        "maximize": "Maximize",
+        "restore": "Restore",
+        "close": "Close",
+        "switchLanguage": "切换到中文"
+    }
+}

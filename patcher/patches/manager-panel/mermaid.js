@@ -51,6 +51,11 @@ const ensureMermaidPolicy = () => {
     return null;
 };
 
+/**
+ * Share the pending Mermaid load across renders
+ *
+ * @returns {Promise<boolean>} True if the library loaded
+ */
 const ensureMermaid = async () => {
     if (mermaidLoaded) return true;
     if (mermaidLoading) return mermaidLoading;
@@ -80,8 +85,8 @@ const ensureMermaid = async () => {
 };
 
 /**
- * @param {HTMLElement} el
- * @returns {HTMLElement|null}
+ * @param {HTMLElement} el - Element to start searching from
+ * @returns {HTMLElement|null} Matching code block, or null
  */
 const resolveCodeBlock = (el) => {
     if (!el) return null;
@@ -186,7 +191,10 @@ const resolveHideTarget = (codeBlock) => {
     return codeBlock || null;
 };
 
-/** @param {HTMLElement} el - Mermaid code block or a descendant */
+/**
+ * @param {HTMLElement} el - Mermaid code block or a descendant
+ * @returns {Promise<void>}
+ */
 export const renderMermaid = async (el) => {
     console.log('[Manager DEBUG] renderMermaid called', { elTag: el?.tagName, elClass: el?.className?.slice?.(0, 50) });
     const codeBlock = resolveCodeBlock(el);
@@ -342,7 +350,10 @@ export const renderMermaid = async (el) => {
     }
 };
 
-/** @param {HTMLElement} root */
+/**
+ * @param {HTMLElement} root
+ * @returns {void}
+ */
 export const scanMermaid = (root) => {
     console.log('[Manager DEBUG] scanMermaid called', { rootTag: root?.tagName, rootClass: root?.className?.slice?.(0, 50) });
     if (!root) return;

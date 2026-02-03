@@ -1,15 +1,22 @@
-// Embedded patch assets
-// Embed patch files with include_str! at compile time
+//! Embedded patch assets
+//!
+//! Embed patch files with `include_str!` at compile time
+//! Development builds can read the live patch files from disk
+
 use std::fs;
 use std::path::PathBuf;
 
+// The build script generates this manifest
 include!(concat!(env!("OUT_DIR"), "/embedded_patches.rs"));
 
-/// All files in the patch payload
+/// Return all embedded patch files
+/// Each tuple contains a relative path and the file contents
 pub fn get_all_files() -> Vec<(&'static str, &'static str)> {
     EMBEDDED_FILES.to_vec()
 }
 
+/// Locate the `patches` directory
+/// Check the current directory and up to five ancestors
 fn find_patches_dir() -> Option<PathBuf> {
     let mut dir = std::env::current_dir().ok()?;
 
@@ -32,6 +39,10 @@ fn find_patches_dir() -> Option<PathBuf> {
     None
 }
 
+/// Load all patch files at runtime
+/// 
+/// Development builds read files from disk so patch edits take effect without rebuilding
+/// Release builds use the embedded patch files
 pub fn get_all_files_runtime() -> Result<Vec<(String, String)>, String> {
     if cfg!(debug_assertions) {
         let patches_dir = find_patches_dir()

@@ -13,8 +13,8 @@
         <div class="file-changes">
           <div v-if="modifiedFiles.length" class="file-section">
             <h4 class="section-title">
-              <span class="badge badge-warning">覆盖</span>
-              将修改的原始文件
+              <span class="badge badge-warning">{{ $t('confirmModal.badgeModified') }}</span>
+              {{ $t('confirmModal.modified') }}
             </h4>
             <ul class="file-list">
               <li v-for="file in modifiedFiles" :key="file">{{ file }}</li>
@@ -23,8 +23,8 @@
 
           <div v-if="addedFiles.length" class="file-section">
             <h4 class="section-title">
-              <span class="badge badge-success">新增</span>
-              将添加的文件/目录
+              <span class="badge badge-success">{{ $t('confirmModal.badgeAdded') }}</span>
+              {{ $t('confirmModal.added') }}
             </h4>
             <ul class="file-list">
               <li v-for="file in addedFiles" :key="file">{{ file }}</li>
@@ -33,8 +33,8 @@
 
           <div v-if="deprecatedFiles.length" class="file-section">
             <h4 class="section-title">
-              <span class="badge badge-error">清理</span>
-              将删除的废弃文件
+              <span class="badge badge-error">{{ $t('confirmModal.badgeDeprecated') }}</span>
+              {{ $t('confirmModal.deprecated') }}
             </h4>
             <ul class="file-list">
               <li v-for="file in deprecatedFiles" :key="file">{{ file }}</li>
@@ -43,14 +43,13 @@
         </div>
 
         <p class="note">
-          <strong>注意：</strong>如果你对上述原始文件进行过自定义修改，这些修改将被覆盖。
-          首次安装时会自动备份原文件（.bak）。
+          <strong>{{ $t('confirmModal.note') }}</strong>{{ $t('confirmModal.noteContent') }}
         </p>
       </div>
 
       <div class="modal-footer">
-        <button class="cancel-btn" @click="$emit('cancel')">取消</button>
-        <button class="confirm-btn" @click="$emit('confirm')">确认安装</button>
+        <button class="cancel-btn" @click="$emit('cancel')">{{ $t('confirmModal.cancel') }}</button>
+        <button class="confirm-btn" @click="$emit('confirm')">{{ $t('confirmModal.confirm') }}</button>
       </div>
     </div>
   </div>
@@ -74,21 +73,39 @@ defineEmits(['confirm', 'cancel']);
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .modal {
   background: var(--ag-surface);
   border: 1px solid var(--ag-border);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   width: 440px;
   max-width: 95%;
   max-height: 80vh;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--ag-shadow-xl);
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  pointer-events: none;
 }
 
 .modal-header {
@@ -101,23 +118,32 @@ defineEmits(['confirm', 'cancel']);
 }
 
 .modal-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   margin: 0;
+  color: var(--ag-text-strong);
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: var(--ag-text-secondary);
-  font-size: 24px;
+  color: var(--ag-text-tertiary);
+  font-size: 20px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn:hover {
   color: var(--ag-text);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .modal-body {
@@ -134,20 +160,23 @@ defineEmits(['confirm', 'cancel']);
 
 .warning-text {
   text-align: center;
-  font-size: 14px;
-  color: var(--ag-text);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ag-text-strong);
   margin: 0 0 20px;
+  line-height: 1.5;
 }
 
 .file-changes {
   background: var(--ag-surface-2);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: var(--radius-md);
+  padding: 14px;
   margin-bottom: 16px;
+  border: 1px solid var(--ag-border);
 }
 
 .file-section {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .file-section:last-child {
@@ -155,9 +184,9 @@ defineEmits(['confirm', 'cancel']);
 }
 
 .section-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ag-text);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ag-text-strong);
   margin: 0 0 8px;
   display: flex;
   align-items: center;
@@ -165,54 +194,65 @@ defineEmits(['confirm', 'cancel']);
 }
 
 .badge {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .badge-warning {
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
+  background: var(--ag-warning-subtle);
+  color: var(--ag-warning);
 }
 
 .badge-success {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: var(--ag-success-subtle);
+  color: var(--ag-success);
 }
 
 .badge-error {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background: var(--ag-error-subtle);
+  color: var(--ag-error);
 }
 
 .file-list {
   margin: 0;
   padding: 0 0 0 16px;
-  font-size: 12px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  font-family: var(--ag-font-mono);
   color: var(--ag-text-secondary);
+  line-height: 1.7;
 }
 
 .file-list li {
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+}
+
+.file-list li:last-child {
+  margin-bottom: 0;
 }
 
 .note {
-  font-size: 12px;
-  color: var(--ag-text-secondary);
+  font-size: 11px;
+  color: var(--ag-text-tertiary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: var(--ag-warning-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(245, 158, 11, 0.15);
 }
 
 .note strong {
   color: var(--ag-warning);
+  font-weight: 600;
 }
 
 .modal-footer {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   padding: 16px 20px;
   border-top: 1px solid var(--ag-border);
   flex-shrink: 0;
@@ -220,34 +260,53 @@ defineEmits(['confirm', 'cancel']);
 
 .cancel-btn {
   flex: 1;
-  padding: 12px;
+  padding: 11px 14px;
   background: var(--ag-surface-2);
   border: 1px solid var(--ag-border);
-  border-radius: 8px;
-  color: var(--ag-text);
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  color: var(--ag-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all var(--transition-fast);
 }
 
 .cancel-btn:hover {
-  background: var(--ag-border);
+  background: var(--ag-surface-3);
+  border-color: var(--ag-border-hover);
+  color: var(--ag-text);
+  transform: translateY(-1px);
 }
 
 .confirm-btn {
   flex: 1;
-  padding: 12px;
-  background: var(--ag-accent);
+  padding: 11px 14px;
+  background: var(--ag-accent-gradient);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: white;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.confirm-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 .confirm-btn:hover {
-  background: var(--ag-accent-hover);
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: var(--ag-shadow-accent-lg);
 }
 </style>
