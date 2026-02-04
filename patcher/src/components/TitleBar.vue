@@ -1,7 +1,7 @@
 <template>
   <div class="titlebar" :class="{ 'is-mac': isMac }" data-tauri-drag-region>
     <div class="titlebar-left" data-tauri-drag-region>
-      <img class="titlebar-icon" src="../assets/LOGO.png" alt="logo" />
+      <img class="titlebar-icon" src="../assets/logo.png" alt="logo" />
       <span class="titlebar-title">{{ title }}</span>
     </div>
     <div class="titlebar-right">
