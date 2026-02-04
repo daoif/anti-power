@@ -8,7 +8,7 @@
       
       <div class="modal-body">
         <div class="about-logo">
-          <img src="../assets/LOGO.png" alt="logo" class="about-icon" />
+          <img src="../assets/logo.png" alt="logo" class="about-icon" />
         </div>
         
         <h3 class="about-name">Anti-Power</h3>
