@@ -2,24 +2,24 @@
   <div v-if="show" class="modal-overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2 class="modal-title">关于</h2>
+        <h2 class="modal-title">{{ $t('aboutModal.title') }}</h2>
         <button class="close-btn" @click="$emit('close')">×</button>
       </div>
       
       <div class="modal-body">
         <div class="about-logo">
-          <img src="../assets/logo.png" alt="logo" class="about-icon" />
+          <img src="../assets/LOGO.png" alt="logo" class="about-icon" />
         </div>
         
         <h3 class="about-name">Anti-Power</h3>
-        <p class="about-version">版本 {{ version }}</p>
+        <p class="about-version">{{ $t('app.version', { version }) }}</p>
         
         <p class="about-desc">
-          Antigravity AI IDE 增强补丁管理工具，让你的 AI 对话体验更上一层楼。
+          {{ $t('aboutModal.desc') }}
         </p>
         
         <p class="about-qq">
-          QQ 交流群: <a href="#" @click.prevent="openQQGroup" class="qq-link">993975349</a>
+          {{ $t('aboutModal.qqGroup') }} <a href="#" @click.prevent="openQQGroup" class="qq-link">993975349</a>
         </p>
 
         <div class="about-actions">
@@ -28,30 +28,33 @@
             @click="checkUpdate"
             :disabled="isCheckingUpdate"
           >
-            {{ isCheckingUpdate ? '检查中...' : '检查更新' }}
+            {{ isCheckingUpdate ? $t('aboutModal.checking') : $t('aboutModal.checkUpdate') }}
           </button>
           <button class="about-btn" @click="openGitHub">
-            GitHub 仓库
+            {{ $t('aboutModal.repo') }}
           </button>
         </div>
 
         <div v-if="updateInfo" class="update-info">
           <template v-if="updateInfo.hasUpdate">
             <p class="update-available">
-              🎉 发现新版本: v{{ updateInfo.latestVersion }}
+              {{ $t('aboutModal.newVersion', { version: updateInfo.latestVersion }) }}
             </p>
             <button class="primary-btn update-btn" @click="openGitHub">
-              前往下载
+              {{ $t('aboutModal.download') }}
             </button>
           </template>
+          <template v-else-if="updateInfo.error">
+            <p class="update-error" style="color: var(--ag-error, #ef4444); font-size: 13px;">{{ $t(updateInfo.error) }}</p>
+          </template>
           <template v-else>
-            <p class="update-latest">✓ 已是最新版本</p>
+            <p class="update-latest">{{ $t('aboutModal.latest') }}</p>
           </template>
         </div>
       </div>
 
       <div class="modal-footer">
-        <p>© 2026 Anti-Power · MIT License</p>
+        <p>{{ $t('aboutModal.copyright') }}</p>
       </div>
     </div>
   </div>
@@ -59,6 +62,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 const props = defineProps<{
   show: boolean;
@@ -69,9 +74,14 @@ const props = defineProps<{
 defineEmits(['close']);
 
 const isCheckingUpdate = ref(false);
-const updateInfo = ref<{ hasUpdate: boolean; latestVersion: string } | null>(null);
+const updateInfo = ref<{ hasUpdate: boolean; latestVersion?: string; error?: string } | null>(null);
 
-// Compare numeric version components
+/**
+ * Compare numeric version components
+ * @param a - First version
+ * @param b - Second version
+ * @returns 1 when a is newer, -1 when b is newer, or 0 when equal
+ */
 function compareVersions(a: string, b: string): number {
   const partsA = a.split('.').map(Number);
   const partsB = b.split('.').map(Number);
@@ -84,6 +94,9 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+/**
+ * Check the latest GitHub release against the installed version
+ */
 async function checkUpdate() {
   isCheckingUpdate.value = true;
   updateInfo.value = null;
@@ -104,21 +117,27 @@ async function checkUpdate() {
         latestVersion
       };
     } else {
-      updateInfo.value = { hasUpdate: false, latestVersion: '检查失败' };
+      updateInfo.value = { hasUpdate: false, error: 'aboutModal.checkFailed' };
     }
   } catch (e) {
-    console.error("检查更新失败:", e);
-    updateInfo.value = { hasUpdate: false, latestVersion: '网络错误' };
+    console.error(t('aboutModal.error.checkUpdate'), e);
+    updateInfo.value = { hasUpdate: false, error: 'aboutModal.networkError' };
   } finally {
     isCheckingUpdate.value = false;
   }
 }
 
+/**
+ * Open the repository in the system browser
+ */
 async function openGitHub() {
   const { openUrl } = await import('@tauri-apps/plugin-opener');
   await openUrl(props.githubUrl);
 }
 
+/**
+ * Open the QQ group in the system browser
+ */
 async function openQQGroup() {
   const { openUrl } = await import('@tauri-apps/plugin-opener');
   await openUrl('https://qm.qq.com/q/AHUKoyLVKg');
@@ -130,18 +149,36 @@ async function openQQGroup() {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .modal {
   background: var(--ag-surface);
   border: 1px solid var(--ag-border);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   width: 360px;
   max-width: 90%;
+  box-shadow: var(--ag-shadow-xl);
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  pointer-events: none;
 }
 
 .modal-header {
@@ -153,23 +190,32 @@ async function openQQGroup() {
 }
 
 .modal-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   margin: 0;
+  color: var(--ag-text-strong);
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: var(--ag-text-secondary);
-  font-size: 24px;
+  color: var(--ag-text-tertiary);
+  font-size: 20px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn:hover {
   color: var(--ag-text);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .modal-body {
@@ -180,9 +226,15 @@ async function openQQGroup() {
 .about-logo {
   width: 80px;
   height: 80px;
-  margin: 0 auto 16px;
-  border-radius: 16px;
+  margin: 0 auto 18px;
+  border-radius: 18px;
   overflow: hidden;
+  box-shadow: var(--ag-shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform var(--transition-normal);
+}
+
+.about-logo:hover {
+  transform: scale(1.05);
 }
 
 .about-icon {
@@ -193,96 +245,137 @@ async function openQQGroup() {
 
 .about-name {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 4px;
+  color: var(--ag-text-strong);
+  letter-spacing: -0.01em;
 }
 
 .about-version {
-  color: var(--ag-text-secondary);
-  font-size: 13px;
+  color: var(--ag-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
   margin: 0 0 16px;
 }
 
 .about-desc {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ag-text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0 0 12px;
 }
 
 .about-qq {
-  font-size: 13px;
-  color: var(--ag-text-secondary);
-  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--ag-text-tertiary);
+  margin: 0 0 18px;
 }
 
 .qq-link {
   color: var(--ag-accent);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.qq-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 0;
+  height: 1px;
+  background: var(--ag-accent);
+  transition: width var(--transition-fast);
 }
 
 .qq-link:hover {
-  text-decoration: underline;
+  color: var(--ag-accent-hover);
+}
+
+.qq-link:hover::after {
+  width: 100%;
 }
 
 .about-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: center;
 }
 
 .about-btn {
-  padding: 10px 16px;
+  padding: 9px 16px;
   background: var(--ag-surface-2);
   border: 1px solid var(--ag-border);
-  border-radius: 6px;
-  color: var(--ag-text);
-  font-size: 13px;
+  border-radius: var(--radius-md);
+  color: var(--ag-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all var(--transition-fast);
 }
 
 .about-btn:hover:not(:disabled) {
-  background: var(--ag-border);
+  background: var(--ag-surface-3);
+  border-color: var(--ag-border-hover);
+  color: var(--ag-text);
+  transform: translateY(-1px);
 }
 
 .about-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .update-info {
   margin-top: 20px;
-  padding-top: 16px;
+  padding-top: 18px;
   border-top: 1px solid var(--ag-border);
 }
 
 .update-available {
   color: var(--ag-success);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   margin: 0 0 12px;
 }
 
 .update-latest {
-  color: var(--ag-text-secondary);
-  font-size: 13px;
+  color: var(--ag-text-tertiary);
+  font-size: 12px;
   margin: 0;
 }
 
 .primary-btn {
   padding: 10px 20px;
-  background: var(--ag-accent);
+  background: var(--ag-accent-gradient);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: white;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.primary-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 .primary-btn:hover {
-  background: var(--ag-accent-hover);
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: var(--ag-shadow-accent-lg);
 }
 
 .modal-footer {
@@ -292,8 +385,9 @@ async function openQQGroup() {
 }
 
 .modal-footer p {
-  font-size: 11px;
-  color: var(--ag-text-secondary);
+  font-size: 10px;
+  color: var(--ag-text-muted);
   margin: 0;
+  letter-spacing: 0.01em;
 }
 </style>

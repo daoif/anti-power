@@ -99,6 +99,7 @@ export const isEditable = (el) =>
 
 /**
  * Handle SVGAnimatedString as well as string class names
+ *
  * @param {Element} el
  * @returns {string}
  */
@@ -112,6 +113,7 @@ export const getClassString = (el) => {
 /**
  * Fall back to execCommand if the Clipboard API fails
  * Empty text returns false, and the browser may require a user gesture
+ *
  * @param {string} text
  * @returns {Promise<boolean>} True if the clipboard write succeeds
  */
@@ -123,7 +125,6 @@ export const writeClipboard = async (text) => {
             await navigator.clipboard.writeText(text);
             return true;
         } catch {
-            // execCommand fallback
         }
     }
 

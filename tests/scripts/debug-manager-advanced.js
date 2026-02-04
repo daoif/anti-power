@@ -1,5 +1,10 @@
-// Diagnose Manager window loading and rendering
-// Start Antigravity with --remote-debugging-port=9222 and open Manager first
+/**
+ * Diagnose Manager window loading and rendering
+ *
+ * Start Antigravity with --remote-debugging-port=9222 and open Manager
+ * Run node scripts/debug-manager-advanced.js
+ */
+
 const { chromium } = require('playwright');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

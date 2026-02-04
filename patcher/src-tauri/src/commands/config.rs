@@ -1,4 +1,6 @@
-// Installer configuration
+//! Installer configuration
+//!
+//! Load and save installer preferences
 
 use serde::{Deserialize, Serialize};
 use std::fs;

@@ -1,4 +1,6 @@
-// Patch installation and removal
+//! Patch installation and removal
+//!
+//! Install, remove, and configure patches
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

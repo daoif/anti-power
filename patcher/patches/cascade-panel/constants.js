@@ -3,9 +3,9 @@
 // Limit enhancement scans to these content selectors
 export const CONTENT_SELECTOR = '.prose, .prose-sm, [data-in-html-content]';
 export const BOUND_ATTR = 'data-cascade-copy-bound';
-export const BUTTON_CLASS = 'cascade-copy-button'; // Main content copy button (top-right)
+export const BUTTON_CLASS = 'cascade-copy-button'; // Top-right content copy button
 export const BOTTOM_BUTTON_CLASS = 'cascade-copy-bottom'; // Bottom copy button
-export const COPY_BTN_CLASS = 'cascade-copy-btn'; // Generic copy button style
+export const COPY_BTN_CLASS = 'cascade-copy-btn';
 export const MATH_ATTR = 'data-cascade-math-rendered';
 export const RAW_TEXT_PROP = '__cascadeRawText';
 export const MATH_HINT_RE = /\$\$|\\\(|\\\[|\\begin\{|\$(?!\s)([^$\n]+?)\$/;

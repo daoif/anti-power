@@ -47,11 +47,14 @@ patcher/
 Copy the patch files to test changes without rebuilding the patcher.
 
 ```bash
+# From project root, enter patcher directory first
+cd patcher
+
 # Copy cascade-panel (example path)
-cp patches/cascade-panel/*.js patches/cascade-panel/*.css "E:/Antigravity/resources/app/extensions/antigravity/cascade-panel/"
+cp ./patches/cascade-panel/*.js ./patches/cascade-panel/*.css "E:/Antigravity/resources/app/extensions/antigravity/cascade-panel/"
 
 # Copy manager-panel (example path)
-cp patches/manager-panel/*.js patches/manager-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/manager-panel/"
+cp ./patches/manager-panel/*.js ./patches/manager-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/manager-panel/"
 ```
 
 Then in Antigravity:
@@ -131,7 +134,7 @@ Paths relative to Antigravity installation directory (e.g., `C:\Program Files\An
 
 ## Core Module Documentation
 
-### extract.js / copy.js (Content Extraction)
+### extract.js/copy.js (Content Extraction)
 
 Responsible for extracting content from DOM and converting to Markdown format.
 
@@ -236,13 +239,12 @@ Should extract as: `` `code content` ``
 
 ### Known Issues
 
-- [ ] **Manager nested list code blocks missing language identifier**
-  - Reason: Manager DOM structure differs from cascade-panel, code blocks may not be direct children of `<li>`
-  - Requires debugging tools to inspect specific DOM structure
+- [ ] **Manager code blocks missing language identifier**
+  - Reason: Manager DOM does not provide `language-xxx` class or other reliable language metadata (upstream limitation)
+  - Note: See [known-issues.md](../reference/known-issues.md)
 
 ### TODO
 
-- [ ] Manager nested code block language identifier extraction
 - [ ] More edge case handling
 - [ ] Unit tests
 

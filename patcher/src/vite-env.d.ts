@@ -1,3 +1,7 @@
+/**
+ * Type declarations for Vite and Vue single-file components
+ */
+
 /// <reference types="vite/client" />
 
 declare module "*.vue" {

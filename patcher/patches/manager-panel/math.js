@@ -30,6 +30,11 @@ const reloadScript = async (src) => {
     await loadScript(src);
 };
 
+/**
+ * Share one pending KaTeX load across renders
+ *
+ * @returns {Promise<boolean>} True if the library loaded
+ */
 const ensureKatex = async () => {
     if (katexLoaded) return true;
     if (katexLoading) return katexLoading;
@@ -207,7 +212,12 @@ const renderMathIntoElement = (el) => {
     });
 };
 
-/** @param {HTMLElement} el */
+/**
+ * Skip unchanged text to avoid rendering the same content twice
+ *
+ * @param {HTMLElement} el
+ * @returns {Promise<void>}
+ */
 export const renderMath = async (el) => {
     if (!el || el.hasAttribute(MATH_ATTR)) return;
 

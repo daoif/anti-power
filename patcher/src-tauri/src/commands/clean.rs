@@ -1,14 +1,28 @@
+//! Cache cleanup
+//!
+//! Clear conversation caches on macOS and Linux
+
+/// Embedded cleanup script
 const ANTI_CLEAN_SCRIPT: &str =
     include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../patches/anti-clean.sh"));
 
+/// Run the cleanup script
+/// 
+/// # Arguments
+/// - `force`: Clear additional cache data
+/// 
+/// # Returns
+/// - `Ok(String)`: Script output on success
+/// - `Err(String)`: Error message on failure
 #[tauri::command]
 pub fn run_anti_clean(force: bool) -> Result<String, String> {
     if !cfg!(any(target_os = "macos", target_os = "linux")) {
-        return Err("该功能仅支持 macOS / Linux".to_string());
+        return Err("该功能仅支持 macOS/Linux".to_string());
     }
     run_anti_clean_unix(force)
 }
 
+/// Run the Unix cleanup script
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn run_anti_clean_unix(force: bool) -> Result<String, String> {
     use std::fs;
@@ -20,6 +34,7 @@ fn run_anti_clean_unix(force: bool) -> Result<String, String> {
 
     fs::write(&script_path, ANTI_CLEAN_SCRIPT)
         .map_err(|e| format!("写入临时脚本失败: {}", e))?;
+    
     let perm = fs::Permissions::from_mode(0o700);
     fs::set_permissions(&script_path, perm)
         .map_err(|e| format!("设置脚本权限失败: {}", e))?;
@@ -49,7 +64,8 @@ fn run_anti_clean_unix(force: bool) -> Result<String, String> {
     Ok(stdout)
 }
 
+/// Return an unsupported-platform error on non-Unix systems
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn run_anti_clean_unix(_force: bool) -> Result<String, String> {
-    Err("该功能仅支持 macOS / Linux".to_string())
+    Err("该功能仅支持 macOS/Linux".to_string())
 }

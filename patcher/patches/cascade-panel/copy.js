@@ -9,6 +9,7 @@ const copyTimers = new WeakMap();
 
 /**
  * Read the configuration published by the patch entry point
+ *
  * @returns {Object}
  */
 const getConfig = () => {
@@ -18,7 +19,7 @@ const getConfig = () => {
 /**
  * @param {boolean} copied - Whether to show the copied state
  * @param {'top'|'bottom'} position - Top or bottom button position
- * @returns {string}
+ * @returns {string} Button label
  */
 const getLabelText = (copied, position) => {
     if (copied) return 'Copied!';
@@ -41,9 +42,9 @@ const getLabelText = (copied, position) => {
 };
 
 /**
- * @param {string} label
- * @param {string} icon
- * @returns {string}
+ * @param {string} label - Button label
+ * @param {string} icon - SVG markup for the icon
+ * @returns {string} Button markup
  */
 const buttonMarkup = (label, icon) => {
     if (label) {
@@ -54,8 +55,9 @@ const buttonMarkup = (label, icon) => {
 
 /**
  * Update the visible copy state and the accessible label together
+ *
  * @param {HTMLElement} button
- * @param {boolean} copied
+ * @param {boolean} copied - Whether to show the copied state
  * @returns {void}
  */
 export const setCopyState = (button, copied) => {
@@ -76,7 +78,7 @@ export const setCopyState = (button, copied) => {
 };
 
 /**
- * Only native button tags receive a type attribute
+ * Give non-button tags button semantics via role and tabIndex
  *
  * @param {Object} [options]
  * @param {string} [options.className] - Extra CSS class
@@ -106,8 +108,8 @@ export const createCopyButton = ({ className, tag = 'button', position = 'top' }
  * @param {Object} options
  * @param {() => (string|Promise<string>)} options.getText - Provides the text to copy
  * @param {number} [options.copiedDuration=1200] - Milliseconds to show the copied state
- * @param {boolean} [options.preventDefault=true]
- * @param {boolean} [options.stopPropagation=true]
+ * @param {boolean} [options.preventDefault=true] - Whether to prevent the click's default action
+ * @param {boolean} [options.stopPropagation=true] - Whether to stop the click from bubbling
  * @param {() => void} [options.onMissing] - Runs when there is no text to copy
  * @param {() => void} [options.onCopyFailed] - Runs when clipboard writing fails
  * @returns {void}
@@ -171,10 +173,12 @@ export const bindCopyButton = (
 };
 
 /**
- * Show each copy button only while the pointer is near its corner
+ * Reveal each copy button only while the pointer is near its corner
+ *
  * @param {HTMLElement} contentEl - Message content container
  * @param {HTMLElement} topBtn - Top-right copy button
- * @param {HTMLElement} bottomBtn - Optional bottom-right button
+ * @param {HTMLElement} [bottomBtn] - Optional bottom-right button
+ * @returns {void}
  */
 const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
     contentEl.addEventListener('mousemove', (e) => {
@@ -208,7 +212,7 @@ const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
 /**
  * Skip editable and previously bound content
  *
- * @param {Element} contentEl
+ * @param {Element} contentEl - Message content container
  * @returns {void}
  */
 export const ensureContentCopyButton = (contentEl) => {

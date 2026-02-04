@@ -1,0 +1,151 @@
+{
+    "app": {
+        "title": "Anti-Power",
+        "version": "版本 v{version}",
+        "github": "GitHub",
+        "files": {
+            "cascadePanelLabel": "(侧边栏模块)",
+            "managerPanelLabel": "(Manager模块)"
+        },
+        "error": {
+            "unknown": "未知错误",
+            "detect": "检测失败",
+            "checkPatch": "检测补丁状态失败",
+            "selectPath": "选择目录失败",
+            "install": "安装失败",
+            "uninstall": "卸载失败",
+            "clean": "清理失败",
+            "normalizePath": "路径规范化失败",
+            "updateConfig": "更新配置失败"
+        }
+    },
+    "actions": {
+        "install": "安装补丁",
+        "reinstall": "重新安装",
+        "updateConfig": "更新配置",
+        "restore": "恢复原版",
+        "browse": "浏览..."
+    },
+    "status": {
+        "installed": "已安装",
+        "notInstalled": "未安装",
+        "installedHint": "已检测到补丁，可直接更新配置，无需重装",
+        "notInstalledHint": "请选择路径，配置选项后再安装"
+    },
+    "cleanTool": {
+        "title": "对话清理工具（仅 macOS/Linux）",
+        "cleanCache": "清理缓存",
+        "forceClean": "强制清理",
+        "cleaning": "清理中...",
+        "confirmTitle": "清理确认",
+        "confirmMessage": "将清理对话标题记录与缓存，建议先关闭 Antigravity。确定继续？",
+        "forceConfirmTitle": "强制清理",
+        "forceConfirmMessage": "将强制清理（忽略运行中检测），可能影响正在运行的 Antigravity。确定继续？"
+    },
+    "pathCard": {
+        "title": "安装目录",
+        "detectButton": "重新检测",
+        "placeholder": "未检测到 Antigravity 安装目录",
+        "selectTitle": "选择 Antigravity 安装目录",
+        "viewTarget": "查看目标路径",
+        "openDir": "打开目录",
+        "targetLabelCascade": "cascade-panel 增强",
+        "targetLabelManager": "Manager 窗口增强",
+        "error": {
+            "openDir": "打开目录失败"
+        }
+    },
+    "featureCard": {
+        "title": "侧边栏设置",
+        "enablePatch": "启用补丁",
+        "mermaid": {
+            "title": "Mermaid 流程图渲染",
+            "desc": "自动渲染 Mermaid 代码块为流程图"
+        },
+        "math": {
+            "title": "数学公式渲染",
+            "desc": "使用 KaTeX/MathJax 渲染 LaTeX 公式"
+        },
+        "copyButton": {
+            "title": "一键复制按钮",
+            "desc": "在内容区域添加复制按钮",
+            "expand": "展开选项",
+            "collapse": "收起选项",
+            "smartHover": "智能感应（鼠标在按钮附近才显示）",
+            "showBottom": "显示底部按钮",
+            "styleLabel": "按钮样式",
+            "styleChinese": "复制 📋",
+            "customPlaceholder": "自定义文字"
+        },
+        "tableColor": {
+            "title": "表格颜色修正",
+            "desc": "修复深色主题下表格文字不可见问题"
+        },
+        "fontSize": {
+            "title": "侧边栏字体大小",
+            "desc": "调整 Cascade 面板整体字体大小"
+        }
+    },
+    "managerCard": {
+        "title": "Manager 窗口设置",
+        "maxWidth": {
+            "title": "对话区域最大宽度",
+            "desc": "设置消息区域最大宽度占比 (%)"
+        },
+        "fontSize": {
+            "title": "Manager 字体大小",
+            "desc": "自定义消息区域的字体大小 (px)"
+        }
+    },
+    "aboutModal": {
+        "title": "关于",
+        "desc": "Antigravity AI IDE 增强补丁管理工具，让你的 AI 对话体验更上一层楼！",
+        "qqGroup": "QQ 交流群:",
+        "checkUpdate": "检查更新",
+        "checking": "检查中...",
+        "repo": "GitHub 仓库",
+        "newVersion": "🎉 发现新版本: v{version}",
+        "download": "前往下载",
+        "latest": "✓ 已是最新版本",
+        "checkFailed": "检查失败",
+        "networkError": "网络错误",
+        "copyright": "© 2026 Anti-Power · MIT License",
+        "error": {
+            "checkUpdate": "检查更新失败"
+        }
+    },
+    "confirmModal": {
+        "title": "确认安装补丁",
+        "message": "即将安装 Anti-Power 补丁，请确认以下文件变更：",
+        "modified": "将修改的原始文件",
+        "added": "将添加的文件/目录",
+        "deprecated": "将删除的废弃文件",
+        "note": "注意：",
+        "noteContent": "如果你对上述原始文件进行过自定义修改，这些修改将被覆盖。首次安装时会自动备份原文件（.bak）",
+        "confirm": "确认安装",
+        "cancel": "取消",
+        "badgeModified": "覆盖",
+        "badgeAdded": "新增",
+        "badgeDeprecated": "清理"
+    },
+    "toast": {
+        "installSuccess": "✓ 补丁安装成功",
+        "installFailed": "✗ 安装失败: {error}",
+        "restoreSuccess": "✓ 已恢复原版",
+        "restoreFailed": "✗ 恢复失败: {error}",
+        "cleanSuccess": "✓ 清理完成",
+        "cleanFailed": "✗ 清理失败: {error}",
+        "configUpdated": "✓ 配置已更新",
+        "updateFailed": "✗ 更新失败: {error}"
+    },
+    "titleBar": {
+        "toggleThemeLight": "切换到浅色主题",
+        "toggleThemeDark": "切换到深色主题",
+        "about": "关于",
+        "minimize": "最小化",
+        "maximize": "最大化",
+        "restore": "还原",
+        "close": "关闭",
+        "switchLanguage": "Switch to English"
+    }
+}

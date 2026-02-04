@@ -13,7 +13,7 @@ import { getClassString } from './utils.js';
  * Read cell text without expanding merged cells or nested markup
  *
  * @param {HTMLTableElement} tableEl
- * @returns {string}
+ * @returns {string} Markdown table
  */
 const extractTable = (tableEl) => {
     let markdown = '';
@@ -41,7 +41,8 @@ const extractTable = (tableEl) => {
 
 /**
  * Recover LaTeX from KaTeX or MathJax output
- * @param {Element} mathEl
+ *
+ * @param {Element} mathEl - Rendered math element
  * @returns {string|null} Null if the original LaTeX cannot be recovered
  */
 const extractLatexFromMath = (mathEl) => {
@@ -75,7 +76,7 @@ const getInnerText = (el) => {
 
 /**
  * @param {Element} element
- * @param {Object} context
+ * @param {Object} [context={}]
  * @returns {string}
  */
 const extractNodeContent = (element, context = {}) => {
@@ -315,7 +316,7 @@ const extractNodeContent = (element, context = {}) => {
 
 /**
  * @param {Element} element
- * @param {Object} context
+ * @param {Object} [context={}]
  * @returns {string}
  */
 const extractChildrenContent = (element, context = {}) => {
@@ -367,11 +368,11 @@ const extractChildrenContent = (element, context = {}) => {
 };
 
 /**
- * Walk the DOM recursively to preserve Markdown formatting
+ * Serialize the DOM as Markdown, including styled text, code, tables, LaTeX and Mermaid source
  *
  * @param {Element} element - Root of the content to copy
  * @param {boolean} [useRawText=false] - Retained for compatibility with existing calls
- * @returns {string}
+ * @returns {string} Markdown text
  */
 export const extractFormattedContent = (element, useRawText = false) => {
     if (!element) return '';

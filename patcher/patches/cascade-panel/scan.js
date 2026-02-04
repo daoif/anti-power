@@ -17,6 +17,7 @@ let config = {
 
 /**
  * Prefer chat, then react-app, then body as the render root
+ *
  * @returns {Element}
  */
 const getRoot = () =>
@@ -24,10 +25,7 @@ const getRoot = () =>
     document.getElementById('react-app') ||
     document.body;
 
-// Classic scan (current)
-
 /**
- * Preserve the immediate scan behavior from v2.0.1
  * @param {Element} root
  * @returns {void}
  */
@@ -66,7 +64,11 @@ const scanClassic = (root) => {
 let pendingNodesClassic = new Set();
 let scheduledClassic = false;
 
-/** Flush queued classic scans together, as in v2.0.1 */
+/**
+ * Flush all queued scans on the next animation frame
+ *
+ * @returns {void}
+ */
 const flushScanClassic = () => {
     scheduledClassic = false;
     const nodes = [...pendingNodesClassic];
@@ -82,8 +84,10 @@ const flushScanClassic = () => {
 };
 
 /**
- * Queue classic scans using the v2.0.1 rules
+ * Batch scan requests into the next animation frame
+ *
  * @param {NodeList|Array} nodes
+ * @returns {void}
  */
 const scheduleScanClassic = (nodes) => {
     let hasElements = false;
@@ -111,7 +115,8 @@ const scheduleScanClassic = (nodes) => {
 };
 
 /**
- * Run the initial classic scan before observing mutations, as in v2.0.1
+ * Scan existing content before observing DOM mutations
+ *
  * @returns {void}
  */
 const initClassic = () => {
@@ -143,7 +148,7 @@ const initClassic = () => {
 };
 
 /**
- * @param {Object} userConfig - Feature overrides
+ * @param {Object} [userConfig={}] - Feature overrides
  * @returns {void}
  */
 export const start = (userConfig = {}) => {

@@ -45,7 +45,7 @@ pre:not(.inline) code,
     padding: 2px 6px;
     border: none;
     border-radius: 4px;
-    background: #3b82f6;
+    background: rgb(51, 118, 205);
     color: #ffffff;
     font-size: 0.85em;
     line-height: 1.2;
@@ -84,14 +84,14 @@ pre:not(.inline) code,
     opacity: 1;
 }
 
-/* Reuse the native outline for hover feedback */
+/* Highlight the message outline on hover */
 [data-cascade-copy-bound='1']:hover {
-    outline: 1px solid var(--vscode-focusBorder, #007fd4);
+    outline: 1px solid rgb(51, 118, 205);
     outline-offset: 2px;
     border-radius: 4px;
 }
 
-/* Show the top-right copy button on hover or focus */
+/* Show the top-right copy button on hover */
 .cascade-copy-button {
     position: absolute;
     top: 0;

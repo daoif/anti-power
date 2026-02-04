@@ -7,7 +7,7 @@
 优先使用对应平台的安装器。
 
 - Windows: `anti-power-windows.exe`
-- macOS: `anti-power-macos-universal.dmg` -> `anti-power.app`
+- macOS: `anti-power-macos-universal.dmg` -> `Anti-Power.app`
 - Linux: `anti-power-linux.AppImage`
 
 手动安装使用补丁包 `anti-power-patches.zip`。
