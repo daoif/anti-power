@@ -24,7 +24,7 @@ pub fn resources_app_root(root: &Path) -> PathBuf {
             return resources.join("app");
         }
 
-        return root.join("resources").join("app");
+        root.join("resources").join("app")
     }
 
     #[cfg(not(target_os = "macos"))]

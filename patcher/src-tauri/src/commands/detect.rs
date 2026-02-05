@@ -4,7 +4,7 @@
 //! - Windows: 注册表查询 + 常见路径扫描
 //! - macOS/Linux: 标准路径探测，未命中时返回 None
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use super::paths;
 
 // 平台特定实现直接内联，避免子模块路径问题
@@ -41,7 +41,7 @@ pub fn normalize_antigravity_path(path: String) -> Option<String> {
     normalize_path(&input)
 }
 
-fn normalize_path(path: &PathBuf) -> Option<String> {
+fn normalize_path(path: &Path) -> Option<String> {
     paths::normalize_antigravity_root(path)
         .and_then(|normalized| normalized.to_str().map(|s| s.to_string()))
 }

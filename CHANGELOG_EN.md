@@ -6,7 +6,23 @@ This document records changes for each Anti-Power version.
 
 ---
 
-## v3.0.0 (Unreleased)
+## v3.0.1 (2026-02-05)
+
+### New Features
+- Cleaning tool now supports Gemini CLI, Codex and Claude Code, with only Antigravity selected by default.
+- Cleaning tool now adds an enable switch to prevent accidental triggering.
+- Added English scripts `anti-power.en.sh`/`anti-clean.en.sh`
+
+### Fixes
+- Fixed Chinese output when running scripts in English mode
+
+### Documentation
+- Manual install guide updated to include English scripts
+- Synced README/Changelog/Release Notes to v3.0.1
+
+---
+
+## v3.0.0 (2026-02-04)
 
 ### New Features
 - UI language switch (Chinese/English)

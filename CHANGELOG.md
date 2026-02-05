@@ -6,7 +6,23 @@
 
 ---
 
-## v3.0.0 (未发布)
+## v3.0.1 (2026-02-05)
+
+### 新功能
+- 清理工具新增支持 Gemini CLI, Codex 和 Claude Code, 默认仅选 Antigravity
+- 清理工具新增启用开关, 防止误触
+- 新增英文版脚本 `anti-power.en.sh`/`anti-clean.en.sh`
+
+### 修复
+- 修复英文模式下脚本输出为中文的问题
+
+### 文档
+- 手动安装说明补充英文脚本
+- README/Changelog/Release Notes 同步至 v3.0.1
+
+---
+
+## v3.0.0 (2026-02-04)
 
 ### 新功能
 - 中英文界面切换
