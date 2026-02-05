@@ -1,46 +1,37 @@
-# Release Notes / 发布说明 (v3.0.0)
+# Release Notes / 发布说明 (v3.0.1)
 
 ## 新功能
 
-- 中英文界面切换
-- 深浅色主题切换
-- 侧边栏与 Manager 功能卡片支持折叠/展开
+- 清理工具新增支持 Gemini CLI, Codex 和 Claude Code, 默认仅选 Antigravity
+- 清理工具新增启用开关, 防止误触
+- 新增英文版脚本 `anti-power.en.sh`/`anti-clean.en.sh`
 
-## 优化
-
-- 安装器布局重构为双栏响应式，清理工具根据屏幕自动调整位置
-- 全面升级视觉样式（字体、色板、按钮、卡片、模态与动画）
 
 ## 修复
 
-- 修复清理工具（macOS/Linux）运行逻辑，确保执行前经过二次确认
+- 修复英文模式下脚本输出为中文的问题
 
 ## 文档
 
-- README/Changelog/Release Notes 同步至 v3.0.0
-- README 更新支持的 Antigravity 版本至 v1.16.5，并统一 macOS 应用名为 `Anti-Power.app`
+- 手动安装说明补充英文脚本
+- README/Changelog/Release Notes 同步至 v3.0.1
 
 ---
 
 ## New Features
 
-- UI language switch (Chinese/English)
-- Light/dark theme toggle
-- Collapsible feature cards for sidebar/Manager options
-
-## Improvements
-
-- Installer layout redesigned with a responsive two-column view; clean tool placement adapts to screen size
-- Visual refresh across typography, color tokens, buttons, cards, modals, and animations
+- Cleaning tool now supports Gemini CLI, Codex and Claude Code, with only Antigravity selected by default.
+- Cleaning tool now adds an enable switch to prevent accidental triggering.
+- Added English scripts `anti-power.en.sh`/`anti-clean.en.sh`
 
 ## Fixes
 
-- Fixed the execution logic of cleaning tools (macOS/Linux) to ensure secondary confirmation
+- Fixed Chinese output when running scripts in English mode
 
 ## Documentation
 
-- Synced README/Changelog/Release Notes to v3.0.0
-- README: update supported Antigravity version to v1.16.5 and standardize macOS app name to `Anti-Power.app`
+- Manual install guide updated to include English scripts
+- Synced README/Changelog/Release Notes to v3.0.1
 
 ---
 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use crate::embedded;
 use super::paths;
 
@@ -137,7 +137,8 @@ impl Default for ManagerFeatureConfig {
 pub fn install_patch(
     path: String, 
     features: FeatureConfig,
-    manager_features: ManagerFeatureConfig
+    manager_features: ManagerFeatureConfig,
+    locale: Option<String>,
 ) -> Result<(), String> {
     let antigravity_root = resolve_antigravity_root(&path)?;
     let resources_root = paths::resources_app_root(&antigravity_root);
@@ -148,25 +149,33 @@ pub fn install_patch(
             &resources_root,
             Some(&features),
             Some(&manager_features),
+            locale.as_deref(),
         );
     }
 
-    match install_patch_internal(&resources_root, &features, &manager_features) {
+    match install_patch_internal(
+        &resources_root,
+        &features,
+        &manager_features,
+        locale.as_deref(),
+    ) {
         Ok(()) => Ok(()),
         Err(err) if is_permission_error(&err) => run_privileged_patch(
             PatchMode::Install,
             &resources_root,
             Some(&features),
             Some(&manager_features),
+            locale.as_deref(),
         ),
         Err(err) => Err(err),
     }
 }
 
 fn install_patch_internal(
-    resources_root: &PathBuf,
+    resources_root: &Path,
     features: &FeatureConfig,
     manager_features: &ManagerFeatureConfig,
+    locale: Option<&str>,
 ) -> Result<(), String> {
     let extensions_dir = resources_root
         .join("extensions")
@@ -194,6 +203,7 @@ fn install_patch_internal(
             Some(features),
             Some(manager_features),
             &dir,
+            locale,
         );
     }
 
@@ -220,24 +230,34 @@ fn install_patch_internal(
 
 /// Uninstall patches and restore the original files
 #[tauri::command]
-pub fn uninstall_patch(path: String) -> Result<(), String> {
+pub fn uninstall_patch(path: String, locale: Option<String>) -> Result<(), String> {
     let antigravity_root = resolve_antigravity_root(&path)?;
     let resources_root = paths::resources_app_root(&antigravity_root);
 
     if should_use_privileged(&resources_root) {
-        return run_privileged_patch(PatchMode::Uninstall, &resources_root, None, None);
+        return run_privileged_patch(
+            PatchMode::Uninstall,
+            &resources_root,
+            None,
+            None,
+            locale.as_deref(),
+        );
     }
 
-    match uninstall_patch_internal(&resources_root) {
+    match uninstall_patch_internal(&resources_root, locale.as_deref()) {
         Ok(()) => Ok(()),
-        Err(err) if is_permission_error(&err) => {
-            run_privileged_patch(PatchMode::Uninstall, &resources_root, None, None)
-        }
+        Err(err) if is_permission_error(&err) => run_privileged_patch(
+            PatchMode::Uninstall,
+            &resources_root,
+            None,
+            None,
+            locale.as_deref(),
+        ),
         Err(err) => Err(err),
     }
 }
 
-fn uninstall_patch_internal(resources_root: &PathBuf) -> Result<(), String> {
+fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> Result<(), String> {
     let extensions_dir = resources_root
         .join("extensions")
         .join("antigravity");
@@ -254,7 +274,14 @@ fn uninstall_patch_internal(resources_root: &PathBuf) -> Result<(), String> {
     }
 
     if let Some(dir) = first_unwritable_dir(&[&extensions_dir, &workbench_dir])? {
-        return handle_privileged_or_error(PatchMode::Uninstall, resources_root, None, None, &dir);
+        return handle_privileged_or_error(
+            PatchMode::Uninstall,
+            resources_root,
+            None,
+            None,
+            &dir,
+            locale,
+        );
     }
 
     restore_backup_files(&extensions_dir, &workbench_dir)?;
@@ -267,7 +294,8 @@ fn uninstall_patch_internal(resources_root: &PathBuf) -> Result<(), String> {
 pub fn update_config(
     path: String, 
     features: FeatureConfig,
-    manager_features: ManagerFeatureConfig
+    manager_features: ManagerFeatureConfig,
+    locale: Option<String>,
 ) -> Result<(), String> {
     let antigravity_root = resolve_antigravity_root(&path)?;
     let resources_root = paths::resources_app_root(&antigravity_root);
@@ -278,25 +306,33 @@ pub fn update_config(
             &resources_root,
             Some(&features),
             Some(&manager_features),
+            locale.as_deref(),
         );
     }
 
-    match update_config_internal(&resources_root, &features, &manager_features) {
+    match update_config_internal(
+        &resources_root,
+        &features,
+        &manager_features,
+        locale.as_deref(),
+    ) {
         Ok(()) => Ok(()),
         Err(err) if is_permission_error(&err) => run_privileged_patch(
             PatchMode::UpdateConfig,
             &resources_root,
             Some(&features),
             Some(&manager_features),
+            locale.as_deref(),
         ),
         Err(err) => Err(err),
     }
 }
 
 fn update_config_internal(
-    resources_root: &PathBuf,
+    resources_root: &Path,
     features: &FeatureConfig,
     manager_features: &ManagerFeatureConfig,
+    locale: Option<&str>,
 ) -> Result<(), String> {
     let cascade_config_path = resources_root
         .join("extensions")
@@ -331,7 +367,7 @@ fn update_config_internal(
     }
 
     if !writable_checks.is_empty() {
-        let refs: Vec<&PathBuf> = writable_checks.iter().collect();
+        let refs: Vec<&Path> = writable_checks.iter().map(|p| p.as_path()).collect();
         if let Some(dir) = first_unwritable_dir(&refs)? {
             return handle_privileged_or_error(
                 PatchMode::UpdateConfig,
@@ -339,6 +375,7 @@ fn update_config_internal(
                 Some(features),
                 Some(manager_features),
                 &dir,
+                locale,
             );
         }
     }
@@ -422,7 +459,7 @@ pub fn read_manager_patch_config(path: String) -> Result<Option<ManagerFeatureCo
 }
 
 /// Back up the original sidebar files
-fn backup_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
+fn backup_cascade_files(extensions_dir: &Path) -> Result<(), String> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_panel.exists() && !cascade_backup.exists() {
@@ -433,7 +470,7 @@ fn backup_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
 }
 
 /// Back up the original Manager files
-fn backup_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
+fn backup_manager_files(workbench_dir: &Path) -> Result<(), String> {
     let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
     let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
     if jetski_agent.exists() && !jetski_backup.exists() {
@@ -444,7 +481,7 @@ fn backup_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
 }
 
 /// Write the sidebar patch files
-fn write_cascade_patches(extensions_dir: &PathBuf, features: &FeatureConfig) -> Result<(), String> {
+fn write_cascade_patches(extensions_dir: &Path, features: &FeatureConfig) -> Result<(), String> {
     let cascade_panel_dir = extensions_dir.join("cascade-panel");
     
     // Remove the old directory so obsolete patch files cannot linger
@@ -482,7 +519,7 @@ fn write_cascade_patches(extensions_dir: &PathBuf, features: &FeatureConfig) -> 
 }
 
 /// Write the Manager patch files
-fn write_manager_patches(workbench_dir: &PathBuf, manager_features: &ManagerFeatureConfig) -> Result<(), String> {
+fn write_manager_patches(workbench_dir: &Path, manager_features: &ManagerFeatureConfig) -> Result<(), String> {
     let manager_panel_dir = workbench_dir.join("manager-panel");
     
     // Remove the old directory so obsolete patch files cannot linger
@@ -520,7 +557,7 @@ fn write_manager_patches(workbench_dir: &PathBuf, manager_features: &ManagerFeat
 }
 
 /// Write the sidebar patch configuration
-fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<(), String> {
+fn write_config_file(config_path: &Path, features: &FeatureConfig) -> Result<(), String> {
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
         "math": features.math,
@@ -541,7 +578,7 @@ fn write_config_file(config_path: &PathBuf, features: &FeatureConfig) -> Result<
 }
 
 /// Write the Manager patch configuration
-fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureConfig) -> Result<(), String> {
+fn write_manager_config_file(config_path: &Path, features: &ManagerFeatureConfig) -> Result<(), String> {
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
         "math": features.math,
@@ -563,7 +600,7 @@ fn write_manager_config_file(config_path: &PathBuf, features: &ManagerFeatureCon
 }
 
 /// Restore the original sidebar files when the patch is disabled
-fn restore_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
+fn restore_cascade_files(extensions_dir: &Path) -> Result<(), String> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_backup.exists() {
@@ -581,7 +618,7 @@ fn restore_cascade_files(extensions_dir: &PathBuf) -> Result<(), String> {
 }
 
 /// Restore the original Manager files when the patch is disabled
-fn restore_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
+fn restore_manager_files(workbench_dir: &Path) -> Result<(), String> {
     let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
     let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
     if jetski_backup.exists() {
@@ -599,7 +636,7 @@ fn restore_manager_files(workbench_dir: &PathBuf) -> Result<(), String> {
 }
 
 /// Restore all backed-up files during a full uninstall
-fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Result<(), String> {
+fn restore_backup_files(extensions_dir: &Path, workbench_dir: &Path) -> Result<(), String> {
     restore_cascade_files(extensions_dir)?;
     restore_manager_files(workbench_dir)?;
     Ok(())
@@ -607,7 +644,7 @@ fn restore_backup_files(extensions_dir: &PathBuf, workbench_dir: &PathBuf) -> Re
 
 /// Remove the listed checksums from `product.json`
 /// This prevents Antigravity from flagging patched files as corrupt
-fn clean_checksums(product_json_path: &PathBuf) -> Result<(), String> {
+fn clean_checksums(product_json_path: &Path) -> Result<(), String> {
     if !product_json_path.exists() {
         return Ok(());
     }
@@ -657,7 +694,7 @@ fn is_permission_error(message: &str) -> bool {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn should_use_privileged(resources_root: &PathBuf) -> bool {
+fn should_use_privileged(resources_root: &Path) -> bool {
     let path = resources_root.to_string_lossy();
     let prefixes = [
         "/Applications/",
@@ -676,24 +713,25 @@ fn should_use_privileged(resources_root: &PathBuf) -> bool {
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-fn should_use_privileged(_resources_root: &PathBuf) -> bool {
+fn should_use_privileged(_resources_root: &Path) -> bool {
     false
 }
 
-fn first_unwritable_dir(dirs: &[&PathBuf]) -> Result<Option<PathBuf>, String> {
+fn first_unwritable_dir(dirs: &[&Path]) -> Result<Option<PathBuf>, String> {
     for dir in dirs {
         match can_write_dir(dir)? {
             true => {}
-            false => return Ok(Some((*dir).clone())),
+            false => return Ok(Some(dir.to_path_buf())),
         }
     }
     Ok(None)
 }
 
-fn can_write_dir(dir: &PathBuf) -> Result<bool, String> {
+fn can_write_dir(dir: &Path) -> Result<bool, String> {
     let test_path = dir.join(".anti-power-write-test");
     match fs::OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .open(&test_path)
     {
@@ -708,17 +746,34 @@ fn can_write_dir(dir: &PathBuf) -> Result<bool, String> {
     }
 }
 
+fn is_zh_locale(locale: Option<&str>) -> bool {
+    if let Some(value) = locale {
+        let lower = value.to_ascii_lowercase();
+        return lower.starts_with("zh");
+    }
+    true
+}
+
+fn select_privileged_script(locale: Option<&str>) -> &'static str {
+    if is_zh_locale(locale) {
+        "anti-power.sh"
+    } else {
+        "anti-power.en.sh"
+    }
+}
+
 fn handle_privileged_or_error(
     mode: PatchMode,
-    resources_root: &PathBuf,
+    resources_root: &Path,
     features: Option<&FeatureConfig>,
     manager_features: Option<&ManagerFeatureConfig>,
-    dir: &PathBuf,
+    dir: &Path,
+    locale: Option<&str>,
 ) -> Result<(), String> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         let _ = dir;
-        return run_privileged_patch(mode, resources_root, features, manager_features);
+        run_privileged_patch(mode, resources_root, features, manager_features, locale)
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -733,9 +788,10 @@ fn handle_privileged_or_error(
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn run_privileged_patch(
     mode: PatchMode,
-    resources_root: &PathBuf,
+    resources_root: &Path,
     features: Option<&FeatureConfig>,
     manager_features: Option<&ManagerFeatureConfig>,
+    locale: Option<&str>,
 ) -> Result<(), String> {
     let temp_dir = prepare_temp_patch_dir()?;
     write_embedded_files_to_dir(&temp_dir)?;
@@ -751,10 +807,11 @@ fn run_privileged_patch(
         write_manager_config_file(&manager_config_path, manager_config)?;
     }
 
-    let script_path = temp_dir.join("anti-power.sh");
+    let script_name = select_privileged_script(locale);
+    let script_path = temp_dir.join(script_name);
     if !script_path.exists() {
         let _ = fs::remove_dir_all(&temp_dir);
-        return Err("未找到 anti-power.sh".to_string());
+        return Err(format!("未找到 {}", script_name));
     }
 
     ensure_script_executable(&script_path)?;
@@ -777,7 +834,7 @@ fn run_privileged_patch(
     }
 }
 
-fn annotate_privileged_error(message: String, resources_root: &PathBuf) -> String {
+fn annotate_privileged_error(message: String, resources_root: &Path) -> String {
     #[cfg(target_os = "macos")]
     {
         let lower = message.to_ascii_lowercase();
@@ -797,9 +854,10 @@ fn annotate_privileged_error(message: String, resources_root: &PathBuf) -> Strin
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn run_privileged_patch(
     _mode: PatchMode,
-    _resources_root: &PathBuf,
+    _resources_root: &Path,
     _features: Option<&FeatureConfig>,
     _manager_features: Option<&ManagerFeatureConfig>,
+    _locale: Option<&str>,
 ) -> Result<(), String> {
     Err("当前平台不支持管理员权限补丁流程，请手动运行补丁脚本".to_string())
 }
@@ -821,7 +879,7 @@ fn prepare_temp_patch_dir() -> Result<PathBuf, String> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn write_embedded_files_to_dir(root: &PathBuf) -> Result<(), String> {
+fn write_embedded_files_to_dir(root: &Path) -> Result<(), String> {
     let patch_files = embedded::get_all_files_runtime()?;
     for (relative_path, content) in patch_files {
         let full_path = root.join(&relative_path);
@@ -840,7 +898,7 @@ fn write_embedded_files_to_dir(root: &PathBuf) -> Result<(), String> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn ensure_script_executable(script_path: &PathBuf) -> Result<(), String> {
+fn ensure_script_executable(script_path: &Path) -> Result<(), String> {
     #[cfg(unix)]
     {
         let mut perms = fs::metadata(script_path)
@@ -857,7 +915,7 @@ fn ensure_script_executable(script_path: &PathBuf) -> Result<(), String> {
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn build_script_args(
     mode: PatchMode,
-    resources_root: &PathBuf,
+    resources_root: &Path,
     cascade_enabled: bool,
     manager_enabled: bool,
 ) -> Vec<String> {
@@ -875,9 +933,9 @@ fn build_script_args(
 
 #[cfg(target_os = "macos")]
 fn run_privileged_script(
-    script_path: &PathBuf,
+    script_path: &Path,
     args: &[String],
-    status_path: &PathBuf,
+    status_path: &Path,
 ) -> Result<(), String> {
     let mut command_parts = Vec::new();
     command_parts.push(shell_quote("/bin/bash"));
@@ -908,9 +966,9 @@ fn run_privileged_script(
 
 #[cfg(target_os = "linux")]
 fn run_privileged_script(
-    script_path: &PathBuf,
+    script_path: &Path,
     args: &[String],
-    _status_path: &PathBuf,
+    _status_path: &Path,
 ) -> Result<(), String> {
     let output = Command::new("pkexec")
         .arg("/bin/bash")
@@ -963,7 +1021,7 @@ fn escape_applescript_string(value: &str) -> String {
 }
 
 #[cfg(target_os = "macos")]
-fn wait_for_status(status_path: &PathBuf, timeout: std::time::Duration) -> Result<(), String> {
+fn wait_for_status(status_path: &Path, timeout: std::time::Duration) -> Result<(), String> {
     let start = std::time::Instant::now();
     while start.elapsed() < timeout {
         if status_path.exists() {

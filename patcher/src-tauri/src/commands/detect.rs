@@ -4,7 +4,7 @@
 //! - Windows: query the registry and scan common paths
 //! - macOS/Linux: check standard paths and return `None` if none match
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use super::paths;
 
 // Keep platform code here to avoid submodule path issues
@@ -41,7 +41,7 @@ pub fn normalize_antigravity_path(path: String) -> Option<String> {
     normalize_path(&input)
 }
 
-fn normalize_path(path: &PathBuf) -> Option<String> {
+fn normalize_path(path: &Path) -> Option<String> {
     paths::normalize_antigravity_root(path)
         .and_then(|normalized| normalized.to_str().map(|s| s.to_string()))
 }

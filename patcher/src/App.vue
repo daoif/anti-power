@@ -10,9 +10,9 @@ import ManagerFeatureCard from "./components/ManagerFeatureCard.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.0.1";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 /**
@@ -42,6 +42,34 @@ const platform = navigator.platform.toLowerCase();
 // This cleanup backend supports macOS and Linux
 const isCleanSupported = platform.includes('mac') || platform.includes('linux');
 const isCleaning = ref(false);
+const cleanEnabled = ref(true);
+const cleanTargets = ref({
+  antigravity: true,
+  gemini: false,
+  codex: false,
+  claude: false,
+});
+
+const hasAnyCleanTarget = computed(() =>
+  Object.values(cleanTargets.value).some(Boolean)
+);
+
+const cleanTargetLabels = computed(() => {
+  const labels: string[] = [];
+  if (cleanTargets.value.antigravity) labels.push(t('cleanTool.targets.antigravity'));
+  if (cleanTargets.value.gemini) labels.push(t('cleanTool.targets.gemini'));
+  if (cleanTargets.value.codex) labels.push(t('cleanTool.targets.codex'));
+  if (cleanTargets.value.claude) labels.push(t('cleanTool.targets.claude'));
+  return labels;
+});
+
+const cleanTargetText = computed(() =>
+  cleanTargetLabels.value.join(t('cleanTool.targetSeparator'))
+);
+
+const isCleanActionDisabled = computed(() =>
+  isCleaning.value || !cleanEnabled.value || !hasAnyCleanTarget.value
+);
 
 /**
  * Feature flags for the legacy Cascade panel
@@ -174,7 +202,8 @@ async function confirmInstall() {
     await invoke("install_patch", { 
       path: antigravityPath.value,
       features: features.value,
-      managerFeatures: managerFeatures.value
+      managerFeatures: managerFeatures.value,
+      locale: locale.value
     });
     isInstalled.value = true;
     showToast(t('toast.installSuccess'));
@@ -190,7 +219,7 @@ async function confirmInstall() {
 async function uninstallPatch() {
   if (!antigravityPath.value) return;
   try {
-    await invoke("uninstall_patch", { path: antigravityPath.value });
+    await invoke("uninstall_patch", { path: antigravityPath.value, locale: locale.value });
     isInstalled.value = false;
     showToast(t('toast.restoreSuccess'));
   } catch (e) {
@@ -206,9 +235,15 @@ async function uninstallPatch() {
  */
 async function runAntiClean(force = false) {
   if (!isCleanSupported || isCleaning.value) return;
-  const message = force
-    ? t('cleanTool.forceConfirmMessage')
-    : t('cleanTool.confirmMessage');
+  if (!hasAnyCleanTarget.value) {
+    showToast(t('cleanTool.targetHint'));
+    return;
+  }
+  const includesAntigravity = cleanTargets.value.antigravity;
+  const messageKey = force
+    ? (includesAntigravity ? 'cleanTool.forceConfirmMessage' : 'cleanTool.forceConfirmMessageNoApp')
+    : (includesAntigravity ? 'cleanTool.confirmMessage' : 'cleanTool.confirmMessageNoApp');
+  const message = t(messageKey, { targets: cleanTargetText.value });
   const confirmed = await ask(message, {
     title: force ? t('cleanTool.forceConfirmTitle') : t('cleanTool.confirmTitle'),
     kind: 'warning'
@@ -219,7 +254,11 @@ async function runAntiClean(force = false) {
   }
   isCleaning.value = true;
   try {
-    const output = await invoke<string>("run_anti_clean", { force });
+    const output = await invoke<string>("run_anti_clean", { 
+      force, 
+      targets: cleanTargets.value,
+      locale: locale.value
+    });
     if (output) {
       console.log("[anti-clean]", output);
     }
@@ -287,7 +326,8 @@ async function updateConfigOnly() {
     await invoke("update_config", { 
       path: antigravityPath.value,
       features: features.value,
-      managerFeatures: managerFeatures.value
+      managerFeatures: managerFeatures.value,
+      locale: locale.value
     });
     showToast(t('toast.configUpdated'));
   } catch (e) {
@@ -357,22 +397,50 @@ onMounted(() => {
           <section v-show="isCleanSupported" class="clean-area desktop-only">
             <div class="clean-header">
               <h2 class="clean-title">{{ $t('cleanTool.title') }}</h2>
+              <label class="enable-toggle" @click.stop>
+                <span class="toggle-label">{{ $t('cleanTool.enableToggle') }}</span>
+                <input type="checkbox" v-model="cleanEnabled" class="checkbox" :disabled="isCleaning" />
+              </label>
             </div>
-            <div class="clean-actions">
-              <button 
-                @click="runAntiClean(false)"
-                :disabled="isCleaning"
-                class="secondary-btn"
-              >
-                {{ isCleaning ? $t('cleanTool.cleaning') : $t('cleanTool.cleanCache') }}
-              </button>
-              <button 
-                @click="runAntiClean(true)"
-                :disabled="isCleaning"
-                class="secondary-btn danger"
-              >
-                {{ $t('cleanTool.forceClean') }}
-              </button>
+            <div class="clean-content">
+              <div class="clean-targets">
+                <div class="clean-target-title">{{ $t('cleanTool.targetTitle') }}</div>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.antigravity" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.antigravity') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.gemini" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.gemini') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.codex" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.codex') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.claude" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.claude') }}</span>
+                </label>
+                <p v-if="!hasAnyCleanTarget" class="clean-target-hint">
+                  {{ $t('cleanTool.targetHint') }}
+                </p>
+              </div>
+              <div class="clean-actions">
+                <button 
+                  @click="runAntiClean(false)"
+                  :disabled="isCleanActionDisabled"
+                  class="secondary-btn"
+                >
+                  {{ isCleaning ? $t('cleanTool.cleaning') : $t('cleanTool.cleanCache') }}
+                </button>
+                <button 
+                  @click="runAntiClean(true)"
+                  :disabled="isCleanActionDisabled"
+                  class="secondary-btn danger"
+                >
+                  {{ $t('cleanTool.forceClean') }}
+                </button>
+              </div>
             </div>
           </section>
 
@@ -386,22 +454,50 @@ onMounted(() => {
           <section v-show="isCleanSupported" class="clean-area mobile-only">
             <div class="clean-header">
               <h2 class="clean-title">{{ $t('cleanTool.title') }}</h2>
+              <label class="enable-toggle" @click.stop>
+                <span class="toggle-label">{{ $t('cleanTool.enableToggle') }}</span>
+                <input type="checkbox" v-model="cleanEnabled" class="checkbox" :disabled="isCleaning" />
+              </label>
             </div>
-            <div class="clean-actions">
-              <button 
-                @click="runAntiClean(false)"
-                :disabled="isCleaning"
-                class="secondary-btn"
-              >
-                {{ isCleaning ? $t('cleanTool.cleaning') : $t('cleanTool.cleanCache') }}
-              </button>
-              <button 
-                @click="runAntiClean(true)"
-                :disabled="isCleaning"
-                class="secondary-btn danger"
-              >
-                {{ $t('cleanTool.forceClean') }}
-              </button>
+            <div class="clean-content">
+              <div class="clean-targets">
+                <div class="clean-target-title">{{ $t('cleanTool.targetTitle') }}</div>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.antigravity" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.antigravity') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.gemini" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.gemini') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.codex" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.codex') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.claude" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.claude') }}</span>
+                </label>
+                <p v-if="!hasAnyCleanTarget" class="clean-target-hint">
+                  {{ $t('cleanTool.targetHint') }}
+                </p>
+              </div>
+              <div class="clean-actions">
+                <button 
+                  @click="runAntiClean(false)"
+                  :disabled="isCleanActionDisabled"
+                  class="secondary-btn"
+                >
+                  {{ isCleaning ? $t('cleanTool.cleaning') : $t('cleanTool.cleanCache') }}
+                </button>
+                <button 
+                  @click="runAntiClean(true)"
+                  :disabled="isCleanActionDisabled"
+                  class="secondary-btn danger"
+                >
+                  {{ $t('cleanTool.forceClean') }}
+                </button>
+              </div>
             </div>
           </section>
         </section>
@@ -595,6 +691,11 @@ onMounted(() => {
 
 .clean-header {
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .clean-title {
@@ -606,9 +707,83 @@ onMounted(() => {
   margin: 0;
 }
 
+.enable-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.enable-toggle:hover {
+  background: var(--ag-accent-subtle);
+}
+
+.toggle-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ag-text-secondary);
+}
+
+.clean-content {
+  display: grid;
+  gap: 12px;
+}
+
+.clean-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.clean-target-title {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--ag-text-tertiary);
+}
+
+.clean-target-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--ag-border);
+  border-radius: var(--radius-md);
+  background: var(--ag-surface-2);
+  font-size: 12px;
+  color: var(--ag-text-secondary);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.clean-target-option input {
+  margin: 0;
+  accent-color: var(--ag-accent);
+}
+
+.clean-target-option:hover {
+  border-color: var(--ag-border-hover);
+  background: var(--ag-surface-3);
+  color: var(--ag-text);
+}
+
+.clean-target-option:focus-within {
+  border-color: var(--ag-accent);
+  box-shadow: 0 0 0 1px rgba(51, 118, 205, 0.2);
+}
+
+.clean-target-hint {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--ag-error);
+  margin: 0;
+}
+
 .clean-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 

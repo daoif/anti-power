@@ -34,13 +34,25 @@
     },
     "cleanTool": {
         "title": "Conversation Clean Tool (macOS/Linux)",
+        "enableToggle": "Enable Cleaning",
+        "targetTitle": "Clean Targets",
+        "targets": {
+            "antigravity": "Antigravity",
+            "gemini": "Gemini CLI",
+            "codex": "Codex Archived",
+            "claude": "Claude Code"
+        },
+        "targetSeparator": ", ",
+        "targetHint": "Please select at least one target",
         "cleanCache": "Clean Cache",
         "forceClean": "Force Clean",
         "cleaning": "Cleaning...",
         "confirmTitle": "Clean Confirmation",
-        "confirmMessage": "This will clean conversation title records and cache. It is recommended to close Antigravity first. Continue?",
+        "confirmMessage": "This will clean conversation data for {targets}. It is recommended to close running application instances first. Continue?",
+        "confirmMessageNoApp": "This will clean conversation data for {targets}. Continue?",
         "forceConfirmTitle": "Force Clean",
-        "forceConfirmMessage": "This will force clean (ignoring running checks), which may affect running Antigravity instances. Continue?"
+        "forceConfirmMessage": "This will force clean (ignoring running checks), which may affect running application instances. It will clean conversation data for {targets}. Continue?",
+        "forceConfirmMessageNoApp": "This will force clean (ignoring running checks). It will clean conversation data for {targets}. Continue?"
     },
     "pathCard": {
         "title": "Install Path",

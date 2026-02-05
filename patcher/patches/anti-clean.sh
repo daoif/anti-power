@@ -14,48 +14,35 @@ OS_TYPE=$(uname -s)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FORCE=0
 DATA_DIR=""
+TARGET_ANTIGRAVITY=0
+TARGET_GEMINI=0
+TARGET_CODEX=0
+TARGET_CLAUDE=0
 
 for arg in "$@"; do
-    if [ "$arg" = "--force" ]; then
-        FORCE=1
-    else
-        DATA_DIR="$arg"
-    fi
+    case "$arg" in
+        --force) FORCE=1 ;;
+        --antigravity) TARGET_ANTIGRAVITY=1 ;;
+        --gemini) TARGET_GEMINI=1 ;;
+        --codex) TARGET_CODEX=1 ;;
+        --claude) TARGET_CLAUDE=1 ;;
+        --all)
+            TARGET_ANTIGRAVITY=1
+            TARGET_GEMINI=1
+            TARGET_CODEX=1
+            TARGET_CLAUDE=1
+            ;;
+        *) DATA_DIR="$arg" ;;
+    esac
 done
 
-# Use the platform default when no data path is supplied
-if [ -z "$DATA_DIR" ]; then
-    if [ "$OS_TYPE" = "Darwin" ]; then
-        DATA_DIR="$HOME/Library/Application Support/Antigravity"
-        echo "检测到 macOS 系统"
-    elif [ "$OS_TYPE" = "Linux" ]; then
-        DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity"
-        echo "检测到 Linux 系统"
-    else
-        echo "错误: 不支持的操作系统 $OS_TYPE"
-        exit 1
-    fi
+# Keep the original all-target cleanup when no target is selected
+if [ "$TARGET_ANTIGRAVITY" -eq 0 ] && [ "$TARGET_GEMINI" -eq 0 ] && [ "$TARGET_CODEX" -eq 0 ] && [ "$TARGET_CLAUDE" -eq 0 ]; then
+    TARGET_ANTIGRAVITY=1
+    TARGET_GEMINI=1
+    TARGET_CODEX=1
+    TARGET_CLAUDE=1
 fi
-
-if ! command -v sqlite3 >/dev/null 2>&1; then
-    echo "错误: 未找到 sqlite3，请先安装后再运行"
-    exit 1
-fi
-
-if [ "$FORCE" -ne 1 ]; then
-    if pgrep -f "Antigravity" >/dev/null 2>&1; then
-        echo "错误: 检测到 Antigravity 正在运行，请先退出后再执行 (或使用 --force)"
-        exit 1
-    fi
-fi
-
-if [ ! -d "$DATA_DIR" ]; then
-    echo "错误: 找不到数据目录 $DATA_DIR"
-    exit 1
-fi
-
-TIMESTAMP="$(date +%m%d%H%M)"
-DB_DIR="$DATA_DIR/User/globalStorage"
 
 backup_file() {
     local src="$1"
@@ -84,16 +71,6 @@ clean_db() {
     echo "清理 $name (before=$before, after=$after)"
 }
 
-echo -e "\n[1/3] 备份数据库..."
-backup_file "$DB_DIR/state.vscdb"
-backup_file "$DB_DIR/state.vscdb.backup"
-
-echo -e "\n[2/3] 清理对话标题记录..."
-clean_db "$DB_DIR/state.vscdb"
-clean_db "$DB_DIR/state.vscdb.backup"
-
-echo -e "\n[3/3] 清理其他缓存和临时文件..."
-
 clean_dir_contents() {
     local dir="$1"
     if [ -d "$dir" ]; then
@@ -105,14 +82,108 @@ clean_dir_contents() {
     fi
 }
 
-# Clear Gemini CLI cache directories under the user's home directory
-clean_dir_contents "$HOME/.gemini/tmp"
-clean_dir_contents "$HOME/.gemini/antigravity/annotations"
-clean_dir_contents "$HOME/.gemini/antigravity/brain"
-clean_dir_contents "$HOME/.gemini/antigravity/browser_recordings"
-clean_dir_contents "$HOME/.gemini/antigravity/code_tracker/active"
-clean_dir_contents "$HOME/.gemini/antigravity/code_tracker/history"
-clean_dir_contents "$HOME/.gemini/antigravity/conversations"
-clean_dir_contents "$HOME/.gemini/antigravity/implicit"
+clean_file() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        echo "删除文件: $file"
+        rm -f "$file"
+    else
+        echo "跳过: 文件不存在 $file"
+    fi
+}
+
+check_running() {
+    local name="$1"
+    local pattern="$2"
+    if pgrep -f "$pattern" >/dev/null 2>&1; then
+        echo "错误: 检测到 ${name} 正在运行，请先退出后再执行 (或使用 --force)"
+        exit 1
+    fi
+}
+
+if [ "$FORCE" -ne 1 ]; then
+    if [ "$TARGET_ANTIGRAVITY" -eq 1 ]; then
+        check_running "Antigravity" "antigravity"
+    fi
+
+    if [ "$TARGET_GEMINI" -eq 1 ]; then
+        check_running "Gemini CLI" "gemini"
+    fi
+
+    if [ "$TARGET_CODEX" -eq 1 ]; then
+        check_running "Codex" "codex"
+    fi
+
+    if [ "$TARGET_CLAUDE" -eq 1 ]; then
+        check_running "Claude Code" "claude"
+    fi
+fi
+
+if [ "$TARGET_ANTIGRAVITY" -eq 1 ]; then
+    # Use the platform default when no data path is supplied
+    if [ -z "$DATA_DIR" ]; then
+        if [ "$OS_TYPE" = "Darwin" ]; then
+            DATA_DIR="$HOME/Library/Application Support/Antigravity"
+            echo "检测到 macOS 系统"
+        elif [ "$OS_TYPE" = "Linux" ]; then
+            DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity"
+            echo "检测到 Linux 系统"
+        else
+            echo "错误: 不支持的操作系统 $OS_TYPE"
+            exit 1
+        fi
+    fi
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        echo "错误: 未找到 sqlite3，请先安装后再运行"
+        exit 1
+    fi
+
+    if [ ! -d "$DATA_DIR" ]; then
+        echo "错误: 找不到数据目录 $DATA_DIR"
+        exit 1
+    fi
+
+    TIMESTAMP="$(date +%m%d%H%M)"
+    DB_DIR="$DATA_DIR/User/globalStorage"
+
+    echo -e "\n[Antigravity] 备份数据库..."
+    backup_file "$DB_DIR/state.vscdb"
+    backup_file "$DB_DIR/state.vscdb.backup"
+
+    echo -e "\n[Antigravity] 清理数据库..."
+    clean_db "$DB_DIR/state.vscdb"
+    clean_db "$DB_DIR/state.vscdb.backup"
+
+    echo -e "\n[Antigravity] 清理对话缓存..."
+    clean_dir_contents "$HOME/.gemini/antigravity/annotations"
+    clean_dir_contents "$HOME/.gemini/antigravity/brain"
+    clean_dir_contents "$HOME/.gemini/antigravity/browser_recordings"
+    clean_dir_contents "$HOME/.gemini/antigravity/code_tracker/active"
+    clean_dir_contents "$HOME/.gemini/antigravity/code_tracker/history"
+    clean_dir_contents "$HOME/.gemini/antigravity/conversations"
+    clean_dir_contents "$HOME/.gemini/antigravity/implicit"
+fi
+
+if [ "$TARGET_GEMINI" -eq 1 ]; then
+    echo -e "\n[Gemini CLI] 清理对话缓存..."
+    clean_dir_contents "$HOME/.gemini/tmp"
+fi
+
+if [ "$TARGET_CODEX" -eq 1 ]; then
+    echo -e "\n[Codex] 清理归档对话..."
+    clean_dir_contents "$HOME/.codex/archived_sessions"
+fi
+
+if [ "$TARGET_CLAUDE" -eq 1 ]; then
+    echo -e "\n[Claude Code] 清理对话缓存..."
+    clean_dir_contents "$HOME/.claude/projects"
+    clean_dir_contents "$HOME/.claude/file-history"
+    clean_dir_contents "$HOME/.claude/session-env"
+    clean_dir_contents "$HOME/.claude/shell-snapshots"
+    clean_dir_contents "$HOME/.claude/todos"
+    clean_dir_contents "$HOME/.claude/debug"
+    clean_file "$HOME/.claude/history.jsonl"
+fi
 
 echo -e "\n完成！"

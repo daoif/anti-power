@@ -258,6 +258,7 @@ async function openTargetDir(path: string) {
 .path-row {
   display: flex;
   gap: 10px;
+  margin-top: 10px;
 }
 
 .path-input {

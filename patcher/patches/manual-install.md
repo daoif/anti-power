@@ -18,6 +18,7 @@
 ## 补丁包内容
 
 - anti-power.sh (macOS/Linux 安装脚本)
+- anti-power.en.sh (macOS/Linux English output script)
 - cascade-panel.html
 - cascade-panel/ 目录
 - workbench-jetski-agent.html

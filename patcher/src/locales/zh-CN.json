@@ -34,13 +34,25 @@
     },
     "cleanTool": {
         "title": "对话清理工具（仅 macOS/Linux）",
+        "enableToggle": "启用清理",
+        "targetTitle": "清理范围",
+        "targets": {
+            "antigravity": "Antigravity",
+            "gemini": "Gemini CLI",
+            "codex": "Codex 归档",
+            "claude": "Claude Code"
+        },
+        "targetSeparator": "、",
+        "targetHint": "请至少选择一个清理范围",
         "cleanCache": "清理缓存",
         "forceClean": "强制清理",
         "cleaning": "清理中...",
         "confirmTitle": "清理确认",
-        "confirmMessage": "将清理对话标题记录与缓存，建议先关闭 Antigravity。确定继续？",
+        "confirmMessage": "将清理 {targets} 的对话与缓存，建议先关闭正在运行的应用。确定继续？",
+        "confirmMessageNoApp": "将清理 {targets} 的对话与缓存。确定继续？",
         "forceConfirmTitle": "强制清理",
-        "forceConfirmMessage": "将强制清理（忽略运行中检测），可能影响正在运行的 Antigravity。确定继续？"
+        "forceConfirmMessage": "将强制清理（忽略运行中检测），可能影响正在运行的应用。将清理 {targets} 的对话与缓存。确定继续？",
+        "forceConfirmMessageNoApp": "将强制清理（忽略运行中检测）。将清理 {targets} 的对话与缓存。确定继续？"
     },
     "pathCard": {
         "title": "安装目录",
