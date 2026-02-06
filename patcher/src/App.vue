@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open, ask } from "@tauri-apps/plugin-dialog";
 import { useI18n } from 'vue-i18n';
@@ -12,7 +12,7 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 
 const { t, locale } = useI18n();
 
-const APP_VERSION = "3.0.1";
+const APP_VERSION = "3.1.0";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 /**
@@ -39,16 +39,62 @@ const isInstalled = ref(false);
 const showAbout = ref(false);
 const showConfirm = ref(false);
 const platform = navigator.platform.toLowerCase();
-// This cleanup backend supports macOS and Linux
-const isCleanSupported = platform.includes('mac') || platform.includes('linux');
+const isCleanSupported = platform.includes('mac') || platform.includes('linux') || platform.includes('win');
 const isCleaning = ref(false);
+const STORAGE_KEYS = {
+  INSTALL_PATH: 'anti-power-install-path',
+  CLEAN_ENABLED: 'anti-power-clean-enabled',
+  CLEAN_TARGETS: 'anti-power-clean-targets'
+};
+
+try {
+  const saved = localStorage.getItem(STORAGE_KEYS.INSTALL_PATH);
+  if (saved !== null) {
+    antigravityPath.value = JSON.parse(saved);
+  }
+} catch (e) {
+  console.error('Failed to load install path', e);
+}
+
 const cleanEnabled = ref(true);
-const cleanTargets = ref({
+try {
+  const saved = localStorage.getItem(STORAGE_KEYS.CLEAN_ENABLED);
+  if (saved !== null) {
+    cleanEnabled.value = JSON.parse(saved);
+  }
+} catch (e) {
+  console.error('Failed to load clean enabled state', e);
+}
+
+const defaultTargets = {
   antigravity: true,
   gemini: false,
   codex: false,
   claude: false,
+};
+const cleanTargets = ref({ ...defaultTargets });
+
+try {
+  const saved = localStorage.getItem(STORAGE_KEYS.CLEAN_TARGETS);
+  if (saved) {
+    cleanTargets.value = { ...defaultTargets, ...JSON.parse(saved) };
+  }
+} catch (e) {
+  console.error('Failed to load clean targets', e);
+}
+
+// Persist the install path and cleanup choices
+watch(antigravityPath, (val) => {
+  localStorage.setItem(STORAGE_KEYS.INSTALL_PATH, JSON.stringify(val));
 });
+
+watch(cleanEnabled, (val) => {
+  localStorage.setItem(STORAGE_KEYS.CLEAN_ENABLED, JSON.stringify(val));
+});
+
+watch(cleanTargets, (val) => {
+  localStorage.setItem(STORAGE_KEYS.CLEAN_TARGETS, JSON.stringify(val));
+}, { deep: true });
 
 const hasAnyCleanTarget = computed(() =>
   Object.values(cleanTargets.value).some(Boolean)
@@ -131,7 +177,7 @@ async function detectPath() {
  */
 async function checkPatchStatus(path: string) {
   try {
-    isInstalled.value = await invoke<boolean>("check_patch_status", { path });
+    isInstalled.value = await invoke<boolean>("check_patch_status", { path, locale: locale.value });
     if (isInstalled.value) {
       const config = await invoke<{
         mermaid: boolean;
@@ -140,7 +186,7 @@ async function checkPatchStatus(path: string) {
         tableColor: boolean;
         fontSizeEnabled?: boolean;
         fontSize?: number;
-      } | null>("read_patch_config", { path });
+      } | null>("read_patch_config", { path, locale: locale.value });
       if (config) {
         features.value = { ...features.value, ...config };
       }
@@ -153,7 +199,7 @@ async function checkPatchStatus(path: string) {
         maxWidthRatio?: number;
         fontSizeEnabled?: boolean;
         fontSize?: number;
-      } | null>("read_manager_patch_config", { path });
+      } | null>("read_manager_patch_config", { path, locale: locale.value });
       if (managerConfig) {
         managerFeatures.value = { ...managerFeatures.value, ...managerConfig, enabled: true };
       }
@@ -229,8 +275,7 @@ async function uninstallPatch() {
 }
 
 /**
- * Clear conversation caches on macOS and Linux
- *
+ * Clear conversation caches for the selected targets
  * @param force - Include additional cache data
  */
 async function runAntiClean(force = false) {

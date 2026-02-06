@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/Version-v3.0.1-blue.svg" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v3.1.0-blue.svg" alt="Version">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/Supports_Antigravity-v1.16.5-green.svg" alt="Antigravity">
@@ -51,7 +51,7 @@
 - Switch between English and Chinese
 - Switch between light and dark themes
 - Detects the IDE installation directory automatically
-- **Conversation Cleanup**: Clean conversation caches (macOS/Linux)
+- **Conversation Cleanup**: Supports conversation cache cleanup on Windows/macOS/Linux
 
 ---
 
@@ -137,7 +137,7 @@ For manual installation, please refer to [manual-install.md](patcher/patches/man
 
 ## 📋 Version Info
 
-Current Version: **v3.0.1** | Supports Antigravity: **v1.16.5**
+Current Version: **v3.1.0** | Supports Antigravity: **v1.16.5**
 
 For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 

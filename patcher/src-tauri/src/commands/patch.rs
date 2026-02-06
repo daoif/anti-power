@@ -2,20 +2,21 @@
 //!
 //! Install, remove, and configure patches
 
+use super::i18n::{self, CommandError};
+use super::paths;
+use crate::embedded::{self, EmbeddedError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use crate::embedded;
-use super::paths;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::env;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use std::process::Command;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+use std::process::Command;
 
 /// File paths whose checksums must be removed from `product.json`
 /// Antigravity reports patched files as corrupt if their original checksums remain
@@ -29,6 +30,8 @@ enum PatchMode {
     UpdateConfig,
 }
 
+type PatchResult<T> = Result<T, CommandError>;
+
 impl PatchMode {
     fn as_str(&self) -> &'static str {
         match self {
@@ -36,6 +39,27 @@ impl PatchMode {
             PatchMode::Uninstall => "uninstall",
             PatchMode::UpdateConfig => "update-config",
         }
+    }
+}
+
+fn patch_text(_locale: Option<&str>, key: &'static str) -> CommandError {
+    CommandError::key(key)
+}
+
+fn patch_with(_locale: Option<&str>, key: &'static str, vars: &[(&str, String)]) -> CommandError {
+    CommandError::key_with(key, vars)
+}
+
+fn map_embedded_error(locale: Option<&str>, err: EmbeddedError) -> CommandError {
+    match err {
+        EmbeddedError::PatchesDirNotFound => {
+            patch_text(locale, "patchBackend.errors.patchesDirNotFound")
+        }
+        EmbeddedError::ReadPatchFileFailed { path, detail } => patch_with(
+            locale,
+            "patchBackend.errors.readPatchFileFailed",
+            &[("detail", format!("{:?}: {}", path, detail))],
+        ),
     }
 }
 
@@ -135,40 +159,39 @@ impl Default for ManagerFeatureConfig {
 /// Install patches
 #[tauri::command]
 pub fn install_patch(
-    path: String, 
+    path: String,
     features: FeatureConfig,
     manager_features: ManagerFeatureConfig,
     locale: Option<String>,
 ) -> Result<(), String> {
-    let antigravity_root = resolve_antigravity_root(&path)?;
+    let locale_ref = locale.as_deref();
+    let antigravity_root =
+        resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
 
-    if should_use_privileged(&resources_root) {
-        return run_privileged_patch(
+    let result = if should_use_privileged(&resources_root) {
+        run_privileged_patch(
             PatchMode::Install,
             &resources_root,
             Some(&features),
             Some(&manager_features),
-            locale.as_deref(),
-        );
-    }
+            locale_ref,
+        )
+    } else {
+        match install_patch_internal(&resources_root, &features, &manager_features, locale_ref) {
+            Ok(()) => Ok(()),
+            Err(err) if is_permission_error(&err) => run_privileged_patch(
+                PatchMode::Install,
+                &resources_root,
+                Some(&features),
+                Some(&manager_features),
+                locale_ref,
+            ),
+            Err(err) => Err(err),
+        }
+    };
 
-    match install_patch_internal(
-        &resources_root,
-        &features,
-        &manager_features,
-        locale.as_deref(),
-    ) {
-        Ok(()) => Ok(()),
-        Err(err) if is_permission_error(&err) => run_privileged_patch(
-            PatchMode::Install,
-            &resources_root,
-            Some(&features),
-            Some(&manager_features),
-            locale.as_deref(),
-        ),
-        Err(err) => Err(err),
-    }
+    result.map_err(|err| err.to_message(locale_ref))
 }
 
 fn install_patch_internal(
@@ -176,10 +199,8 @@ fn install_patch_internal(
     features: &FeatureConfig,
     manager_features: &ManagerFeatureConfig,
     locale: Option<&str>,
-) -> Result<(), String> {
-    let extensions_dir = resources_root
-        .join("extensions")
-        .join("antigravity");
+) -> PatchResult<()> {
+    let extensions_dir = resources_root.join("extensions").join("antigravity");
 
     let workbench_dir = resources_root
         .join("out")
@@ -189,14 +210,16 @@ fn install_patch_internal(
         .join("workbench");
 
     if !extensions_dir.exists() {
-        return Err("无效的 Antigravity 安装目录".to_string());
+        return Err(patch_text(locale, "patchBackend.errors.invalidInstallDir"));
     }
 
     if !workbench_dir.exists() {
-        return Err("Manager 窗口目录不存在".to_string());
+        return Err(patch_text(locale, "patchBackend.errors.managerDirMissing"));
     }
 
-    if let Some(dir) = first_unwritable_dir(&[&extensions_dir, &workbench_dir, resources_root])? {
+    if let Some(dir) =
+        first_unwritable_dir(&[&extensions_dir, &workbench_dir, resources_root], locale)?
+    {
         return handle_privileged_or_error(
             PatchMode::Install,
             resources_root,
@@ -208,21 +231,21 @@ fn install_patch_internal(
     }
 
     if features.enabled {
-        backup_cascade_files(&extensions_dir)?;
-        write_cascade_patches(&extensions_dir, features)?;
+        backup_cascade_files(&extensions_dir, locale)?;
+        write_cascade_patches(&extensions_dir, features, locale)?;
     } else {
-        restore_cascade_files(&extensions_dir)?;
+        restore_cascade_files(&extensions_dir, locale)?;
     }
 
     if manager_features.enabled {
-        backup_manager_files(&workbench_dir)?;
-        write_manager_patches(&workbench_dir, manager_features)?;
-        
+        backup_manager_files(&workbench_dir, locale)?;
+        write_manager_patches(&workbench_dir, manager_features, locale)?;
+
         // Clear stale checksums to prevent Antigravity's corruption warning
         let product_json_path = resources_root.join("product.json");
-        clean_checksums(&product_json_path)?;
+        clean_checksums(&product_json_path, locale)?;
     } else {
-        restore_manager_files(&workbench_dir)?;
+        restore_manager_files(&workbench_dir, locale)?;
     }
 
     Ok(())
@@ -231,36 +254,38 @@ fn install_patch_internal(
 /// Uninstall patches and restore the original files
 #[tauri::command]
 pub fn uninstall_patch(path: String, locale: Option<String>) -> Result<(), String> {
-    let antigravity_root = resolve_antigravity_root(&path)?;
+    let locale_ref = locale.as_deref();
+    let antigravity_root =
+        resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
 
-    if should_use_privileged(&resources_root) {
-        return run_privileged_patch(
+    let result = if should_use_privileged(&resources_root) {
+        run_privileged_patch(
             PatchMode::Uninstall,
             &resources_root,
             None,
             None,
-            locale.as_deref(),
-        );
-    }
+            locale_ref,
+        )
+    } else {
+        match uninstall_patch_internal(&resources_root, locale_ref) {
+            Ok(()) => Ok(()),
+            Err(err) if is_permission_error(&err) => run_privileged_patch(
+                PatchMode::Uninstall,
+                &resources_root,
+                None,
+                None,
+                locale_ref,
+            ),
+            Err(err) => Err(err),
+        }
+    };
 
-    match uninstall_patch_internal(&resources_root, locale.as_deref()) {
-        Ok(()) => Ok(()),
-        Err(err) if is_permission_error(&err) => run_privileged_patch(
-            PatchMode::Uninstall,
-            &resources_root,
-            None,
-            None,
-            locale.as_deref(),
-        ),
-        Err(err) => Err(err),
-    }
+    result.map_err(|err| err.to_message(locale_ref))
 }
 
-fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> Result<(), String> {
-    let extensions_dir = resources_root
-        .join("extensions")
-        .join("antigravity");
+fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> PatchResult<()> {
+    let extensions_dir = resources_root.join("extensions").join("antigravity");
 
     let workbench_dir = resources_root
         .join("out")
@@ -270,10 +295,10 @@ fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> Resu
         .join("workbench");
 
     if !extensions_dir.exists() {
-        return Err("无效的 Antigravity 安装目录".to_string());
+        return Err(patch_text(locale, "patchBackend.errors.invalidInstallDir"));
     }
 
-    if let Some(dir) = first_unwritable_dir(&[&extensions_dir, &workbench_dir])? {
+    if let Some(dir) = first_unwritable_dir(&[&extensions_dir, &workbench_dir], locale)? {
         return handle_privileged_or_error(
             PatchMode::Uninstall,
             resources_root,
@@ -284,7 +309,7 @@ fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> Resu
         );
     }
 
-    restore_backup_files(&extensions_dir, &workbench_dir)?;
+    restore_backup_files(&extensions_dir, &workbench_dir, locale)?;
 
     Ok(())
 }
@@ -292,40 +317,39 @@ fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> Resu
 /// Update configuration in place without reinstalling patch files
 #[tauri::command]
 pub fn update_config(
-    path: String, 
+    path: String,
     features: FeatureConfig,
     manager_features: ManagerFeatureConfig,
     locale: Option<String>,
 ) -> Result<(), String> {
-    let antigravity_root = resolve_antigravity_root(&path)?;
+    let locale_ref = locale.as_deref();
+    let antigravity_root =
+        resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
 
-    if should_use_privileged(&resources_root) {
-        return run_privileged_patch(
+    let result = if should_use_privileged(&resources_root) {
+        run_privileged_patch(
             PatchMode::UpdateConfig,
             &resources_root,
             Some(&features),
             Some(&manager_features),
-            locale.as_deref(),
-        );
-    }
+            locale_ref,
+        )
+    } else {
+        match update_config_internal(&resources_root, &features, &manager_features, locale_ref) {
+            Ok(()) => Ok(()),
+            Err(err) if is_permission_error(&err) => run_privileged_patch(
+                PatchMode::UpdateConfig,
+                &resources_root,
+                Some(&features),
+                Some(&manager_features),
+                locale_ref,
+            ),
+            Err(err) => Err(err),
+        }
+    };
 
-    match update_config_internal(
-        &resources_root,
-        &features,
-        &manager_features,
-        locale.as_deref(),
-    ) {
-        Ok(()) => Ok(()),
-        Err(err) if is_permission_error(&err) => run_privileged_patch(
-            PatchMode::UpdateConfig,
-            &resources_root,
-            Some(&features),
-            Some(&manager_features),
-            locale.as_deref(),
-        ),
-        Err(err) => Err(err),
-    }
+    result.map_err(|err| err.to_message(locale_ref))
 }
 
 fn update_config_internal(
@@ -333,15 +357,19 @@ fn update_config_internal(
     features: &FeatureConfig,
     manager_features: &ManagerFeatureConfig,
     locale: Option<&str>,
-) -> Result<(), String> {
+) -> PatchResult<()> {
     let cascade_config_path = resources_root
         .join("extensions")
         .join("antigravity")
         .join("cascade-panel")
         .join("config.json");
 
-    if !cascade_config_path.parent().map(|p| p.exists()).unwrap_or(false) {
-        return Err("补丁尚未安装，请先安装补丁".to_string());
+    if !cascade_config_path
+        .parent()
+        .map(|p| p.exists())
+        .unwrap_or(false)
+    {
+        return Err(patch_text(locale, "patchBackend.errors.patchNotInstalled"));
     }
 
     let mut writable_checks = Vec::new();
@@ -360,7 +388,11 @@ fn update_config_internal(
         .join("manager-panel")
         .join("config.json");
 
-    if manager_config_path.parent().map(|p| p.exists()).unwrap_or(false) {
+    if manager_config_path
+        .parent()
+        .map(|p| p.exists())
+        .unwrap_or(false)
+    {
         if let Some(parent) = manager_config_path.parent() {
             writable_checks.push(parent.to_path_buf());
         }
@@ -368,7 +400,7 @@ fn update_config_internal(
 
     if !writable_checks.is_empty() {
         let refs: Vec<&Path> = writable_checks.iter().map(|p| p.as_path()).collect();
-        if let Some(dir) = first_unwritable_dir(&refs)? {
+        if let Some(dir) = first_unwritable_dir(&refs, locale)? {
             return handle_privileged_or_error(
                 PatchMode::UpdateConfig,
                 resources_root,
@@ -380,10 +412,14 @@ fn update_config_internal(
         }
     }
 
-    write_config_file(&cascade_config_path, features)?;
+    write_config_file(&cascade_config_path, features, locale)?;
 
-    if manager_config_path.parent().map(|p| p.exists()).unwrap_or(false) {
-        write_manager_config_file(&manager_config_path, manager_features)?;
+    if manager_config_path
+        .parent()
+        .map(|p| p.exists())
+        .unwrap_or(false)
+    {
+        write_manager_config_file(&manager_config_path, manager_features, locale)?;
     }
 
     Ok(())
@@ -391,10 +427,12 @@ fn update_config_internal(
 
 /// Check whether a patch is installed
 #[tauri::command]
-pub fn check_patch_status(path: String) -> Result<bool, String> {
-    let antigravity_root = resolve_antigravity_root(&path)?;
+pub fn check_patch_status(path: String, locale: Option<String>) -> Result<bool, String> {
+    let locale_ref = locale.as_deref();
+    let antigravity_root =
+        resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
-    
+
     let config_path = resources_root
         .join("extensions")
         .join("antigravity")
@@ -407,10 +445,15 @@ pub fn check_patch_status(path: String) -> Result<bool, String> {
 
 /// Read the installed patch configuration
 #[tauri::command]
-pub fn read_patch_config(path: String) -> Result<Option<FeatureConfig>, String> {
-    let antigravity_root = resolve_antigravity_root(&path)?;
+pub fn read_patch_config(
+    path: String,
+    locale: Option<String>,
+) -> Result<Option<FeatureConfig>, String> {
+    let locale_ref = locale.as_deref();
+    let antigravity_root =
+        resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
-    
+
     let config_path = resources_root
         .join("extensions")
         .join("antigravity")
@@ -422,20 +465,39 @@ pub fn read_patch_config(path: String) -> Result<Option<FeatureConfig>, String> 
     }
 
     let content = fs::read_to_string(&config_path)
-        .map_err(|e| format!("读取配置失败: {}", e))?;
-    
+        .map_err(|e| {
+            patch_with(
+                locale_ref,
+                "patchBackend.errors.readConfigFailed",
+                &[("detail", e.to_string())],
+            )
+        })
+        .map_err(|err| err.to_message(locale_ref))?;
+
     let config: FeatureConfig = serde_json::from_str(&content)
-        .map_err(|e| format!("解析配置失败: {}", e))?;
-    
+        .map_err(|e| {
+            patch_with(
+                locale_ref,
+                "patchBackend.errors.parseConfigFailed",
+                &[("detail", e.to_string())],
+            )
+        })
+        .map_err(|err| err.to_message(locale_ref))?;
+
     Ok(Some(config))
 }
 
 /// Read the installed Manager patch configuration
 #[tauri::command]
-pub fn read_manager_patch_config(path: String) -> Result<Option<ManagerFeatureConfig>, String> {
-    let antigravity_root = resolve_antigravity_root(&path)?;
+pub fn read_manager_patch_config(
+    path: String,
+    locale: Option<String>,
+) -> Result<Option<ManagerFeatureConfig>, String> {
+    let locale_ref = locale.as_deref();
+    let antigravity_root =
+        resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
-    
+
     let config_path = resources_root
         .join("out")
         .join("vs")
@@ -450,114 +512,194 @@ pub fn read_manager_patch_config(path: String) -> Result<Option<ManagerFeatureCo
     }
 
     let content = fs::read_to_string(&config_path)
-        .map_err(|e| format!("读取 Manager 配置失败: {}", e))?;
-    
+        .map_err(|e| {
+            patch_with(
+                locale_ref,
+                "patchBackend.errors.readManagerConfigFailed",
+                &[("detail", e.to_string())],
+            )
+        })
+        .map_err(|err| err.to_message(locale_ref))?;
+
     let config: ManagerFeatureConfig = serde_json::from_str(&content)
-        .map_err(|e| format!("解析 Manager 配置失败: {}", e))?;
-    
+        .map_err(|e| {
+            patch_with(
+                locale_ref,
+                "patchBackend.errors.parseManagerConfigFailed",
+                &[("detail", e.to_string())],
+            )
+        })
+        .map_err(|err| err.to_message(locale_ref))?;
+
     Ok(Some(config))
 }
 
 /// Back up the original sidebar files
-fn backup_cascade_files(extensions_dir: &Path) -> Result<(), String> {
+fn backup_cascade_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_panel.exists() && !cascade_backup.exists() {
-        fs::copy(&cascade_panel, &cascade_backup)
-            .map_err(|e| format!("备份 cascade-panel.html 失败: {}", e))?;
+        fs::copy(&cascade_panel, &cascade_backup).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.backupCascadeFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
     Ok(())
 }
 
 /// Back up the original Manager files
-fn backup_manager_files(workbench_dir: &Path) -> Result<(), String> {
+fn backup_manager_files(workbench_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
     let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
     let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
     if jetski_agent.exists() && !jetski_backup.exists() {
-        fs::copy(&jetski_agent, &jetski_backup)
-            .map_err(|e| format!("备份 workbench-jetski-agent.html 失败: {}", e))?;
+        fs::copy(&jetski_agent, &jetski_backup).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.backupManagerEntryFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
     Ok(())
 }
 
 /// Write the sidebar patch files
-fn write_cascade_patches(extensions_dir: &Path, features: &FeatureConfig) -> Result<(), String> {
+fn write_cascade_patches(
+    extensions_dir: &Path,
+    features: &FeatureConfig,
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let cascade_panel_dir = extensions_dir.join("cascade-panel");
-    
+
     // Remove the old directory so obsolete patch files cannot linger
     if cascade_panel_dir.exists() {
-        fs::remove_dir_all(&cascade_panel_dir)
-            .map_err(|e| format!("删除旧 cascade-panel 目录失败: {}", e))?;
+        fs::remove_dir_all(&cascade_panel_dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.removeOldCascadeDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
-    
-    fs::create_dir_all(&cascade_panel_dir)
-        .map_err(|e| format!("创建 cascade-panel 目录失败: {}", e))?;
-    
-    let patch_files = embedded::get_all_files_runtime()?;
+
+    fs::create_dir_all(&cascade_panel_dir).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.createCascadeDirFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    let patch_files =
+        embedded::get_all_files_runtime().map_err(|e| map_embedded_error(locale, e))?;
     for (relative_path, content) in patch_files {
         if relative_path != "cascade-panel.html" && !relative_path.starts_with("cascade-panel/") {
             continue;
         }
-        
+
         let full_path = extensions_dir.join(&relative_path);
-        
+
         if let Some(parent) = full_path.parent() {
             if !parent.exists() {
-                fs::create_dir_all(parent)
-                    .map_err(|e| format!("创建目录失败: {}", e))?;
+                fs::create_dir_all(parent).map_err(|e| {
+                    patch_with(
+                        locale,
+                        "patchBackend.errors.createDirFailed",
+                        &[("detail", e.to_string())],
+                    )
+                })?;
             }
         }
-        
-        fs::write(&full_path, content)
-            .map_err(|e| format!("写入文件失败 {:?}: {}", full_path, e))?;
+
+        fs::write(&full_path, content).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.writeFileFailed",
+                &[("detail", format!("{:?}: {}", full_path, e))],
+            )
+        })?;
     }
-    
+
     let cascade_config_path = cascade_panel_dir.join("config.json");
-    write_config_file(&cascade_config_path, features)?;
+    write_config_file(&cascade_config_path, features, locale)?;
 
     Ok(())
 }
 
 /// Write the Manager patch files
-fn write_manager_patches(workbench_dir: &Path, manager_features: &ManagerFeatureConfig) -> Result<(), String> {
+fn write_manager_patches(
+    workbench_dir: &Path,
+    manager_features: &ManagerFeatureConfig,
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let manager_panel_dir = workbench_dir.join("manager-panel");
-    
+
     // Remove the old directory so obsolete patch files cannot linger
     if manager_panel_dir.exists() {
-        fs::remove_dir_all(&manager_panel_dir)
-            .map_err(|e| format!("删除旧 manager-panel 目录失败: {}", e))?;
+        fs::remove_dir_all(&manager_panel_dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.removeOldManagerDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
-    
-    fs::create_dir_all(&manager_panel_dir)
-        .map_err(|e| format!("创建 manager-panel 目录失败: {}", e))?;
-    
-    let patch_files = embedded::get_all_files_runtime()?;
+
+    fs::create_dir_all(&manager_panel_dir).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.createManagerDirFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    let patch_files =
+        embedded::get_all_files_runtime().map_err(|e| map_embedded_error(locale, e))?;
     for (relative_path, content) in patch_files {
-        if relative_path != "workbench-jetski-agent.html" && !relative_path.starts_with("manager-panel/") {
+        if relative_path != "workbench-jetski-agent.html"
+            && !relative_path.starts_with("manager-panel/")
+        {
             continue;
         }
-        
+
         let full_path = workbench_dir.join(&relative_path);
-        
+
         if let Some(parent) = full_path.parent() {
             if !parent.exists() {
-                fs::create_dir_all(parent)
-                    .map_err(|e| format!("创建目录失败: {}", e))?;
+                fs::create_dir_all(parent).map_err(|e| {
+                    patch_with(
+                        locale,
+                        "patchBackend.errors.createDirFailed",
+                        &[("detail", e.to_string())],
+                    )
+                })?;
             }
         }
-        
-        fs::write(&full_path, content)
-            .map_err(|e| format!("写入文件失败 {:?}: {}", full_path, e))?;
+
+        fs::write(&full_path, content).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.writeFileFailed",
+                &[("detail", format!("{:?}: {}", full_path, e))],
+            )
+        })?;
     }
-    
+
     let manager_config_path = manager_panel_dir.join("config.json");
-    write_manager_config_file(&manager_config_path, manager_features)?;
+    write_manager_config_file(&manager_config_path, manager_features, locale)?;
 
     Ok(())
 }
 
 /// Write the sidebar patch configuration
-fn write_config_file(config_path: &Path, features: &FeatureConfig) -> Result<(), String> {
+fn write_config_file(
+    config_path: &Path,
+    features: &FeatureConfig,
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
         "math": features.math,
@@ -570,15 +712,32 @@ fn write_config_file(config_path: &Path, features: &FeatureConfig) -> Result<(),
         "copyButtonStyle": features.copy_button_style,
         "copyButtonCustomText": features.copy_button_custom_text
     });
-    
-    fs::write(config_path, serde_json::to_string_pretty(&config_content).unwrap())
-        .map_err(|e| format!("写入配置文件失败: {}", e))?;
-    
+
+    let content = serde_json::to_string_pretty(&config_content).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.writeConfigFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    fs::write(config_path, content).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.writeConfigFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
     Ok(())
 }
 
 /// Write the Manager patch configuration
-fn write_manager_config_file(config_path: &Path, features: &ManagerFeatureConfig) -> Result<(), String> {
+fn write_manager_config_file(
+    config_path: &Path,
+    features: &ManagerFeatureConfig,
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let config_content = serde_json::json!({
         "mermaid": features.mermaid,
         "math": features.math,
@@ -592,86 +751,143 @@ fn write_manager_config_file(config_path: &Path, features: &ManagerFeatureConfig
         "copyButtonStyle": features.copy_button_style,
         "copyButtonCustomText": features.copy_button_custom_text
     });
-    
-    fs::write(config_path, serde_json::to_string_pretty(&config_content).unwrap())
-        .map_err(|e| format!("写入 Manager 配置文件失败: {}", e))?;
-    
+
+    let content = serde_json::to_string_pretty(&config_content).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.writeManagerConfigFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    fs::write(config_path, content).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.writeManagerConfigFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
     Ok(())
 }
 
 /// Restore the original sidebar files when the patch is disabled
-fn restore_cascade_files(extensions_dir: &Path) -> Result<(), String> {
+fn restore_cascade_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_backup.exists() {
-        fs::copy(&cascade_backup, &cascade_panel)
-            .map_err(|e| format!("恢复 cascade-panel.html 失败: {}", e))?;
+        fs::copy(&cascade_backup, &cascade_panel).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.restoreCascadeFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
 
     let cascade_dir = extensions_dir.join("cascade-panel");
     if cascade_dir.exists() {
-        fs::remove_dir_all(&cascade_dir)
-            .map_err(|e| format!("删除 cascade-panel 目录失败: {}", e))?;
+        fs::remove_dir_all(&cascade_dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.removeCascadeDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
 
     Ok(())
 }
 
 /// Restore the original Manager files when the patch is disabled
-fn restore_manager_files(workbench_dir: &Path) -> Result<(), String> {
+fn restore_manager_files(workbench_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
     let jetski_agent = workbench_dir.join("workbench-jetski-agent.html");
     let jetski_backup = workbench_dir.join("workbench-jetski-agent.html.bak");
     if jetski_backup.exists() {
-        fs::copy(&jetski_backup, &jetski_agent)
-            .map_err(|e| format!("恢复 workbench-jetski-agent.html 失败: {}", e))?;
+        fs::copy(&jetski_backup, &jetski_agent).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.restoreManagerEntryFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
 
     let manager_dir = workbench_dir.join("manager-panel");
     if manager_dir.exists() {
-        fs::remove_dir_all(&manager_dir)
-            .map_err(|e| format!("删除 manager-panel 目录失败: {}", e))?;
+        fs::remove_dir_all(&manager_dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.removeManagerDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
 
     Ok(())
 }
 
 /// Restore all backed-up files during a full uninstall
-fn restore_backup_files(extensions_dir: &Path, workbench_dir: &Path) -> Result<(), String> {
-    restore_cascade_files(extensions_dir)?;
-    restore_manager_files(workbench_dir)?;
+fn restore_backup_files(
+    extensions_dir: &Path,
+    workbench_dir: &Path,
+    locale: Option<&str>,
+) -> PatchResult<()> {
+    restore_cascade_files(extensions_dir, locale)?;
+    restore_manager_files(workbench_dir, locale)?;
     Ok(())
 }
 
 /// Remove the listed checksums from `product.json`
 /// This prevents Antigravity from flagging patched files as corrupt
-fn clean_checksums(product_json_path: &Path) -> Result<(), String> {
+fn clean_checksums(product_json_path: &Path, locale: Option<&str>) -> PatchResult<()> {
     if !product_json_path.exists() {
         return Ok(());
     }
 
-    let content = fs::read_to_string(product_json_path)
-        .map_err(|e| format!("读取 product.json 失败: {}", e))?;
-    
-    let mut json: Value = serde_json::from_str(&content)
-        .map_err(|e| format!("解析 product.json 失败: {}", e))?;
+    let content = fs::read_to_string(product_json_path).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.readProductJsonFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    let mut json: Value = serde_json::from_str(&content).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.parseProductJsonFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
 
     if let Some(checksums) = json.get_mut("checksums") {
         if let Some(checksums_obj) = checksums.as_object_mut() {
             let mut removed_count = 0;
-            
+
             for key in CHECKSUMS_TO_REMOVE {
                 if checksums_obj.remove(*key).is_some() {
                     removed_count += 1;
                 }
             }
-            
+
             // Leave product.json untouched when no checksums were removed
             if removed_count > 0 {
-                let new_content = serde_json::to_string_pretty(&json)
-                    .map_err(|e| format!("序列化 product.json 失败: {}", e))?;
-                
-                fs::write(product_json_path, new_content)
-                    .map_err(|e| format!("写入 product.json 失败: {}", e))?;
+                let new_content = serde_json::to_string_pretty(&json).map_err(|e| {
+                    patch_with(
+                        locale,
+                        "patchBackend.errors.serializeProductJsonFailed",
+                        &[("detail", e.to_string())],
+                    )
+                })?;
+
+                fs::write(product_json_path, new_content).map_err(|e| {
+                    patch_with(
+                        locale,
+                        "patchBackend.errors.writeProductJsonFailed",
+                        &[("detail", e.to_string())],
+                    )
+                })?;
             }
         }
     }
@@ -679,16 +895,15 @@ fn clean_checksums(product_json_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn resolve_antigravity_root(path: &str) -> Result<PathBuf, String> {
+fn resolve_antigravity_root(path: &str, locale: Option<&str>) -> PatchResult<PathBuf> {
     let input = PathBuf::from(path);
     paths::normalize_antigravity_root(&input)
-        .ok_or_else(|| "无效的 Antigravity 安装目录".to_string())
+        .ok_or_else(|| patch_text(locale, "patchBackend.errors.invalidInstallDir"))
 }
 
-fn is_permission_error(message: &str) -> bool {
-    let lower = message.to_ascii_lowercase();
-    message.contains("权限不足")
-        || lower.contains("permission denied")
+fn is_permission_error(error: &CommandError) -> bool {
+    let lower = error.details_for_match().to_ascii_lowercase();
+    lower.contains("permission denied")
         || lower.contains("operation not permitted")
         || lower.contains("read-only file system")
 }
@@ -717,9 +932,9 @@ fn should_use_privileged(_resources_root: &Path) -> bool {
     false
 }
 
-fn first_unwritable_dir(dirs: &[&Path]) -> Result<Option<PathBuf>, String> {
+fn first_unwritable_dir(dirs: &[&Path], locale: Option<&str>) -> PatchResult<Option<PathBuf>> {
     for dir in dirs {
-        match can_write_dir(dir)? {
+        match can_write_dir(dir, locale)? {
             true => {}
             false => return Ok(Some(dir.to_path_buf())),
         }
@@ -727,7 +942,7 @@ fn first_unwritable_dir(dirs: &[&Path]) -> Result<Option<PathBuf>, String> {
     Ok(None)
 }
 
-fn can_write_dir(dir: &Path) -> Result<bool, String> {
+fn can_write_dir(dir: &Path, locale: Option<&str>) -> PatchResult<bool> {
     let test_path = dir.join(".anti-power-write-test");
     match fs::OpenOptions::new()
         .create(true)
@@ -741,17 +956,17 @@ fn can_write_dir(dir: &Path) -> Result<bool, String> {
         }
         Err(err) => match err.kind() {
             ErrorKind::PermissionDenied | ErrorKind::ReadOnlyFilesystem => Ok(false),
-            _ => Err(format!("无法写入目录 {}: {}", dir.display(), err)),
+            _ => Err(patch_with(
+                locale,
+                "patchBackend.errors.cannotWriteDir",
+                &[("detail", format!("{}: {}", dir.display(), err))],
+            )),
         },
     }
 }
 
 fn is_zh_locale(locale: Option<&str>) -> bool {
-    if let Some(value) = locale {
-        let lower = value.to_ascii_lowercase();
-        return lower.starts_with("zh");
-    }
-    true
+    i18n::is_zh_locale(locale)
 }
 
 fn select_privileged_script(locale: Option<&str>) -> &'static str {
@@ -769,7 +984,7 @@ fn handle_privileged_or_error(
     manager_features: Option<&ManagerFeatureConfig>,
     dir: &Path,
     locale: Option<&str>,
-) -> Result<(), String> {
+) -> PatchResult<()> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         let _ = dir;
@@ -778,9 +993,10 @@ fn handle_privileged_or_error(
 
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
-        Err(format!(
-            "权限不足：无法写入目录 {}。请以管理员身份运行或将应用安装到可写位置。",
-            dir.display()
+        Err(patch_with(
+            locale,
+            "patchBackend.errors.permissionDeniedDir",
+            &[("dir", dir.display().to_string())],
         ))
     }
 }
@@ -792,62 +1008,85 @@ fn run_privileged_patch(
     features: Option<&FeatureConfig>,
     manager_features: Option<&ManagerFeatureConfig>,
     locale: Option<&str>,
-) -> Result<(), String> {
-    let temp_dir = prepare_temp_patch_dir()?;
-    write_embedded_files_to_dir(&temp_dir)?;
+) -> PatchResult<()> {
+    let temp_dir = prepare_temp_patch_dir(locale)?;
+    write_embedded_files_to_dir(&temp_dir, locale)?;
 
     if matches!(mode, PatchMode::Install | PatchMode::UpdateConfig) {
-        let feature_config = features.ok_or_else(|| "缺少侧边栏配置".to_string())?;
-        let manager_config = manager_features.ok_or_else(|| "缺少 Manager 配置".to_string())?;
+        let feature_config = features
+            .ok_or_else(|| patch_text(locale, "patchBackend.errors.missingSidebarConfig"))?;
+        let manager_config = manager_features
+            .ok_or_else(|| patch_text(locale, "patchBackend.errors.missingManagerConfig"))?;
 
         let cascade_config_path = temp_dir.join("cascade-panel").join("config.json");
-        write_config_file(&cascade_config_path, feature_config)?;
+        write_config_file(&cascade_config_path, feature_config, locale)?;
 
         let manager_config_path = temp_dir.join("manager-panel").join("config.json");
-        write_manager_config_file(&manager_config_path, manager_config)?;
+        write_manager_config_file(&manager_config_path, manager_config, locale)?;
     }
 
     let script_name = select_privileged_script(locale);
     let script_path = temp_dir.join(script_name);
     if !script_path.exists() {
         let _ = fs::remove_dir_all(&temp_dir);
-        return Err(format!("未找到 {}", script_name));
+        return Err(patch_with(
+            locale,
+            "patchBackend.errors.notFound",
+            &[("name", script_name.to_string())],
+        ));
     }
 
-    ensure_script_executable(&script_path)?;
+    ensure_script_executable(&script_path, locale)?;
 
     let cascade_enabled = features.map(|config| config.enabled).unwrap_or(true);
-    let manager_enabled = manager_features.map(|config| config.enabled).unwrap_or(true);
+    let manager_enabled = manager_features
+        .map(|config| config.enabled)
+        .unwrap_or(true);
     let args = build_script_args(mode, resources_root, cascade_enabled, manager_enabled);
     let status_path = temp_dir.join("privileged-status.txt");
 
-    match run_privileged_script(&script_path, &args, &status_path) {
+    match run_privileged_script(&script_path, &args, &status_path, locale) {
         Ok(()) => {
             let _ = fs::remove_dir_all(&temp_dir);
             Ok(())
         }
         Err(err) => {
-            let message = annotate_privileged_error(err, resources_root);
+            let message = annotate_privileged_error(err, resources_root, locale);
             let _ = fs::remove_dir_all(&temp_dir);
-            Err(format!("管理员脚本执行失败: {}", message))
+            Err(patch_with(
+                locale,
+                "patchBackend.errors.privilegedScriptFailed",
+                &[("message", message)],
+            ))
         }
     }
 }
 
-fn annotate_privileged_error(message: String, resources_root: &Path) -> String {
+fn annotate_privileged_error(
+    error: CommandError,
+    resources_root: &Path,
+    locale: Option<&str>,
+) -> String {
+    let details = error.details_for_match();
+    let message = error.to_message(locale);
+
     #[cfg(target_os = "macos")]
     {
-        let lower = message.to_ascii_lowercase();
-        if lower.contains("operation not permitted") || message.contains("权限") {
-            return format!(
-                "{}。macOS 可能拦截了对应用包的修改，请在 系统设置 → 隐私与安全性 → App 管理 为 Anti-Power 授权，必要时再在“完全磁盘访问”中授权；或将 Antigravity.app 移动到 ~/Applications 后重试。资源路径: {}",
-                message,
-                resources_root.display()
-            );
+        let lower = details.to_ascii_lowercase();
+        if lower.contains("operation not permitted") || details.contains("权限") {
+            return patch_with(
+                locale,
+                "patchBackend.errors.macosPermissionHint",
+                &[
+                    ("message", message.clone()),
+                    ("path", resources_root.display().to_string()),
+                ],
+            )
+            .to_message(locale);
         }
     }
 
-    let _ = resources_root;
+    let _ = (resources_root, locale);
     message
 }
 
@@ -858,55 +1097,90 @@ fn run_privileged_patch(
     _features: Option<&FeatureConfig>,
     _manager_features: Option<&ManagerFeatureConfig>,
     _locale: Option<&str>,
-) -> Result<(), String> {
-    Err("当前平台不支持管理员权限补丁流程，请手动运行补丁脚本".to_string())
+) -> PatchResult<()> {
+    Err(patch_text(
+        _locale,
+        "patchBackend.errors.unsupportedPrivilegedFlow",
+    ))
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn prepare_temp_patch_dir() -> Result<PathBuf, String> {
+fn prepare_temp_patch_dir(locale: Option<&str>) -> PatchResult<PathBuf> {
     let mut dir = env::temp_dir();
     dir.push(format!("anti-power-privileged-{}", std::process::id()));
 
     if dir.exists() {
-        fs::remove_dir_all(&dir)
-            .map_err(|e| format!("清理临时目录失败: {}", e))?;
+        fs::remove_dir_all(&dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.cleanTempDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
 
-    fs::create_dir_all(&dir)
-        .map_err(|e| format!("创建临时目录失败: {}", e))?;
+    fs::create_dir_all(&dir).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.createTempDirFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
 
     Ok(dir)
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn write_embedded_files_to_dir(root: &Path) -> Result<(), String> {
-    let patch_files = embedded::get_all_files_runtime()?;
+fn write_embedded_files_to_dir(root: &Path, locale: Option<&str>) -> PatchResult<()> {
+    let patch_files =
+        embedded::get_all_files_runtime().map_err(|e| map_embedded_error(locale, e))?;
     for (relative_path, content) in patch_files {
         let full_path = root.join(&relative_path);
         if let Some(parent) = full_path.parent() {
             if !parent.exists() {
-                fs::create_dir_all(parent)
-                    .map_err(|e| format!("创建目录失败: {}", e))?;
+                fs::create_dir_all(parent).map_err(|e| {
+                    patch_with(
+                        locale,
+                        "patchBackend.errors.createDirFailed",
+                        &[("detail", e.to_string())],
+                    )
+                })?;
             }
         }
 
-        fs::write(&full_path, content)
-            .map_err(|e| format!("写入文件失败 {:?}: {}", full_path, e))?;
+        fs::write(&full_path, content).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.writeFileFailed",
+                &[("detail", format!("{:?}: {}", full_path, e))],
+            )
+        })?;
     }
 
     Ok(())
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn ensure_script_executable(script_path: &Path) -> Result<(), String> {
+fn ensure_script_executable(script_path: &Path, locale: Option<&str>) -> PatchResult<()> {
     #[cfg(unix)]
     {
         let mut perms = fs::metadata(script_path)
-            .map_err(|e| format!("读取脚本权限失败: {}", e))?
+            .map_err(|e| {
+                patch_with(
+                    locale,
+                    "patchBackend.errors.readScriptPermissionsFailed",
+                    &[("detail", e.to_string())],
+                )
+            })?
             .permissions();
         perms.set_mode(0o755);
-        fs::set_permissions(script_path, perms)
-            .map_err(|e| format!("设置脚本权限失败: {}", e))?;
+        fs::set_permissions(script_path, perms).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.setScriptPermissionsFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
 
     Ok(())
@@ -936,7 +1210,8 @@ fn run_privileged_script(
     script_path: &Path,
     args: &[String],
     status_path: &Path,
-) -> Result<(), String> {
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let mut command_parts = Vec::new();
     command_parts.push(shell_quote("/bin/bash"));
     command_parts.push(shell_quote(script_path.to_string_lossy().as_ref()));
@@ -946,10 +1221,7 @@ fn run_privileged_script(
 
     let command_line = command_parts.join(" ");
     let status_path_quoted = shell_quote(status_path.to_string_lossy().as_ref());
-    let terminal_command = format!(
-        "sudo {} ; echo $? > {}",
-        command_line, status_path_quoted
-    );
+    let terminal_command = format!("sudo {} ; echo $? > {}", command_line, status_path_quoted);
     let apple_script = format!(
         "tell application \"Terminal\"\nactivate\ndo script \"{}\"\nend tell",
         escape_applescript_string(&terminal_command)
@@ -959,9 +1231,15 @@ fn run_privileged_script(
         .arg("-e")
         .arg(apple_script)
         .output()
-        .map_err(|e| format!("调用 Terminal 失败: {}", e))?;
+        .map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.invokeTerminalFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
 
-    wait_for_status(status_path, std::time::Duration::from_secs(900))
+    wait_for_status(status_path, std::time::Duration::from_secs(900), locale)
 }
 
 #[cfg(target_os = "linux")]
@@ -969,7 +1247,8 @@ fn run_privileged_script(
     script_path: &Path,
     args: &[String],
     _status_path: &Path,
-) -> Result<(), String> {
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let output = Command::new("pkexec")
         .arg("/bin/bash")
         .arg(script_path)
@@ -981,19 +1260,25 @@ fn run_privileged_script(
         Ok(output) => {
             let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
             let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let message = if !stderr.is_empty() {
-                stderr
+            if !stderr.is_empty() {
+                Err(CommandError::from(stderr))
             } else if !stdout.is_empty() {
-                stdout
+                Err(CommandError::from(stdout))
             } else {
-                "管理员权限操作被取消或失败".to_string()
-            };
-            Err(message)
+                Err(patch_text(
+                    locale,
+                    "patchBackend.errors.privilegedCanceledOrFailed",
+                ))
+            }
         }
-        Err(err) if err.kind() == ErrorKind::NotFound => Err(
-            "未找到 pkexec，请安装 polkit 或使用 sudo 从终端运行应用".to_string(),
-        ),
-        Err(err) => Err(format!("执行 pkexec 失败: {}", err)),
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            Err(patch_text(locale, "patchBackend.errors.pkexecNotFound"))
+        }
+        Err(err) => Err(patch_with(
+            locale,
+            "patchBackend.errors.executePkexecFailed",
+            &[("detail", err.to_string())],
+        )),
     }
 }
 
@@ -1021,21 +1306,37 @@ fn escape_applescript_string(value: &str) -> String {
 }
 
 #[cfg(target_os = "macos")]
-fn wait_for_status(status_path: &Path, timeout: std::time::Duration) -> Result<(), String> {
+fn wait_for_status(
+    status_path: &Path,
+    timeout: std::time::Duration,
+    locale: Option<&str>,
+) -> PatchResult<()> {
     let start = std::time::Instant::now();
     while start.elapsed() < timeout {
         if status_path.exists() {
-            let content = fs::read_to_string(status_path)
-                .map_err(|e| format!("读取状态文件失败: {}", e))?;
+            let content = fs::read_to_string(status_path).map_err(|e| {
+                patch_with(
+                    locale,
+                    "patchBackend.errors.readStatusFileFailed",
+                    &[("detail", e.to_string())],
+                )
+            })?;
             let _ = fs::remove_file(status_path);
             let code = content.trim().parse::<i32>().unwrap_or(1);
             if code == 0 {
                 return Ok(());
             }
-            return Err(format!("终端命令执行失败，退出码 {}", code));
+            return Err(patch_with(
+                locale,
+                "patchBackend.errors.terminalCommandFailedCode",
+                &[("code", code.to_string())],
+            ));
         }
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
 
-    Err("终端尚未完成，请在 Terminal 中完成授权后重试".to_string())
+    Err(patch_text(
+        locale,
+        "patchBackend.errors.terminalNotFinished",
+    ))
 }

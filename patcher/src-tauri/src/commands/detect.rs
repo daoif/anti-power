@@ -4,8 +4,8 @@
 //! - Windows: query the registry and scan common paths
 //! - macOS/Linux: check standard paths and return `None` if none match
 
-use std::path::{Path, PathBuf};
 use super::paths;
+use std::path::{Path, PathBuf};
 
 // Keep platform code here to avoid submodule path issues
 
@@ -66,7 +66,7 @@ fn try_registry() -> Option<String> {
     use winreg::RegKey;
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    
+
     let paths = [
         r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity",
         r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity",
@@ -100,7 +100,7 @@ fn try_registry() -> Option<String> {
 fn try_common_paths_windows() -> Option<String> {
     let literal_paths = [
         r"C:\Program Files\Antigravity",
-        r"D:\Program Files\Antigravity", 
+        r"D:\Program Files\Antigravity",
         r"E:\Program Files\Antigravity",
     ];
 
@@ -140,7 +140,10 @@ fn detect_macos() -> Option<String> {
             return Some(normalized);
         }
 
-        let user_app_contents = home.join("Applications").join("Antigravity.app").join("Contents");
+        let user_app_contents = home
+            .join("Applications")
+            .join("Antigravity.app")
+            .join("Contents");
         if let Some(normalized) = normalize_path(&user_app_contents) {
             return Some(normalized);
         }
