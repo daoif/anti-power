@@ -2,13 +2,17 @@
 //!
 //! 导出所有 Tauri 命令供前端调用
 
-mod detect;
-mod patch;
-mod config;
-mod paths;
 mod clean;
+mod config;
+mod detect;
+mod i18n;
+mod patch;
+mod paths;
 
-pub use detect::{detect_antigravity_path, normalize_antigravity_path};
-pub use patch::{install_patch, uninstall_patch, update_config, check_patch_status, read_patch_config, read_manager_patch_config};
-pub use config::{get_config, save_config};
 pub use clean::run_anti_clean;
+pub use config::{get_config, save_config};
+pub use detect::{detect_antigravity_path, normalize_antigravity_path};
+pub use patch::{
+    check_patch_status, install_patch, read_manager_patch_config, read_patch_config,
+    uninstall_patch, update_config,
+};

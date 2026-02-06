@@ -6,6 +6,12 @@
 use std::fs;
 use std::path::PathBuf;
 
+#[derive(Debug)]
+pub enum EmbeddedError {
+    PatchesDirNotFound,
+    ReadPatchFileFailed { path: PathBuf, detail: String },
+}
+
 // 编译时生成的嵌入文件列表
 include!(concat!(env!("OUT_DIR"), "/embedded_patches.rs"));
 
@@ -42,19 +48,21 @@ fn find_patches_dir() -> Option<PathBuf> {
 }
 
 /// 运行时获取所有补丁文件
-/// 
+///
 /// 开发模式下从磁盘实时读取文件（便于热更新调试）
 /// 发布模式下使用编译时嵌入的文件内容
-pub fn get_all_files_runtime() -> Result<Vec<(String, String)>, String> {
+pub fn get_all_files_runtime() -> Result<Vec<(String, String)>, EmbeddedError> {
     // 开发模式：从磁盘读取
     if cfg!(debug_assertions) {
-        let patches_dir = find_patches_dir()
-            .ok_or_else(|| "未找到 patches 目录，请从项目根目录或 patcher 目录启动".to_string())?;
+        let patches_dir = find_patches_dir().ok_or(EmbeddedError::PatchesDirNotFound)?;
         let mut files = Vec::new();
         for (relative_path, _) in get_all_files() {
             let full_path = patches_dir.join(relative_path);
-            let content = fs::read_to_string(&full_path)
-                .map_err(|e| format!("读取补丁文件失败 {:?}: {}", full_path, e))?;
+            let content =
+                fs::read_to_string(&full_path).map_err(|e| EmbeddedError::ReadPatchFileFailed {
+                    path: full_path.clone(),
+                    detail: e.to_string(),
+                })?;
             files.push((relative_path.to_string(), content));
         }
         return Ok(files);

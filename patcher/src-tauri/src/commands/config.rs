@@ -6,6 +6,14 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+use super::i18n::CommandError;
+
+type ConfigResult<T> = Result<T, CommandError>;
+
+fn config_with(_locale: Option<&str>, key: &'static str, vars: &[(&str, String)]) -> CommandError {
+    CommandError::key_with(key, vars)
+}
+
 /// 应用配置
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(default)]
@@ -13,7 +21,7 @@ pub struct AppConfig {
     /// Antigravity 安装路径
     #[serde(rename = "antigravityPath")]
     pub antigravity_path: Option<String>,
-    
+
     /// 功能开关
     pub features: FeatureFlags,
 }
@@ -59,7 +67,7 @@ fn get_config_path() -> PathBuf {
 #[tauri::command]
 pub fn get_config() -> AppConfig {
     let config_path = get_config_path();
-    
+
     if config_path.exists() {
         if let Ok(content) = fs::read_to_string(&config_path) {
             if let Ok(config) = serde_json::from_str(&content) {
@@ -67,26 +75,46 @@ pub fn get_config() -> AppConfig {
             }
         }
     }
-    
+
     AppConfig::default()
 }
 
 /// 保存配置
 #[tauri::command]
-pub fn save_config(config: AppConfig) -> Result<(), String> {
+pub fn save_config(config: AppConfig, locale: Option<String>) -> Result<(), String> {
+    let locale_ref = locale.as_deref();
+    save_config_internal(config, locale_ref).map_err(|err| err.to_message(locale_ref))
+}
+
+fn save_config_internal(config: AppConfig, locale: Option<&str>) -> ConfigResult<()> {
     let config_path = get_config_path();
-    
+
     // 确保配置目录存在
     if let Some(parent) = config_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("创建配置目录失败: {}", e))?;
+        fs::create_dir_all(parent).map_err(|e| {
+            config_with(
+                locale,
+                "configBackend.errors.createConfigDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
     }
-    
-    let content = serde_json::to_string_pretty(&config)
-        .map_err(|e| format!("序列化配置失败: {}", e))?;
-    
-    fs::write(&config_path, content)
-        .map_err(|e| format!("保存配置失败: {}", e))?;
-    
+
+    let content = serde_json::to_string_pretty(&config).map_err(|e| {
+        config_with(
+            locale,
+            "configBackend.errors.serializeConfigFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    fs::write(&config_path, content).map_err(|e| {
+        config_with(
+            locale,
+            "configBackend.errors.saveConfigFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
     Ok(())
 }

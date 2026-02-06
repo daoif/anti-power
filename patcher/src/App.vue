@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open, ask } from "@tauri-apps/plugin-dialog";
 import { useI18n } from 'vue-i18n';
@@ -13,7 +13,7 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 const { t, locale } = useI18n();
 
 // 应用版本号
-const APP_VERSION = "3.0.1";
+const APP_VERSION = "3.1.0";
 // GitHub 仓库地址
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
@@ -48,19 +48,66 @@ const showAbout = ref(false);
 const showConfirm = ref(false);
 // 当前平台标识
 const platform = navigator.platform.toLowerCase();
-// 是否支持清理功能（仅 macOS/Linux）
-const isCleanSupported = platform.includes('mac') || platform.includes('linux');
+// 是否支持清理功能
+const isCleanSupported = platform.includes('mac') || platform.includes('linux') || platform.includes('win');
 // 是否正在执行清理
 const isCleaning = ref(false);
+const STORAGE_KEYS = {
+  INSTALL_PATH: 'anti-power-install-path',
+  CLEAN_ENABLED: 'anti-power-clean-enabled',
+  CLEAN_TARGETS: 'anti-power-clean-targets'
+};
+
+try {
+  const saved = localStorage.getItem(STORAGE_KEYS.INSTALL_PATH);
+  if (saved !== null) {
+    antigravityPath.value = JSON.parse(saved);
+  }
+} catch (e) {
+  console.error('Failed to load install path', e);
+}
+
 // 是否启用清理功能
 const cleanEnabled = ref(true);
+try {
+  const saved = localStorage.getItem(STORAGE_KEYS.CLEAN_ENABLED);
+  if (saved !== null) {
+    cleanEnabled.value = JSON.parse(saved);
+  }
+} catch (e) {
+  console.error('Failed to load clean enabled state', e);
+}
+
 // 清理目标选择
-const cleanTargets = ref({
+const defaultTargets = {
   antigravity: true,
   gemini: false,
   codex: false,
   claude: false,
+};
+const cleanTargets = ref({ ...defaultTargets });
+
+try {
+  const saved = localStorage.getItem(STORAGE_KEYS.CLEAN_TARGETS);
+  if (saved) {
+    cleanTargets.value = { ...defaultTargets, ...JSON.parse(saved) };
+  }
+} catch (e) {
+  console.error('Failed to load clean targets', e);
+}
+
+// 自动保存状态
+watch(antigravityPath, (val) => {
+  localStorage.setItem(STORAGE_KEYS.INSTALL_PATH, JSON.stringify(val));
 });
+
+watch(cleanEnabled, (val) => {
+  localStorage.setItem(STORAGE_KEYS.CLEAN_ENABLED, JSON.stringify(val));
+});
+
+watch(cleanTargets, (val) => {
+  localStorage.setItem(STORAGE_KEYS.CLEAN_TARGETS, JSON.stringify(val));
+}, { deep: true });
 
 const hasAnyCleanTarget = computed(() =>
   Object.values(cleanTargets.value).some(Boolean)
@@ -148,7 +195,7 @@ async function detectPath() {
  */
 async function checkPatchStatus(path: string) {
   try {
-    isInstalled.value = await invoke<boolean>("check_patch_status", { path });
+    isInstalled.value = await invoke<boolean>("check_patch_status", { path, locale: locale.value });
     if (isInstalled.value) {
       // 读取侧边栏配置
       const config = await invoke<{
@@ -158,7 +205,7 @@ async function checkPatchStatus(path: string) {
         tableColor: boolean;
         fontSizeEnabled?: boolean;
         fontSize?: number;
-      } | null>("read_patch_config", { path });
+      } | null>("read_patch_config", { path, locale: locale.value });
       if (config) {
         features.value = { ...features.value, ...config };
       }
@@ -172,7 +219,7 @@ async function checkPatchStatus(path: string) {
         maxWidthRatio?: number;
         fontSizeEnabled?: boolean;
         fontSize?: number;
-      } | null>("read_manager_patch_config", { path });
+      } | null>("read_manager_patch_config", { path, locale: locale.value });
       if (managerConfig) {
         managerFeatures.value = { ...managerFeatures.value, ...managerConfig, enabled: true };
       }
@@ -253,7 +300,6 @@ async function uninstallPatch() {
 
 /**
  * 清理对话缓存
- * 仅支持 macOS/Linux 平台
  * @param force - 是否强制清理（删除更多缓存数据）
  */
 async function runAntiClean(force = false) {

@@ -4,8 +4,7 @@
 
 use std::{
     collections::HashSet,
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
 };
 
@@ -83,7 +82,7 @@ fn collect_patch_files(
             Err(_) => continue,
         };
         let rel_str = normalize_path(rel);
-        
+
         // 检查是否在排除列表中
         if is_excluded(&rel_str, exclude) {
             continue;

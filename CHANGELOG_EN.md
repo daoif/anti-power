@@ -6,6 +6,20 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.1.0 (2026-02-06)
+
+### New Features
+- Cleaning tool now supports Windows, including conversation cache cleanup for Antigravity, Gemini CLI, Codex and Claude Code.
+
+### Improvements
+- Backend command error handling is now localized to match the current UI language.
+- Frontend now passes locale to backend commands for consistent cross-platform error messages.
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.1.0
+
+---
+
 ## v3.0.1 (2026-02-05)
 
 ### New Features

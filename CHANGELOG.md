@@ -6,6 +6,20 @@
 
 ---
 
+## v3.1.0 (2026-02-06)
+
+### 新功能
+- 清理工具新增 Windows 平台支持, 可清理 Antigravity, Gemini CLI, Codex 与 Claude Code 的对话缓存
+
+### 优化
+- 后端命令错误处理支持多语言, 根据当前界面语言返回错误信息
+- 前端向后端命令透传 locale, 统一跨平台错误提示体验
+
+### 文档
+- README/Changelog/Release Notes 同步至 v3.1.0
+
+---
+
 ## v3.0.1 (2026-02-05)
 
 ### 新功能

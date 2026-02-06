@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v3.0.1-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v3.1.0-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
     <img src="https://img.shields.io/badge/支持_Antigravity-v1.16.5-green.svg" alt="Antigravity">
@@ -57,7 +57,7 @@ Anti-Power 以补丁方式增强 Antigravity 的侧边栏和 Manager 窗口, 提
 - **多语言支持**: 支持切换中英文界面
 - **深浅色主题**: 支持切换深/浅色模式
 - **路径检测**: 自动识别 IDE 目录, 安装流程简单省心
-- **清理对话**: 清理对话缓存 (macOS/Linux)
+- **清理对话**: 支持 Windows/macOS/Linux 清理对话缓存
 
 ---
 
@@ -148,7 +148,7 @@ sudo ./anti-power.sh
 
 ## 📋 版本信息
 
-当前版本: **v3.0.1** | 支持 Antigravity: **v1.16.5**
+当前版本: **v3.1.0** | 支持 Antigravity: **v1.16.5**
 
 完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
 

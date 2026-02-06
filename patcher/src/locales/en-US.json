@@ -1,163 +1,270 @@
 {
     "app": {
-        "title": "Anti-Power",
-        "version": "Version v{version}",
-        "github": "GitHub",
+        "error": {
+            "checkPatch": "Failed to check patch status",
+            "clean": "Cleanup failed",
+            "detect": "Detection failed",
+            "install": "Installation failed",
+            "normalizePath": "Path normalization failed",
+            "selectPath": "Failed to select directory",
+            "uninstall": "Uninstallation failed",
+            "unknown": "Unknown Error",
+            "updateConfig": "Failed to update configuration"
+        },
         "files": {
             "cascadePanelLabel": "(Sidebar Module)",
             "managerPanelLabel": "(Manager Module)"
         },
-        "error": {
-            "unknown": "Unknown Error",
-            "detect": "Detection failed",
-            "checkPatch": "Failed to check patch status",
-            "selectPath": "Failed to select directory",
-            "install": "Installation failed",
-            "uninstall": "Uninstallation failed",
-            "clean": "Cleanup failed",
-            "normalizePath": "Path normalization failed",
-            "updateConfig": "Failed to update configuration"
-        }
+        "github": "GitHub",
+        "title": "Anti-Power",
+        "version": "Version v{version}"
     },
     "actions": {
+        "browse": "Browse...",
         "install": "Install Patch",
         "reinstall": "Reinstall",
-        "updateConfig": "Update Config",
         "restore": "Restore",
-        "browse": "Browse..."
+        "updateConfig": "Update Config"
     },
     "status": {
         "installed": "Installed",
-        "notInstalled": "Not Installed",
         "installedHint": "Patch detected. You can update config without reinstalling.",
+        "notInstalled": "Not Installed",
         "notInstalledHint": "Please select a path, configure options, then install."
     },
+    "pathCard": {
+        "detectButton": "Redetect",
+        "detecting": "Detecting...",
+        "error": {
+            "openDir": "Failed to open directory"
+        },
+        "openDir": "Open Directory",
+        "placeholder": "Antigravity installation not detected",
+        "selectTitle": "Select Antigravity Installation Directory",
+        "targetLabelCascade": "Cascade Panel Enhancement",
+        "targetLabelManager": "Manager Window Enhancement",
+        "title": "Install Path",
+        "viewTarget": "View Target Path"
+    },
+    "featureCard": {
+        "copyButton": {
+            "collapse": "Hide Options",
+            "customPlaceholder": "Custom text",
+            "desc": "Add copy button to messages",
+            "expand": "Show Options",
+            "showBottom": "Show Bottom Button",
+            "smartHover": "Smart Hover (Only show when mouse near)",
+            "styleChinese": "Copy 📋",
+            "styleLabel": "Button Style",
+            "title": "Copy Button"
+        },
+        "enablePatch": "Enable Patch",
+        "fontSize": {
+            "desc": "Adjust Cascade panel font size",
+            "title": "Font Size"
+        },
+        "math": {
+            "desc": "Render LaTeX formulas using KaTeX/MathJax",
+            "title": "Math Formula"
+        },
+        "mermaid": {
+            "desc": "Automatically render Mermaid code blocks",
+            "title": "Mermaid Rendering"
+        },
+        "tableColor": {
+            "desc": "Fix invisible table text in dark mode",
+            "title": "Table Color Fix"
+        },
+        "title": "Sidebar Settings"
+    },
+    "managerCard": {
+        "fontSize": {
+            "desc": "Custom font size for message area (px)",
+            "title": "Font Size"
+        },
+        "maxWidth": {
+            "desc": "Set message area max width ratio (%)",
+            "title": "Max Width"
+        },
+        "title": "Manager Window Settings"
+    },
     "cleanTool": {
-        "title": "Conversation Clean Tool (macOS/Linux)",
+        "cleanCache": "Clean Cache",
+        "cleaning": "Cleaning...",
+        "confirmMessage": "This will clean conversation data for {targets}. It is recommended to close running application instances first. Continue?",
+        "confirmMessageNoApp": "This will clean conversation data for {targets}. Continue?",
+        "confirmTitle": "Clean Confirmation",
         "enableToggle": "Enable Cleaning",
+        "forceClean": "Force Clean",
+        "forceConfirmMessage": "This will force clean (ignoring running checks), which may affect running application instances. It will clean conversation data for {targets}. Continue?",
+        "forceConfirmMessageNoApp": "This will force clean (ignoring running checks). It will clean conversation data for {targets}. Continue?",
+        "forceConfirmTitle": "Force Clean",
+        "targetHint": "Please select at least one target",
+        "targetSeparator": ", ",
         "targetTitle": "Clean Targets",
         "targets": {
             "antigravity": "Antigravity",
-            "gemini": "Gemini CLI",
+            "claude": "Claude Code",
             "codex": "Codex Archived",
-            "claude": "Claude Code"
+            "gemini": "Gemini CLI"
         },
-        "targetSeparator": ", ",
-        "targetHint": "Please select at least one target",
-        "cleanCache": "Clean Cache",
-        "forceClean": "Force Clean",
-        "cleaning": "Cleaning...",
-        "confirmTitle": "Clean Confirmation",
-        "confirmMessage": "This will clean conversation data for {targets}. It is recommended to close running application instances first. Continue?",
-        "confirmMessageNoApp": "This will clean conversation data for {targets}. Continue?",
-        "forceConfirmTitle": "Force Clean",
-        "forceConfirmMessage": "This will force clean (ignoring running checks), which may affect running application instances. It will clean conversation data for {targets}. Continue?",
-        "forceConfirmMessageNoApp": "This will force clean (ignoring running checks). It will clean conversation data for {targets}. Continue?"
+        "title": "Conversation Clean Tool"
     },
-    "pathCard": {
-        "title": "Install Path",
-        "detectButton": "Redetect",
-        "placeholder": "Antigravity installation not detected",
-        "selectTitle": "Select Antigravity Installation Directory",
-        "viewTarget": "View Target Path",
-        "openDir": "Open Directory",
-        "targetLabelCascade": "Cascade Panel Enhancement",
-        "targetLabelManager": "Manager Window Enhancement",
-        "error": {
-            "openDir": "Failed to open directory"
+    "cleanBackend": {
+        "done": "Done!",
+        "errors": {
+            "antigravityDataDirNotFound": "Unable to resolve Antigravity data directory",
+            "backupFileFailed": "Failed to backup file",
+            "dataDirNotFound": "Data directory not found",
+            "executeScriptFailed": "Failed to execute script",
+            "homeDirNotFound": "Unable to resolve home directory",
+            "noTarget": "No clean target selected",
+            "readDirEntryFailed": "Failed to read directory entry",
+            "readDirFailed": "Failed to read directory",
+            "readFileTypeFailed": "Failed to read file type",
+            "removeDirFailed": "Failed to remove directory",
+            "removeFileFailed": "Failed to remove file",
+            "runningDetected": "Error: detected {name} is running, please close it first (or use --force)",
+            "setScriptPermissionsFailed": "Failed to set script permissions",
+            "sqlite3ExecFailed": "Failed to execute sqlite3",
+            "sqlite3Missing": "Error: sqlite3 not found, please install it before running",
+            "sqliteCleanFailed": "Failed to clean database",
+            "sqliteCountFailed": "Failed to read database count",
+            "tasklistExecFailed": "Failed to execute tasklist",
+            "unsupportedPlatform": "This platform is not supported yet",
+            "writeTempScriptFailed": "Failed to write temporary script"
+        },
+        "labels": {
+            "cleanDirContents": "Cleaning directory contents",
+            "deletedFile": "Deleted file",
+            "skipDirMissing": "Skip: directory does not exist",
+            "skipFileMissing": "Skip: file does not exist",
+            "skipNotDir": "Skip: not a directory",
+            "skipNotFound": "Skip: not found"
+        },
+        "logs": {
+            "backup": "Backup {name} -> {backup}",
+            "cleanedDb": "Cleaned {name} (before={before}, after={after})"
+        },
+        "sections": {
+            "antigravity": {
+                "backupDb": "Backing up database files...",
+                "cleanDb": "Cleaning database records..."
+            },
+            "codex": {
+                "cleanArchive": "Cleaning archived sessions..."
+            },
+            "shared": {
+                "cleanCache": "Cleaning conversation caches..."
+            }
         }
     },
-    "featureCard": {
-        "title": "Sidebar Settings",
-        "enablePatch": "Enable Patch",
-        "mermaid": {
-            "title": "Mermaid Rendering",
-            "desc": "Automatically render Mermaid code blocks"
-        },
-        "math": {
-            "title": "Math Formula",
-            "desc": "Render LaTeX formulas using KaTeX/MathJax"
-        },
-        "copyButton": {
-            "title": "Copy Button",
-            "desc": "Add copy button to messages",
-            "expand": "Show Options",
-            "collapse": "Hide Options",
-            "smartHover": "Smart Hover (Only show when mouse near)",
-            "showBottom": "Show Bottom Button",
-            "styleLabel": "Button Style",
-            "styleChinese": "Copy 📋",
-            "customPlaceholder": "Custom text"
-        },
-        "tableColor": {
-            "title": "Table Color Fix",
-            "desc": "Fix invisible table text in dark mode"
-        },
-        "fontSize": {
-            "title": "Font Size",
-            "desc": "Adjust Cascade panel font size"
+    "configBackend": {
+        "errors": {
+            "createConfigDirFailed": "Failed to create config directory: {detail}",
+            "saveConfigFailed": "Failed to save config: {detail}",
+            "serializeConfigFailed": "Failed to serialize config: {detail}"
         }
     },
-    "managerCard": {
-        "title": "Manager Window Settings",
-        "maxWidth": {
-            "title": "Max Width",
-            "desc": "Set message area max width ratio (%)"
-        },
-        "fontSize": {
-            "title": "Font Size",
-            "desc": "Custom font size for message area (px)"
+    "patchBackend": {
+        "errors": {
+            "backupCascadeFailed": "Failed to backup cascade-panel.html: {detail}",
+            "backupManagerEntryFailed": "Failed to backup workbench-jetski-agent.html: {detail}",
+            "cannotWriteDir": "Unable to write directory: {detail}",
+            "cleanTempDirFailed": "Failed to clean temporary directory: {detail}",
+            "createCascadeDirFailed": "Failed to create cascade-panel directory: {detail}",
+            "createDirFailed": "Failed to create directory: {detail}",
+            "createManagerDirFailed": "Failed to create manager-panel directory: {detail}",
+            "createTempDirFailed": "Failed to create temporary directory: {detail}",
+            "executePkexecFailed": "Failed to execute pkexec: {detail}",
+            "invalidInstallDir": "Invalid Antigravity installation directory",
+            "invokeTerminalFailed": "Failed to invoke Terminal: {detail}",
+            "macosPermissionHint": "{message}. macOS may block app bundle modification. In System Settings -> Privacy & Security -> App Management, grant Anti-Power permission; optionally grant Full Disk Access. Or move Antigravity.app to ~/Applications and retry. Resource path: {path}",
+            "managerDirMissing": "Manager window directory does not exist",
+            "missingManagerConfig": "Missing Manager config",
+            "missingSidebarConfig": "Missing sidebar config",
+            "notFound": "Not found: {name}",
+            "parseConfigFailed": "Failed to parse config: {detail}",
+            "parseManagerConfigFailed": "Failed to parse Manager config: {detail}",
+            "parseProductJsonFailed": "Failed to parse product.json: {detail}",
+            "patchNotInstalled": "Patch is not installed. Please install the patch first",
+            "patchesDirNotFound": "Patches directory not found. Please start from the project root or patcher directory",
+            "permissionDeniedDir": "Permission denied: cannot write directory {dir}. Run as administrator or install to a writable path.",
+            "pkexecNotFound": "pkexec not found. Please install polkit or run with sudo in terminal",
+            "privilegedCanceledOrFailed": "Privileged operation was canceled or failed",
+            "privilegedScriptFailed": "Privileged script execution failed: {message}",
+            "readConfigFailed": "Failed to read config: {detail}",
+            "readManagerConfigFailed": "Failed to read Manager config: {detail}",
+            "readPatchFileFailed": "Failed to read patch file: {detail}",
+            "readProductJsonFailed": "Failed to read product.json: {detail}",
+            "readScriptPermissionsFailed": "Failed to read script permissions: {detail}",
+            "readStatusFileFailed": "Failed to read status file: {detail}",
+            "removeCascadeDirFailed": "Failed to remove cascade-panel directory: {detail}",
+            "removeManagerDirFailed": "Failed to remove manager-panel directory: {detail}",
+            "removeOldCascadeDirFailed": "Failed to remove old cascade-panel directory: {detail}",
+            "removeOldManagerDirFailed": "Failed to remove old manager-panel directory: {detail}",
+            "restoreCascadeFailed": "Failed to restore cascade-panel.html: {detail}",
+            "restoreManagerEntryFailed": "Failed to restore workbench-jetski-agent.html: {detail}",
+            "serializeProductJsonFailed": "Failed to serialize product.json: {detail}",
+            "setScriptPermissionsFailed": "Failed to set script permissions: {detail}",
+            "terminalCommandFailedCode": "Terminal command failed with exit code {code}",
+            "terminalNotFinished": "Terminal is not finished yet. Complete authorization in Terminal and retry",
+            "unsupportedPrivilegedFlow": "Privileged patch flow is not supported on this platform. Please run the patch script manually",
+            "writeConfigFailed": "Failed to write config file: {detail}",
+            "writeFileFailed": "Failed to write file: {detail}",
+            "writeManagerConfigFailed": "Failed to write Manager config file: {detail}",
+            "writeProductJsonFailed": "Failed to write product.json: {detail}"
         }
     },
     "aboutModal": {
-        "title": "About",
-        "desc": "Antigravity AI IDE enhancement patch manager tool.",
-        "qqGroup": "QQ Group: ",
+        "checkFailed": "Check Failed",
         "checkUpdate": "Check Update",
         "checking": "Checking...",
-        "repo": "GitHub Repo",
-        "newVersion": "🎉 New Version Found: v{version}",
-        "download": "Download",
-        "latest": "✓ Up to date",
-        "checkFailed": "Check Failed",
-        "networkError": "Network Error",
         "copyright": "© 2026 Anti-Power · MIT License",
+        "desc": "Antigravity AI IDE enhancement patch manager tool.",
+        "download": "Download",
         "error": {
             "checkUpdate": "Failed to check for updates"
-        }
+        },
+        "latest": "✓ Up to date",
+        "networkError": "Network Error",
+        "newVersion": "🎉 New Version Found: v{version}",
+        "qqGroup": "QQ Group: ",
+        "repo": "GitHub Repo",
+        "title": "About"
     },
     "confirmModal": {
-        "title": "Confirm Installation",
+        "added": "Files/Dirs to be Added",
+        "badgeAdded": "Added",
+        "badgeDeprecated": "Deprecated",
+        "badgeModified": "Modified",
+        "cancel": "Cancel",
+        "confirm": "Confirm Install",
+        "deprecated": "Files to be Removed",
         "message": "Installing Anti-Power patch. Please confirm the following file changes: ",
         "modified": "Files to be Modified",
-        "added": "Files/Dirs to be Added",
-        "deprecated": "Files to be Removed",
         "note": "Note: ",
         "noteContent": "If you have customized the above original files, your changes will be overwritten. A backup (.bak) will be created on first install.",
-        "confirm": "Confirm Install",
-        "cancel": "Cancel",
-        "badgeModified": "Modified",
-        "badgeAdded": "Added",
-        "badgeDeprecated": "Deprecated"
+        "title": "Confirm Installation"
     },
     "toast": {
-        "installSuccess": "✓ Patch Installed",
-        "installFailed": "✗ Install Failed: {error}",
-        "restoreSuccess": "✓ Restored Original",
-        "restoreFailed": "✗ Restore Failed: {error}",
-        "cleanSuccess": "✓ Cleaned Successfully",
         "cleanFailed": "✗ Clean Failed: {error}",
+        "cleanSuccess": "✓ Cleaned Successfully",
         "configUpdated": "✓ Config Updated",
+        "installFailed": "✗ Install Failed: {error}",
+        "installSuccess": "✓ Patch Installed",
+        "restoreFailed": "✗ Restore Failed: {error}",
+        "restoreSuccess": "✓ Restored Original",
         "updateFailed": "✗ Update Failed: {error}"
     },
     "titleBar": {
-        "toggleThemeLight": "Switch to light theme",
-        "toggleThemeDark": "Switch to dark theme",
         "about": "About",
-        "minimize": "Minimize",
-        "maximize": "Maximize",
-        "restore": "Restore",
         "close": "Close",
-        "switchLanguage": "切换到中文"
+        "maximize": "Maximize",
+        "minimize": "Minimize",
+        "restore": "Restore",
+        "switchLanguage": "切换到中文",
+        "toggleThemeDark": "Switch to dark theme",
+        "toggleThemeLight": "Switch to light theme"
     }
 }

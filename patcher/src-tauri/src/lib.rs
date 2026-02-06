@@ -5,7 +5,11 @@
 mod commands;
 mod embedded;
 
-use commands::{detect_antigravity_path, normalize_antigravity_path, install_patch, uninstall_patch, update_config, check_patch_status, read_patch_config, read_manager_patch_config, get_config, save_config, run_anti_clean};
+use commands::{
+    check_patch_status, detect_antigravity_path, get_config, install_patch,
+    normalize_antigravity_path, read_manager_patch_config, read_patch_config, run_anti_clean,
+    save_config, uninstall_patch, update_config,
+};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

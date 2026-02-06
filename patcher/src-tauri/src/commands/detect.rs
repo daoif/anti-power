@@ -4,8 +4,8 @@
 //! - Windows: 注册表查询 + 常见路径扫描
 //! - macOS/Linux: 标准路径探测，未命中时返回 None
 
-use std::path::{Path, PathBuf};
 use super::paths;
+use std::path::{Path, PathBuf};
 
 // 平台特定实现直接内联，避免子模块路径问题
 
@@ -69,7 +69,7 @@ fn try_registry() -> Option<String> {
 
     // 尝试 HKEY_LOCAL_MACHINE
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    
+
     // Antigravity 可能的注册表路径
     let paths = [
         r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity",
@@ -105,7 +105,7 @@ fn try_registry() -> Option<String> {
 fn try_common_paths_windows() -> Option<String> {
     let literal_paths = [
         r"C:\Program Files\Antigravity",
-        r"D:\Program Files\Antigravity", 
+        r"D:\Program Files\Antigravity",
         r"E:\Program Files\Antigravity",
     ];
 
@@ -147,7 +147,10 @@ fn detect_macos() -> Option<String> {
             return Some(normalized);
         }
 
-        let user_app_contents = home.join("Applications").join("Antigravity.app").join("Contents");
+        let user_app_contents = home
+            .join("Applications")
+            .join("Antigravity.app")
+            .join("Contents");
         if let Some(normalized) = normalize_path(&user_app_contents) {
             return Some(normalized);
         }

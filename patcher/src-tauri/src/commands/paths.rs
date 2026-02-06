@@ -113,7 +113,12 @@ fn ends_with_components_ci(path: &Path, tail: &[&str]) -> bool {
     let tail_lower: Vec<String> = tail.iter().map(|item| item.to_ascii_lowercase()).collect();
     let components: Vec<String> = path
         .components()
-        .filter_map(|component| component.as_os_str().to_str().map(|s| s.to_ascii_lowercase()))
+        .filter_map(|component| {
+            component
+                .as_os_str()
+                .to_str()
+                .map(|s| s.to_ascii_lowercase())
+        })
         .collect();
 
     if components.len() < tail_lower.len() {
