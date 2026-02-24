@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/Version-v3.1.0-blue.svg" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v3.2.0-blue.svg" alt="Version">
   </a>
   <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/Supports_Antigravity-v1.16.5-green.svg" alt="Antigravity">
+    <img src="https://img.shields.io/badge/Supports_Antigravity-v1.18.4-green.svg" alt="Antigravity">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License">
@@ -55,13 +55,13 @@
 
 ---
 
-## 📸 Demo
+## Demo
 
 View the [screenshots](docs/reference/screenshots.md).
 
 ---
 
-## 📥 Installation
+## Installation
 
 ### Windows (Recommended)
 
@@ -71,7 +71,7 @@ View the [screenshots](docs/reference/screenshots.md).
 4. Select the desired features and click "Install Patch".
 5. Restart Antigravity or reopen the Manager window to load the patch.
 
-For manual installation, download the patch zip file from Releases (e.g., `anti-power-patches.zip`) and refer to [manual-install.md](patcher/patches/manual-install.md).
+For manual installation, download the patch zip file from Releases (e.g., `anti-power-patches.zip`) and refer to [manual-install_EN.md](patcher/patches/manual-install_EN.md).
 
 ### macOS (Recommended)
 
@@ -112,7 +112,7 @@ chmod +x ./anti-power.sh
 sudo ./anti-power.sh
 ```
 
-For manual installation, please refer to [manual-install.md](patcher/patches/manual-install.md).
+For manual installation, please refer to [manual-install_EN.md](patcher/patches/manual-install_EN.md).
 
 ---
 
@@ -135,9 +135,9 @@ For manual installation, please refer to [manual-install.md](patcher/patches/man
 
 ---
 
-## 📋 Version Info
+## Version Info
 
-Current Version: **v3.1.0** | Supports Antigravity: **v1.16.5**
+Current Version: **v3.2.0** | Supports Antigravity: **v1.18.4**
 
 For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 
@@ -150,13 +150,13 @@ For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 
 ---
 
-## 🤝 Contribution
+## Contribution
 
 Issues and Pull Requests are welcome.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [@mikessslxxx](https://github.com/mikessslxxx) - Math formula rendering, Manager enhancements
 - [@syanle](https://github.com/syanle) - Linux support
@@ -164,6 +164,6 @@ Issues and Pull Requests are welcome.
 
 ---
 
-## ⚖️ License
+## License
 
 MIT License

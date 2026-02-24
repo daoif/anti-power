@@ -301,7 +301,7 @@ const getConfig = () => {
  */
 const getButtonLabel = (position) => {
     const config = getConfig();
-    const style = config.copyButtonStyle || 'arrow';
+    const style = config.copyButtonStyle || 'icon';
     const customText = config.copyButtonCustomText || '';
 
     switch (style) {
@@ -362,7 +362,24 @@ export const setCopyState = (btn, copied) => {
     const position = btn.dataset.copyPosition || 'top';
     const label = copied ? COPIED_LABEL : getButtonLabel(position);
     const span = btn.querySelector('span');
-    if (span) span.textContent = label;
+    if (span) {
+        span.textContent = label;
+        span.style.display = label ? '' : 'none';
+    }
+
+    // Remove the label gap in icon-only mode to center the icon
+    btn.style.gap = label ? '0.25rem' : '0';
+
+    // Set icon visibility explicitly so host styles cannot override the copy state
+    const copyIcon = btn.querySelector('.manager-copy-icon-copy');
+    const checkIcon = btn.querySelector('.manager-copy-icon-check');
+    if (copyIcon) {
+        copyIcon.style.display = copied ? 'none' : 'inline-block';
+    }
+    if (checkIcon) {
+        checkIcon.style.display = copied ? 'inline-block' : 'none';
+    }
+
     btn.classList.toggle('copied', copied);
     btn.setAttribute('aria-label', label || 'Copy');
 };
@@ -379,7 +396,7 @@ export const createCopyButton = (className, position = 'top') => {
     btn.dataset.copyPosition = position;
 
     const config = getConfig();
-    const style = config.copyButtonStyle || 'arrow';
+    const style = config.copyButtonStyle || 'icon';
 
     const label = getButtonLabel(position);
     const span = document.createElement('span');

@@ -12,28 +12,20 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 
 const { t, locale } = useI18n();
 
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "3.2.0";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
-/**
- * Files the installer replaces, adds, or removes
- */
-const PATCH_FILES = computed(() => ({
-  // Upstream files replaced by the installer
-  modified: [
-    "cascade-panel.html",
-    "workbench-jetski-agent.html",
-  ],
-  // New patch assets
-  added: [
-    `cascade-panel/ ${t('app.files.cascadePanelLabel')}`,
-    `manager-panel/ ${t('app.files.managerPanelLabel')}`,
-  ],
-  // Files left behind by older patch versions
-  deprecated: [] as string[],
-}));
+type SidebarVariant = 'legacy' | 'modern';
+
+interface AntigravityVersionInfo {
+  ideVersion: string | null;
+  sidebarVariant: SidebarVariant;
+}
 
 const antigravityPath = ref<string | null>(null);
+const detectedIdeVersion = ref<string | null>(null);
+// The installed ideVersion determines the sidebar entry point
+const detectedSidebarVariant = ref<SidebarVariant>('legacy');
 const isDetecting = ref(false);
 const isInstalled = ref(false);
 const showAbout = ref(false);
@@ -118,7 +110,7 @@ const isCleanActionDisabled = computed(() =>
 );
 
 /**
- * Feature flags for the legacy Cascade panel
+ * Feature flags for the selected sidebar variant
  */
 const features = ref({
   enabled: true,
@@ -127,10 +119,10 @@ const features = ref({
   copyButton: true,
   tableColor: true,
   fontSizeEnabled: true,
-  fontSize: 20,
-  copyButtonSmartHover: false,
+  fontSize: 16,
+  copyButtonSmartHover: true,
   copyButtonShowBottom: 'float' as 'float' | 'feedback',
-  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonStyle: 'icon' as 'arrow' | 'icon' | 'chinese' | 'custom',
   copyButtonCustomText: '',
 });
 
@@ -142,15 +134,103 @@ const managerFeatures = ref({
   mermaid: true,
   math: true,
   copyButton: true,
-  maxWidthEnabled: false,
+  maxWidthEnabled: true,
   maxWidthRatio: 75,
-  fontSizeEnabled: false,
+  fontSizeEnabled: true,
   fontSize: 16,
-  copyButtonSmartHover: false,
+  copyButtonSmartHover: true,
   copyButtonShowBottom: 'float' as 'float' | 'feedback',
-  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonStyle: 'icon' as 'arrow' | 'icon' | 'chinese' | 'custom',
   copyButtonCustomText: '',
 });
+
+const isModernSidebarVariant = computed(() => detectedSidebarVariant.value === 'modern');
+
+const detectedVersionLabel = computed(() => {
+  if (detectedIdeVersion.value) {
+    return t('status.ideVersion', { version: detectedIdeVersion.value });
+  }
+  return t('status.ideVersionUnknown');
+});
+
+const confirmModalMessage = computed(() => {
+  if (!detectedIdeVersion.value) {
+    return t('confirmModal.messageUnknown');
+  }
+  return t(
+    isModernSidebarVariant.value
+      ? 'confirmModal.messageModern'
+      : 'confirmModal.messageLegacy'
+  );
+});
+
+/**
+ * Show changes for the detected sidebar variant and enabled panels
+ */
+const PATCH_FILES = computed(() => {
+  const modified: string[] = [];
+  const added: string[] = [];
+  const deprecated: string[] = [];
+
+  if (features.value.enabled) {
+    if (isModernSidebarVariant.value) {
+      modified.push("workbench.html");
+      added.push(`sidebar-panel/ ${t('app.files.sidebarModernLabel')}`);
+      deprecated.push(`cascade-panel/ ${t('app.files.sidebarLegacyCleanupLabel')}`);
+    } else {
+      modified.push("cascade-panel.html");
+      added.push(`cascade-panel/ ${t('app.files.sidebarLegacyLabel')}`);
+      deprecated.push(`sidebar-panel/ ${t('app.files.sidebarModernCleanupLabel')}`);
+    }
+  }
+
+  if (managerFeatures.value.enabled) {
+    modified.push("workbench-jetski-agent.html");
+    added.push(`manager-panel/ ${t('app.files.managerPanelLabel')}`);
+  }
+
+  return { modified, added, deprecated };
+});
+
+const hasPatchChanges = computed(() =>
+  PATCH_FILES.value.modified.length > 0 ||
+  PATCH_FILES.value.added.length > 0 ||
+  PATCH_FILES.value.deprecated.length > 0
+);
+
+/**
+ * Read the IDE version and use the legacy sidebar as a fallback
+ * @param path - Antigravity install path
+ */
+async function readAntigravityVersion(path: string) {
+  try {
+    const info = await invoke<AntigravityVersionInfo | null>("detect_antigravity_version", { path });
+    detectedIdeVersion.value = info?.ideVersion ?? null;
+    detectedSidebarVariant.value = info?.sidebarVariant === 'modern' ? 'modern' : 'legacy';
+  } catch (e) {
+    detectedIdeVersion.value = null;
+    detectedSidebarVariant.value = 'legacy';
+    console.error(t('app.error.readVersion'), e);
+  }
+}
+
+/**
+ * Refresh patch status and version together after an install path change
+ * @param path - Antigravity install path, or null to reset
+ */
+async function refreshPathState(path: string | null) {
+  if (!path) {
+    isInstalled.value = false;
+    detectedIdeVersion.value = null;
+    detectedSidebarVariant.value = 'legacy';
+    return;
+  }
+
+  await Promise.all([
+    checkPatchStatus(path),
+    readAntigravityVersion(path),
+  ]);
+}
 
 /**
  * Use the platform's install locations to discover Antigravity
@@ -160,10 +240,9 @@ async function detectPath() {
   try {
     const path = await invoke<string | null>("detect_antigravity_path");
     const normalized = path ? await normalizePath(path) : null;
-    antigravityPath.value = normalized ?? path;
-    if (normalized) {
-      await checkPatchStatus(normalized);
-    }
+    const resolvedPath = normalized ?? path;
+    antigravityPath.value = resolvedPath;
+    await refreshPathState(resolvedPath);
   } catch (e) {
     console.error(t('app.error.detect'), e);
   } finally {
@@ -179,30 +258,39 @@ async function checkPatchStatus(path: string) {
   try {
     isInstalled.value = await invoke<boolean>("check_patch_status", { path, locale: locale.value });
     if (isInstalled.value) {
-      const config = await invoke<{
-        mermaid: boolean;
-        math: boolean;
-        copyButton: boolean;
-        tableColor: boolean;
-        fontSizeEnabled?: boolean;
-        fontSize?: number;
-      } | null>("read_patch_config", { path, locale: locale.value });
-      if (config) {
-        features.value = { ...features.value, ...config };
-      }
+      const [config, managerConfig] = await Promise.all([
+        invoke<{
+          enabled?: boolean;
+          mermaid: boolean;
+          math: boolean;
+          copyButton: boolean;
+          tableColor: boolean;
+          fontSizeEnabled?: boolean;
+          fontSize?: number;
+        } | null>("read_patch_config", { path, locale: locale.value }),
+        invoke<{
+          enabled?: boolean;
+          mermaid: boolean;
+          math: boolean;
+          copyButton: boolean;
+          maxWidthEnabled?: boolean;
+          maxWidthRatio?: number;
+          fontSizeEnabled?: boolean;
+          fontSize?: number;
+        } | null>("read_manager_patch_config", { path, locale: locale.value }),
+      ]);
 
-      const managerConfig = await invoke<{
-        mermaid: boolean;
-        math: boolean;
-        copyButton: boolean;
-        maxWidthEnabled?: boolean;
-        maxWidthRatio?: number;
-        fontSizeEnabled?: boolean;
-        fontSize?: number;
-      } | null>("read_manager_patch_config", { path, locale: locale.value });
-      if (managerConfig) {
-        managerFeatures.value = { ...managerFeatures.value, ...managerConfig, enabled: true };
-      }
+      features.value = {
+        ...features.value,
+        ...(config ?? {}),
+        enabled: config ? (config.enabled ?? true) : false,
+      };
+
+      managerFeatures.value = {
+        ...managerFeatures.value,
+        ...(managerConfig ?? {}),
+        enabled: managerConfig ? (managerConfig.enabled ?? true) : false,
+      };
     }
   } catch (e) {
     console.error(t('app.error.checkPatch'), e);
@@ -220,10 +308,9 @@ async function browsePath() {
     });
     if (selected) {
       const normalized = await normalizePath(selected as string);
-      antigravityPath.value = normalized ?? (selected as string);
-      if (normalized) {
-        await checkPatchStatus(normalized);
-      }
+      const resolvedPath = normalized ?? (selected as string);
+      antigravityPath.value = resolvedPath;
+      await refreshPathState(resolvedPath);
     }
   } catch (e) {
     console.error(t('app.error.selectPath'), e);
@@ -235,6 +322,10 @@ async function browsePath() {
  */
 function requestInstall() {
   if (!antigravityPath.value) return;
+  if (!hasPatchChanges.value) {
+    showToast(t('toast.noPatchEnabled'));
+    return;
+  }
   showConfirm.value = true;
 }
 
@@ -244,6 +335,10 @@ function requestInstall() {
 async function confirmInstall() {
   showConfirm.value = false;
   if (!antigravityPath.value) return;
+  if (!hasPatchChanges.value) {
+    showToast(t('toast.noPatchEnabled'));
+    return;
+  }
   try {
     await invoke("install_patch", { 
       path: antigravityPath.value,
@@ -251,7 +346,7 @@ async function confirmInstall() {
       managerFeatures: managerFeatures.value,
       locale: locale.value
     });
-    isInstalled.value = true;
+    await refreshPathState(antigravityPath.value);
     showToast(t('toast.installSuccess'));
   } catch (e) {
     console.error(t('app.error.install'), e);
@@ -403,9 +498,18 @@ onMounted(() => {
 
           <section class="actions-card">
             <div class="actions-meta">
-              <span class="status-pill" :class="{ installed: isInstalled }">
-                {{ isInstalled ? $t('status.installed') : $t('status.notInstalled') }}
-              </span>
+              <div class="status-badges">
+                <span class="status-pill" :class="{ installed: isInstalled }">
+                  {{ isInstalled ? $t('status.installed') : $t('status.notInstalled') }}
+                </span>
+                <span
+                  v-if="antigravityPath"
+                  class="status-pill version-pill"
+                  :class="{ modern: isModernSidebarVariant }"
+                >
+                  {{ detectedVersionLabel }}
+                </span>
+              </div>
               <span class="status-text">
                 {{ isInstalled ? $t('status.installedHint') : $t('status.notInstalledHint') }}
               </span>
@@ -566,7 +670,7 @@ onMounted(() => {
     <ConfirmModal
       :show="showConfirm"
       :title="$t('confirmModal.title')"
-      :message="$t('confirmModal.message')"
+      :message="confirmModalMessage"
       :modifiedFiles="PATCH_FILES.modified"
       :addedFiles="PATCH_FILES.added"
       :deprecatedFiles="PATCH_FILES.deprecated"
@@ -673,9 +777,17 @@ onMounted(() => {
 
 .actions-meta {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   margin-bottom: 14px;
+}
+
+.status-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .status-pill {
@@ -698,6 +810,18 @@ onMounted(() => {
   border-color: rgba(51, 118, 205, 0.3);
   color: var(--ag-accent);
   box-shadow: 0 0 8px rgba(51, 118, 205, 0.1);
+}
+
+.version-pill {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.24);
+  color: var(--ag-text-secondary);
+}
+
+.version-pill.modern {
+  background: var(--ag-success-subtle);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: var(--ag-success);
 }
 
 .status-text {

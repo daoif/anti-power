@@ -6,9 +6,9 @@ mod commands;
 mod embedded;
 
 use commands::{
-    check_patch_status, detect_antigravity_path, get_config, install_patch,
-    normalize_antigravity_path, read_manager_patch_config, read_patch_config, run_anti_clean,
-    save_config, uninstall_patch, update_config,
+    check_patch_status, detect_antigravity_path, detect_antigravity_version, get_config,
+    install_patch, normalize_antigravity_path, read_manager_patch_config, read_patch_config,
+    run_anti_clean, save_config, uninstall_patch, update_config,
 };
 use tauri::Manager;
 
@@ -34,6 +34,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             detect_antigravity_path,
+            detect_antigravity_version,
             normalize_antigravity_path,
             install_patch,
             uninstall_patch,

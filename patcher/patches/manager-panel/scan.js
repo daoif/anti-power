@@ -17,8 +17,8 @@ import { renderMath } from './math.js';
 import { scanMermaid } from './mermaid.js';
 
 let config = {
-    mermaid: false,
-    math: false,
+    mermaid: true,
+    math: true,
     copyButton: true,
 };
 

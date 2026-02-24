@@ -6,6 +6,7 @@
             "detect": "检测失败",
             "install": "安装失败",
             "normalizePath": "路径规范化失败",
+            "readVersion": "读取版本号失败",
             "selectPath": "选择目录失败",
             "uninstall": "卸载失败",
             "unknown": "未知错误",
@@ -13,6 +14,10 @@
         },
         "files": {
             "cascadePanelLabel": "(侧边栏模块)",
+            "sidebarLegacyLabel": "(侧边栏模块 · 旧版入口)",
+            "sidebarModernLabel": "(侧边栏模块 · 新版入口)",
+            "sidebarLegacyCleanupLabel": "(旧版残留目录清理)",
+            "sidebarModernCleanupLabel": "(新版残留目录清理)",
             "managerPanelLabel": "(Manager模块)"
         },
         "github": "GitHub",
@@ -27,6 +32,8 @@
         "updateConfig": "更新配置"
     },
     "status": {
+        "ideVersion": "Antigravity v{version}",
+        "ideVersionUnknown": "Antigravity 版本未知",
         "installed": "已安装",
         "installedHint": "已检测到补丁，可直接更新配置，无需重装",
         "notInstalled": "未安装",
@@ -41,7 +48,7 @@
         "openDir": "打开目录",
         "placeholder": "未检测到 Antigravity 安装目录",
         "selectTitle": "选择 Antigravity 安装目录",
-        "targetLabelCascade": "cascade-panel 增强",
+        "targetLabelCascade": "侧边栏增强（自动匹配新旧入口）",
         "targetLabelManager": "Manager 窗口增强",
         "title": "安装目录",
         "viewTarget": "查看目标路径"
@@ -60,7 +67,7 @@
         },
         "enablePatch": "启用补丁",
         "fontSize": {
-            "desc": "调整 Cascade 面板整体字体大小",
+            "desc": "调整侧边栏消息区域的整体字体大小",
             "title": "侧边栏字体大小"
         },
         "math": {
@@ -242,6 +249,9 @@
         "confirm": "确认安装",
         "deprecated": "将删除的废弃文件",
         "message": "即将安装 Anti-Power 补丁，请确认以下文件变更：",
+        "messageLegacy": "即将安装 Anti-Power 补丁（侧边栏旧版入口：cascade-panel.html），请确认以下文件变更：",
+        "messageModern": "即将安装 Anti-Power 补丁（侧边栏新版入口：workbench.html），请确认以下文件变更：",
+        "messageUnknown": "即将安装 Anti-Power 补丁（未识别到 Antigravity 版本，默认按旧版入口处理），请确认以下文件变更：",
         "modified": "将修改的原始文件",
         "note": "注意：",
         "noteContent": "如果你对上述原始文件进行过自定义修改，这些修改将被覆盖。首次安装时会自动备份原文件（.bak）",
@@ -253,6 +263,7 @@
         "configUpdated": "✓ 配置已更新",
         "installFailed": "✗ 安装失败: {error}",
         "installSuccess": "✓ 补丁安装成功",
+        "noPatchEnabled": "✗ 请至少启用一个补丁模块后再安装",
         "restoreFailed": "✗ 恢复失败: {error}",
         "restoreSuccess": "✓ 已恢复原版",
         "updateFailed": "✗ 更新失败: {error}"

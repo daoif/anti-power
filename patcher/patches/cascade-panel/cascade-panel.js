@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
     copyButton: true,
     tableColor: true,
     fontSizeEnabled: true,
-    fontSize: 20,
+    fontSize: 16,
 };
 
 /**

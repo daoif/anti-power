@@ -5,8 +5,8 @@
     "tableColor": true,
     "fontSizeEnabled": true,
     "fontSize": 16,
-    "copyButtonSmartHover": false,
+    "copyButtonSmartHover": true,
     "copyButtonShowBottom": "float",
-    "copyButtonStyle": "arrow",
+    "copyButtonStyle": "icon",
     "copyButtonCustomText": ""
 }

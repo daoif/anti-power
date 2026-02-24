@@ -25,7 +25,7 @@ const getLabelText = (copied, position) => {
     if (copied) return 'Copied!';
 
     const config = getConfig();
-    const style = config.copyButtonStyle || 'arrow';
+    const style = config.copyButtonStyle || 'icon';
     const customText = config.copyButtonCustomText || '';
 
     switch (style) {
@@ -64,7 +64,7 @@ export const setCopyState = (button, copied) => {
     const position = button.dataset.copyPosition || 'top';
     const label = getLabelText(copied, position);
     const config = getConfig();
-    const style = config.copyButtonStyle || 'arrow';
+    const style = config.copyButtonStyle || 'icon';
 
     // Use a text-only custom label until the success checkmark is shown
     let icon = '';
@@ -229,7 +229,7 @@ export const ensureContentCopyButton = (contentEl) => {
     }
 
     const config = getConfig();
-    const smartHover = config.copyButtonSmartHover || false;
+    const smartHover = config.copyButtonSmartHover ?? true;
     const bottomPosition = config.copyButtonShowBottom || 'float';
 
     // Top-right hover button

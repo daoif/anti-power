@@ -2,6 +2,8 @@
 .embed-exclude.txt
 cascade-panel/config.json
 manager-panel/config.json
+sidebar-panel/config.json
 manual-install.md
+manual-install_EN.md
 .DS_Store
 Thumbs.db

@@ -6,6 +6,7 @@
             "detect": "Detection failed",
             "install": "Installation failed",
             "normalizePath": "Path normalization failed",
+            "readVersion": "Failed to read Antigravity version",
             "selectPath": "Failed to select directory",
             "uninstall": "Uninstallation failed",
             "unknown": "Unknown Error",
@@ -13,6 +14,10 @@
         },
         "files": {
             "cascadePanelLabel": "(Sidebar Module)",
+            "sidebarLegacyLabel": "(Sidebar Module · Legacy Entry)",
+            "sidebarModernLabel": "(Sidebar Module · Modern Entry)",
+            "sidebarLegacyCleanupLabel": "(Cleanup Legacy Sidebar Directory)",
+            "sidebarModernCleanupLabel": "(Cleanup Modern Sidebar Directory)",
             "managerPanelLabel": "(Manager Module)"
         },
         "github": "GitHub",
@@ -27,6 +32,8 @@
         "updateConfig": "Update Config"
     },
     "status": {
+        "ideVersion": "Antigravity v{version}",
+        "ideVersionUnknown": "Antigravity version unknown",
         "installed": "Installed",
         "installedHint": "Patch detected. You can update config without reinstalling.",
         "notInstalled": "Not Installed",
@@ -41,7 +48,7 @@
         "openDir": "Open Directory",
         "placeholder": "Antigravity installation not detected",
         "selectTitle": "Select Antigravity Installation Directory",
-        "targetLabelCascade": "Cascade Panel Enhancement",
+        "targetLabelCascade": "Sidebar Enhancement (Auto legacy/modern)",
         "targetLabelManager": "Manager Window Enhancement",
         "title": "Install Path",
         "viewTarget": "View Target Path"
@@ -60,7 +67,7 @@
         },
         "enablePatch": "Enable Patch",
         "fontSize": {
-            "desc": "Adjust Cascade panel font size",
+            "desc": "Adjust font size of the sidebar conversation area",
             "title": "Font Size"
         },
         "math": {
@@ -242,6 +249,9 @@
         "confirm": "Confirm Install",
         "deprecated": "Files to be Removed",
         "message": "Installing Anti-Power patch. Please confirm the following file changes: ",
+        "messageLegacy": "Installing Anti-Power patch (legacy sidebar entry: cascade-panel.html). Please confirm the following file changes:",
+        "messageModern": "Installing Anti-Power patch (modern sidebar entry: workbench.html). Please confirm the following file changes:",
+        "messageUnknown": "Installing Anti-Power patch (Antigravity version not detected, falling back to legacy sidebar entry). Please confirm the following file changes:",
         "modified": "Files to be Modified",
         "note": "Note: ",
         "noteContent": "If you have customized the above original files, your changes will be overwritten. A backup (.bak) will be created on first install.",
@@ -253,6 +263,7 @@
         "configUpdated": "✓ Config Updated",
         "installFailed": "✗ Install Failed: {error}",
         "installSuccess": "✓ Patch Installed",
+        "noPatchEnabled": "✗ Enable at least one patch module before installing",
         "restoreFailed": "✗ Restore Failed: {error}",
         "restoreSuccess": "✓ Restored Original",
         "updateFailed": "✗ Update Failed: {error}"

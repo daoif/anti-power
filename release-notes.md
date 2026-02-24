@@ -1,32 +1,38 @@
-# Release Notes / 发布说明 (v3.1.0)
+# Release Notes / 发布说明 (v3.2.0)
 
 ## 新功能
 
-- 清理工具新增 Windows 平台支持, 可清理 Antigravity, Gemini CLI, Codex 与 Claude Code 的对话缓存
+- 适配 Antigravity 新版侧边栏入口, 根据 `product.json` 中 `ideVersion` 自动切换旧版/新版补丁路径
 
 ## 优化
 
-- 后端命令错误处理支持多语言, 根据当前界面语言返回错误信息
-- 前端向后端命令透传 locale, 统一跨平台错误提示体验
+- 安装器界面新增 Antigravity 版本号显示
+- 确认安装弹窗根据侧边栏入口模式动态展示变更文件
+- 新版侧边栏样式与 Manager 样式对齐, 修复复制按钮显示细节
+- 修复补丁状态回填逻辑, 避免仅安装单模块时误判另一模块为启用
 
 ## 文档
 
-- README/Changelog/Release Notes 同步至 v3.1.0
+- README/Changelog/Release Notes 同步至 v3.2.0
+- README 支持的 Antigravity 版本更新至 v1.18.4
 
 ---
 
 ## New Features
 
-- Cleaning tool now supports Windows, including conversation cache cleanup for Antigravity, Gemini CLI, Codex and Claude Code.
+- Adapted to the new Antigravity sidebar entry, with automatic legacy/modern patch path switching based on `ideVersion` in `product.json`.
 
 ## Improvements
 
-- Backend command error handling is now localized to match the current UI language.
-- Frontend now passes locale to backend commands for consistent cross-platform error messages.
+- Added Antigravity version display in the installer UI.
+- Confirmation modal now shows file changes dynamically based on sidebar entry mode.
+- Aligned modern sidebar styles with Manager styles and fixed copy-button display details.
+- Fixed patch status state sync to avoid incorrectly enabling the other module in single-module installs.
 
 ## Documentation
 
-- Synced README/Changelog/Release Notes to v3.1.0
+- Synced README/Changelog/Release Notes to v3.2.0
+- Updated supported Antigravity version in README to v1.18.4.
 
 ---
 

@@ -4,6 +4,23 @@
 
 ---
 
+## v3.2.0 (2026-02-24)
+
+### New Features
+- Adapted to the new Antigravity sidebar entry, with automatic legacy/modern patch path switching based on `ideVersion` in `product.json`
+
+### Improvements
+- Added Antigravity version display in the installer UI
+- Confirmation modal now shows file changes dynamically based on sidebar entry mode
+- Aligned modern sidebar styles with Manager styles and fixed copy-button display details
+- Fixed patch status state sync to avoid incorrectly enabling the other module in single-module installs
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.2.0
+- Updated supported Antigravity version in README to v1.18.4
+
+---
+
 ## v3.1.0 (2026-02-06)
 
 ### New Features

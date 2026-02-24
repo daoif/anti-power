@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v3.1.0-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v3.2.0-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/支持_Antigravity-v1.16.5-green.svg" alt="Antigravity">
+    <img src="https://img.shields.io/badge/支持_Antigravity-v1.18.4-green.svg" alt="Antigravity">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/协议-MIT-orange.svg" alt="开源协议">
@@ -55,13 +55,13 @@
 
 ---
 
-## 📸 效果展示
+## 效果展示
 
 查看[效果截图](docs/reference/screenshots.md)。
 
 ---
 
-## 📥 下载安装
+## 下载安装
 
 <details>
 <summary>展开查看 (Windows, macOS, Linux)</summary>
@@ -139,9 +139,9 @@ sudo ./anti-power.sh
 
 ---
 
-## 📋 版本信息
+## 版本信息
 
-当前版本: **v3.1.0** | 支持 Antigravity: **v1.16.5**
+当前版本: **v3.2.0** | 支持 Antigravity: **v1.18.4**
 
 完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
 
@@ -154,13 +154,13 @@ sudo ./anti-power.sh
 
 ---
 
-## 🤝 贡献
+## 贡献
 
 欢迎提交 Issue 和 Pull Request.
 
 ---
 
-## 🙏 致谢
+## 致谢
 
 - [@mikessslxxx](https://github.com/mikessslxxx)
 - [@syanle](https://github.com/syanle)
@@ -168,6 +168,6 @@ sudo ./anti-power.sh
 
 ---
 
-## ⚖️ 开源协议
+## 开源协议
 
 MIT License

@@ -50,7 +50,7 @@ impl Default for FeatureFlags {
             copy_button: true,
             table_color: true,
             font_size_enabled: true,
-            font_size: 20.0,
+            font_size: 16.0,
         }
     }
 }

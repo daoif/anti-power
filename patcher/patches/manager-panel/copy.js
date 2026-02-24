@@ -609,7 +609,7 @@ export const ensureContentCopyButton = (contentEl) => {
     }
 
     const config = getConfig();
-    const smartHover = config.copyButtonSmartHover || false;
+    const smartHover = config.copyButtonSmartHover ?? true;
     const bottomPosition = config.copyButtonShowBottom || 'float';
 
     // Top-right hover button

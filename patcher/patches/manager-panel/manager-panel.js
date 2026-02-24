@@ -14,14 +14,18 @@
 const SCRIPT_BASE = new URL('./', import.meta.url).href;
 
 const DEFAULT_CONFIG = {
-    mermaid: false,
-    math: false,
+    mermaid: true,
+    math: true,
     copyButton: true,
-    tableColor: false,
-    maxWidthEnabled: false,
+    tableColor: true,
+    maxWidthEnabled: true,
     maxWidthRatio: 75,
-    fontSizeEnabled: false,
+    fontSizeEnabled: true,
     fontSize: 16,
+    copyButtonSmartHover: true,
+    copyButtonShowBottom: 'float',
+    copyButtonStyle: 'icon',
+    copyButtonCustomText: '',
 };
 
 /**
