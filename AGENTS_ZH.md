@@ -85,7 +85,7 @@
   - 解决: 使用提权 PowerShell `Set-Content -Encoding UTF8` 直接写入, 或先写 ASCII 再分段追加.
 - 写入 `patcher/patches/` 或清理 `tests/` 在沙箱下可能 `Access denied`, 需要使用提权命令执行写入/删除.
 
-## 近期变更 (v2.3.1 - v3.2.0)
+## 近期变更 (v2.3.1 - v3.2.1)
 
 - macOS/Linux 跨平台支持 + 路径规范化与检测; Unix 提权安装流程 (sudo/pkexec)
 - 发布产物支持 macOS Universal (Intel/Apple Silicon)
@@ -93,3 +93,5 @@
 - 侧边栏补丁支持新旧入口分流, 并按 `ideVersion` 自动切换
 - KaTeX CSS/JS 并行加载; 复制按钮更多自定义与布局优化
 - Markdown 复制质量提升: 嵌套列表/代码块/内联代码, SVG 过滤, 多余空行清理
+- LaTeX/Mermaid 渲染链路增强: 加载失败可重试, 流式更新可重渲染, 并清理 Mermaid 调试日志
+- Unix 提权安装与清理脚本改为唯一临时路径并自动回收, 卸载恢复后同步清理 `.bak` 备份残留
