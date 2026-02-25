@@ -175,6 +175,7 @@
     },
     "patchBackend": {
         "errors": {
+            "allocateUniqueTempDirFailed": "Unable to allocate a unique temporary directory",
             "backupCascadeFailed": "Failed to backup cascade-panel.html: {detail}",
             "backupManagerEntryFailed": "Failed to backup workbench-jetski-agent.html: {detail}",
             "cannotWriteDir": "Unable to write directory: {detail}",

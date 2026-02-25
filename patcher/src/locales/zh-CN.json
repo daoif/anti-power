@@ -175,6 +175,7 @@
     },
     "patchBackend": {
         "errors": {
+            "allocateUniqueTempDirFailed": "无法分配唯一临时目录",
             "backupCascadeFailed": "备份 cascade-panel.html 失败: {detail}",
             "backupManagerEntryFailed": "备份 workbench-jetski-agent.html 失败: {detail}",
             "cannotWriteDir": "无法写入目录: {detail}",

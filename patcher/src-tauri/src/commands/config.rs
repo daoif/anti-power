@@ -58,6 +58,7 @@ impl Default for FeatureFlags {
 /// Resolve the installer configuration path
 fn get_config_path() -> PathBuf {
     dirs::config_dir()
+        .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
         .unwrap_or_else(|| PathBuf::from("."))
         .join("anti-power")
         .join("config.json")

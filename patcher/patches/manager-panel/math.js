@@ -15,6 +15,7 @@ import { loadStyle, loadScript } from './utils.js';
 
 let katexLoaded = false;
 let katexLoading = null;
+const MATH_TEXT_SNAPSHOT_PROP = '__managerMathTextSnapshot';
 const DELIMITERS = [
     { left: '$$', right: '$$', display: true },
     { left: '\\[', right: '\\]', display: true },
@@ -37,27 +38,32 @@ const reloadScript = async (src) => {
  */
 const ensureKatex = async () => {
     if (katexLoaded) return true;
-    if (katexLoading) return katexLoading;
-
-    katexLoading = (async () => {
-        try {
-            await loadStyle(KATEX_CSS_URL);
-            await loadScript(KATEX_JS_URL);
-            if (!window.katex) {
-                await reloadScript(KATEX_JS_URL);
-            }
-            if (!window.katex?.renderToString) {
+    if (!katexLoading) {
+        katexLoading = (async () => {
+            try {
+                await loadStyle(KATEX_CSS_URL);
+                await loadScript(KATEX_JS_URL);
+                if (!window.katex) {
+                    await reloadScript(KATEX_JS_URL);
+                }
+                if (!window.katex?.renderToString) {
+                    return false;
+                }
+                katexLoaded = true;
+                return true;
+            } catch (err) {
+                console.warn('[Manager] KaTeX 加载失败:', err);
                 return false;
             }
-            katexLoaded = true;
-            return true;
-        } catch (err) {
-            console.warn('[Manager] KaTeX 加载失败:', err);
-            return false;
-        }
-    })();
+        })();
+    }
 
-    return katexLoading;
+    const loaded = await katexLoading;
+    if (!loaded) {
+        // Clear the failed load so the next render can retry
+        katexLoading = null;
+    }
+    return loaded;
 };
 
 const isEscaped = (text, index) => {
@@ -168,11 +174,163 @@ const shouldSkipTextNode = (node) => {
     const parent = node.parentElement;
     if (!parent) return true;
     if (parent.closest('pre, code, .code-block')) return true;
-    if (parent.closest('.manager-mermaid-container, .katex, .katex-display, mjx-container')) return true;
+    if (parent.closest('.manager-mermaid-container, .katex, .katex-display, mjx-container, .katex-inline-wrapper, .katex-display-wrapper')) return true;
     return false;
 };
 
+const shouldSkipElementNode = (node) => {
+    if (!node) return true;
+    if (node.closest('pre, code, .code-block')) return true;
+    if (node.closest('.manager-mermaid-container, .katex, .katex-display, mjx-container, .katex-inline-wrapper, .katex-display-wrapper')) return true;
+    return false;
+};
+
+const findNextDollarDelimiter = (text, startIndex) => {
+    let match = null;
+    const delimiters = ['$$', '$'];
+
+    for (const delimiter of delimiters) {
+        const idx = text.indexOf(delimiter, startIndex);
+        if (idx === -1) continue;
+        if (isEscaped(text, idx)) continue;
+
+        if (delimiter === '$') {
+            const nextChar = text[idx + 1];
+            if (nextChar && /\s/.test(nextChar)) continue;
+        }
+
+        if (!match || idx < match.index || (idx === match.index && delimiter.length > match.delimiter.length)) {
+            match = { index: idx, delimiter };
+        }
+    }
+
+    return match;
+};
+
+const collectDollarMathRanges = (text) => {
+    const ranges = [];
+    let pos = 0;
+
+    while (pos < text.length) {
+        const found = findNextDollarDelimiter(text, pos);
+        if (!found) break;
+
+        const start = found.index + found.delimiter.length;
+        const end = findEndDelimiter(text, start, { right: found.delimiter });
+        if (end === -1) {
+            pos = found.index + found.delimiter.length;
+            continue;
+        }
+
+        ranges.push({ start, end });
+        pos = end + found.delimiter.length;
+    }
+
+    return ranges;
+};
+
+const restoreUnderscoreInDollarMath = (el) => {
+    if (!el || shouldSkipElementNode(el)) return;
+
+    let restored = false;
+    let segment = [];
+
+    const flushSegment = () => {
+        if (!segment.length) return;
+
+        const hasFormat = segment.some((unit) => unit.type === 'format');
+        if (!hasFormat) {
+            segment = [];
+            return;
+        }
+
+        let mergedText = '';
+        let cursor = 0;
+        segment.forEach((unit) => {
+            unit.start = cursor;
+            mergedText += unit.text;
+            cursor += unit.text.length;
+            unit.end = cursor;
+        });
+
+        if (!mergedText.includes('$')) {
+            segment = [];
+            return;
+        }
+
+        const ranges = collectDollarMathRanges(mergedText);
+        if (!ranges.length) {
+            segment = [];
+            return;
+        }
+
+        segment.forEach((unit) => {
+            if (unit.type !== 'format') return;
+            const inDollarMath = ranges.some((range) => unit.start >= range.start && unit.end <= range.end);
+            if (!inDollarMath) return;
+            unit.node.replaceWith(document.createTextNode(`${unit.marker}${unit.text}${unit.marker}`));
+            restored = true;
+        });
+
+        segment = [];
+    };
+
+    const children = Array.from(el.childNodes);
+    children.forEach((child) => {
+        if (child.nodeType === Node.TEXT_NODE) {
+            if (shouldSkipTextNode(child)) {
+                flushSegment();
+                return;
+            }
+            const text = child.textContent || '';
+            if (!text) {
+                flushSegment();
+                return;
+            }
+            segment.push({ type: 'text', text });
+            return;
+        }
+
+        if (child.nodeType !== Node.ELEMENT_NODE) {
+            flushSegment();
+            return;
+        }
+
+        if (shouldSkipElementNode(child)) {
+            flushSegment();
+            return;
+        }
+
+        const tagName = child.tagName.toLowerCase();
+        if (tagName === 'em' || tagName === 'strong') {
+            const text = child.textContent || '';
+            if (!text) {
+                flushSegment();
+                return;
+            }
+            segment.push({
+                type: 'format',
+                node: child,
+                text,
+                marker: tagName === 'strong' ? '__' : '_',
+            });
+            return;
+        }
+
+        flushSegment();
+        restoreUnderscoreInDollarMath(child);
+    });
+
+    flushSegment();
+    if (restored) {
+        // Merge text only within the same parent so delimiters cannot span unrelated elements
+        el.normalize();
+    }
+};
+
 const renderMathIntoElement = (el) => {
+    restoreUnderscoreInDollarMath(el);
+
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
     const textNodes = [];
     let node;
@@ -219,9 +377,12 @@ const renderMathIntoElement = (el) => {
  * @returns {Promise<void>}
  */
 export const renderMath = async (el) => {
-    if (!el || el.hasAttribute(MATH_ATTR)) return;
-
+    if (!el) return;
     const text = el.textContent || '';
+
+    // Render again when streaming updates change the text
+    if (el.hasAttribute(MATH_ATTR) && el[MATH_TEXT_SNAPSHOT_PROP] === text) return;
+
     if (!MATH_HINT_RE.test(text)) return;
 
     // Cache the original text for copying before inserting rendered math
@@ -232,11 +393,13 @@ export const renderMath = async (el) => {
     const loaded = await ensureKatex();
     if (!loaded || !window.katex?.renderToString) return;
 
-    el.setAttribute(MATH_ATTR, '1');
-
     try {
         renderMathIntoElement(el);
+        el.setAttribute(MATH_ATTR, '1');
+        el[MATH_TEXT_SNAPSHOT_PROP] = el.textContent || '';
     } catch (err) {
         console.warn('[Manager] 数学公式渲染失败:', err);
+        // Leave failed formulas eligible for the next render
+        el.removeAttribute(MATH_ATTR);
     }
 };

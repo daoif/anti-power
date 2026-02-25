@@ -999,6 +999,7 @@ fn restore_legacy_sidebar_files(extensions_dir: &Path, locale: Option<&str>) -> 
                 &[("detail", e.to_string())],
             )
         })?;
+        let _ = fs::remove_file(&cascade_backup);
     }
 
     let cascade_dir = extensions_dir.join("cascade-panel");
@@ -1027,6 +1028,7 @@ fn restore_modern_sidebar_files(workbench_dir: &Path, locale: Option<&str>) -> P
                 &[("detail", e.to_string())],
             )
         })?;
+        let _ = fs::remove_file(&workbench_backup);
     }
 
     let sidebar_dir = workbench_dir.join("sidebar-panel");
@@ -1055,6 +1057,7 @@ fn restore_manager_files(workbench_dir: &Path, locale: Option<&str>) -> PatchRes
                 &[("detail", e.to_string())],
             )
         })?;
+        let _ = fs::remove_file(&jetski_backup);
     }
 
     let manager_dir = workbench_dir.join("manager-panel");
@@ -1247,6 +1250,29 @@ fn handle_privileged_or_error(
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+struct TempDirGuard {
+    path: PathBuf,
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl TempDirGuard {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl Drop for TempDirGuard {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn run_privileged_patch(
     mode: PatchMode,
     resources_root: &Path,
@@ -1254,8 +1280,8 @@ fn run_privileged_patch(
     manager_features: Option<&ManagerFeatureConfig>,
     locale: Option<&str>,
 ) -> PatchResult<()> {
-    let temp_dir = prepare_temp_patch_dir(locale)?;
-    write_embedded_files_to_dir(&temp_dir, locale)?;
+    let temp_dir = TempDirGuard::new(prepare_temp_patch_dir(locale)?);
+    write_embedded_files_to_dir(temp_dir.path(), locale)?;
 
     if matches!(mode, PatchMode::Install | PatchMode::UpdateConfig) {
         let feature_config = features
@@ -1263,20 +1289,19 @@ fn run_privileged_patch(
         let manager_config = manager_features
             .ok_or_else(|| patch_text(locale, "patchBackend.errors.missingManagerConfig"))?;
 
-        let cascade_config_path = temp_dir.join("cascade-panel").join("config.json");
+        let cascade_config_path = temp_dir.path().join("cascade-panel").join("config.json");
         write_config_file(&cascade_config_path, feature_config, locale)?;
 
-        let sidebar_config_path = temp_dir.join("sidebar-panel").join("config.json");
+        let sidebar_config_path = temp_dir.path().join("sidebar-panel").join("config.json");
         write_config_file(&sidebar_config_path, feature_config, locale)?;
 
-        let manager_config_path = temp_dir.join("manager-panel").join("config.json");
+        let manager_config_path = temp_dir.path().join("manager-panel").join("config.json");
         write_manager_config_file(&manager_config_path, manager_config, locale)?;
     }
 
     let script_name = select_privileged_script(locale);
-    let script_path = temp_dir.join(script_name);
+    let script_path = temp_dir.path().join(script_name);
     if !script_path.exists() {
-        let _ = fs::remove_dir_all(&temp_dir);
         return Err(patch_with(
             locale,
             "patchBackend.errors.notFound",
@@ -1291,16 +1316,12 @@ fn run_privileged_patch(
         .map(|config| config.enabled)
         .unwrap_or(true);
     let args = build_script_args(mode, resources_root, cascade_enabled, manager_enabled);
-    let status_path = temp_dir.join("privileged-status.txt");
+    let status_path = temp_dir.path().join("privileged-status.txt");
 
     match run_privileged_script(&script_path, &args, &status_path, locale) {
-        Ok(()) => {
-            let _ = fs::remove_dir_all(&temp_dir);
-            Ok(())
-        }
+        Ok(()) => Ok(()),
         Err(err) => {
             let message = annotate_privileged_error(err, resources_root, locale);
-            let _ = fs::remove_dir_all(&temp_dir);
             Err(patch_with(
                 locale,
                 "patchBackend.errors.privilegedScriptFailed",
@@ -1354,28 +1375,37 @@ fn run_privileged_patch(
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn prepare_temp_patch_dir(locale: Option<&str>) -> PatchResult<PathBuf> {
-    let mut dir = env::temp_dir();
-    dir.push(format!("anti-power-privileged-{}", std::process::id()));
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-    if dir.exists() {
-        fs::remove_dir_all(&dir).map_err(|e| {
-            patch_with(
-                locale,
-                "patchBackend.errors.cleanTempDirFailed",
-                &[("detail", e.to_string())],
-            )
-        })?;
+    for attempt in 0..8 {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let dir = env::temp_dir().join(format!(
+            "anti-power-privileged-{}-{}-{}",
+            std::process::id(),
+            nonce,
+            attempt
+        ));
+
+        match fs::create_dir(&dir) {
+            Ok(()) => return Ok(dir),
+            Err(err) if err.kind() == ErrorKind::AlreadyExists => continue,
+            Err(err) => {
+                return Err(patch_with(
+                    locale,
+                    "patchBackend.errors.createTempDirFailed",
+                    &[("detail", err.to_string())],
+                ));
+            }
+        }
     }
 
-    fs::create_dir_all(&dir).map_err(|e| {
-        patch_with(
-            locale,
-            "patchBackend.errors.createTempDirFailed",
-            &[("detail", e.to_string())],
-        )
-    })?;
-
-    Ok(dir)
+    Err(patch_text(
+        locale,
+        "patchBackend.errors.allocateUniqueTempDirFailed",
+    ))
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

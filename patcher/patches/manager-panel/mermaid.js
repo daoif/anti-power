@@ -58,30 +58,35 @@ const ensureMermaidPolicy = () => {
  */
 const ensureMermaid = async () => {
     if (mermaidLoaded) return true;
-    if (mermaidLoading) return mermaidLoading;
+    if (!mermaidLoading) {
+        mermaidLoading = (async () => {
+            try {
+                ensureMermaidPolicy();
 
-    mermaidLoading = (async () => {
-        try {
-            ensureMermaidPolicy();
-
-            await loadScript(MERMAID_URL);
-            if (window.mermaid) {
-                window.mermaid.initialize({
-                    startOnLoad: false,
-                    theme: 'dark',
-                    securityLevel: 'loose',
-                });
-                mermaidLoaded = true;
-                return true;
+                await loadScript(MERMAID_URL);
+                if (window.mermaid) {
+                    window.mermaid.initialize({
+                        startOnLoad: false,
+                        theme: 'dark',
+                        securityLevel: 'loose',
+                    });
+                    mermaidLoaded = true;
+                    return true;
+                }
+                return false;
+            } catch (err) {
+                console.warn('[Manager] Mermaid 加载失败:', err);
+                return false;
             }
-            return false;
-        } catch (err) {
-            console.warn('[Manager] Mermaid 加载失败:', err);
-            return false;
-        }
-    })();
+        })();
+    }
 
-    return mermaidLoading;
+    const loaded = await mermaidLoading;
+    if (!loaded) {
+        // Clear the failed load so the next render can retry
+        mermaidLoading = null;
+    }
+    return loaded;
 };
 
 /**
@@ -196,47 +201,25 @@ const resolveHideTarget = (codeBlock) => {
  * @returns {Promise<void>}
  */
 export const renderMermaid = async (el) => {
-    console.log('[Manager DEBUG] renderMermaid called', { elTag: el?.tagName, elClass: el?.className?.slice?.(0, 50) });
     const codeBlock = resolveCodeBlock(el);
-    if (!codeBlock) {
-        console.log('[Manager DEBUG] renderMermaid: no codeBlock found');
-        return;
-    }
+    if (!codeBlock) return;
 
     const source = extractMermaidSource(codeBlock);
-    if (!isMermaidSource(source)) {
-        console.log('[Manager DEBUG] renderMermaid: not mermaid source', { sourcePreview: source.slice(0, 50) });
-        return;
-    }
-
-    console.log('[Manager DEBUG] renderMermaid: mermaid source detected', { sourceLen: source.length });
+    if (!isMermaidSource(source)) return;
 
     const previousSource = codeBlock[MERMAID_SOURCE_PROP] || '';
     const isRendered = codeBlock.getAttribute(MERMAID_ATTR) === '1';
     const contentChanged = previousSource && previousSource !== source;
     const errorSource = codeBlock[MERMAID_ERROR_PROP] || '';
 
-    console.log('[Manager DEBUG] renderMermaid state', { isRendered, contentChanged, hasErrorSource: !!errorSource });
+    if (isRendered && !contentChanged) return;
+    if (!isRendered && !contentChanged && errorSource === source) return;
+    if (codeBlock[MERMAID_RENDERING_PROP]) return;
 
-    if (isRendered && !contentChanged) {
-        console.log('[Manager DEBUG] renderMermaid: already rendered, skipping');
-        return;
-    }
-    if (!isRendered && !contentChanged && errorSource === source) {
-        console.log('[Manager DEBUG] renderMermaid: error source matches, skipping');
-        return;
-    }
-    if (codeBlock[MERMAID_RENDERING_PROP]) {
-        console.log('[Manager DEBUG] renderMermaid: already rendering, skipping');
-        return;
-    }
-
-    console.log('[Manager DEBUG] renderMermaid: starting render');
     codeBlock[MERMAID_SOURCE_PROP] = source;
     codeBlock[MERMAID_RENDERING_PROP] = true;
 
     const loaded = await ensureMermaid();
-    console.log('[Manager DEBUG] renderMermaid: mermaid loaded', { loaded, hasMermaid: !!window.mermaid });
     if (!loaded || !window.mermaid) {
         delete codeBlock[MERMAID_RENDERING_PROP];
         return;
@@ -271,33 +254,10 @@ export const renderMermaid = async (el) => {
             codeBlock.parentNode.insertBefore(container, codeBlock);
         }
 
-        console.log('[Manager DEBUG] before mermaid.render', {
-            containerId: container.id,
-            containerConnected: container.isConnected,
-            containerDisplay: container.style.display,
-            containerRect: container.getBoundingClientRect ? JSON.stringify(container.getBoundingClientRect()) : 'N/A',
-            sourceLength: source.length,
-            sourcePreview: source.slice(0, 100),
-            renderId,
-        });
-
-        let renderResult;
-        try {
-            renderResult = await withTrustedHTML(
-                () => window.mermaid.render(renderId, source, container),
-                mermaidPolicy
-            );
-            console.log('[Manager DEBUG] mermaid.render succeeded', {
-                svgLength: renderResult?.svg?.length,
-            });
-        } catch (renderErr) {
-            console.log('[Manager DEBUG] mermaid.render failed', {
-                error: renderErr.message,
-                containerConnected: container.isConnected,
-                containerRect: container.getBoundingClientRect ? JSON.stringify(container.getBoundingClientRect()) : 'N/A',
-            });
-            throw renderErr;
-        }
+        const renderResult = await withTrustedHTML(
+            () => window.mermaid.render(renderId, source, container),
+            mermaidPolicy
+        );
 
         const { svg, bindFunctions } = renderResult;
 
@@ -355,7 +315,6 @@ export const renderMermaid = async (el) => {
  * @returns {void}
  */
 export const scanMermaid = (root) => {
-    console.log('[Manager DEBUG] scanMermaid called', { rootTag: root?.tagName, rootClass: root?.className?.slice?.(0, 50) });
     if (!root) return;
 
     const codeBlocks = [];
@@ -363,7 +322,6 @@ export const scanMermaid = (root) => {
         codeBlocks.push(root);
     }
     codeBlocks.push(...root.querySelectorAll('.code-block'));
-    console.log('[Manager DEBUG] scanMermaid found codeBlocks', { count: codeBlocks.length });
     codeBlocks.forEach((block) => {
         scheduleMermaidRender(block);
     });

@@ -420,31 +420,40 @@ export const createCopyButton = (className, position = 'top') => {
  * @returns {Promise<boolean>} True if the clipboard write succeeds
  */
 export const copyToClipboard = async (text) => {
-    try {
-        await navigator.clipboard.writeText(text);
-        return true;
-    } catch {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        const success = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return success;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+        }
     }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return success;
 };
+
+const copySuccessTimers = new WeakMap();
 
 /**
  * Reset the success state after 1.5 seconds
+ * Replace the previous timer on repeat clicks to avoid flicker
  *
  * @param {HTMLElement} btn
  * @returns {void}
  */
 export const showCopySuccess = (btn) => {
     setCopyState(btn, true);
-    setTimeout(() => {
+    const existingTimer = copySuccessTimers.get(btn);
+    if (existingTimer) clearTimeout(existingTimer);
+    const timerId = setTimeout(() => {
         setCopyState(btn, false);
+        copySuccessTimers.delete(btn);
     }, 1500);
+    copySuccessTimers.set(btn, timerId);
 };
