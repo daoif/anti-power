@@ -6,7 +6,7 @@ This guide explains how to debug Antigravity and develop UI enhancements.
 
 ## Project Overview
 
-Anti-Power is a patch tool that enhances Antigravity IDE, primarily improving the sidebar (cascade-panel) and Manager window content copy functionality.
+Anti-Power is a patch tool that enhances Antigravity IDE, primarily improving the sidebar (legacy: cascade-panel / modern: sidebar-panel) and Manager window content copy functionality.
 
 ## Directory Structure
 
@@ -26,6 +26,15 @@ patcher/
 │   │   ├── math.js             # KaTeX math rendering
 │   │   ├── mermaid.js          # Mermaid diagram rendering
 │   │   └── icons.js            # Icon definitions
+│   ├── sidebar-panel/      # Modern sidebar patch module (workbench.html entry)
+│   │   ├── sidebar-panel.js    # Entry file
+│   │   ├── sidebar-panel.css   # Styles
+│   │   ├── constants.js        # Constants
+│   │   ├── copy.js             # Copy button functionality
+│   │   ├── scan.js             # DOM scanning and button injection
+│   │   ├── utils.js            # Utility functions
+│   │   ├── math.js             # KaTeX math rendering
+│   │   └── mermaid.js          # Mermaid diagram rendering
 │   └── manager-panel/      # Manager window patch module
 │       ├── manager-panel.js    # Entry file
 │       ├── manager-panel.css   # Styles
@@ -39,7 +48,8 @@ patcher/
 
 ## Patch Installation Paths
 
-- **cascade-panel**: `<Antigravity>/resources/app/extensions/antigravity/cascade-panel/`
+- **sidebar (legacy)**: `<Antigravity>/resources/app/extensions/antigravity/cascade-panel/`
+- **sidebar (modern)**: `<Antigravity>/resources/app/out/vs/code/electron-browser/workbench/sidebar-panel/`
 - **manager-panel**: `<Antigravity>/resources/app/out/vs/code/electron-browser/workbench/manager-panel/`
 
 ## Quick Development Workflow
@@ -50,8 +60,11 @@ No need to rebuild patcher every time - just copy files directly for testing:
 # From project root, enter patcher directory first
 cd patcher
 
-# Copy cascade-panel (example path)
+# Copy sidebar legacy (example path)
 cp ./patches/cascade-panel/*.js ./patches/cascade-panel/*.css "E:/Antigravity/resources/app/extensions/antigravity/cascade-panel/"
+
+# Copy sidebar modern (example path)
+cp ./patches/sidebar-panel/*.js ./patches/sidebar-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/sidebar-panel/"
 
 # Copy manager-panel (example path)
 cp ./patches/manager-panel/*.js ./patches/manager-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/manager-panel/"
@@ -103,7 +116,8 @@ Available scripts (in `tests/scripts/`):
 
 | Hook Point | File Path | Scope |
 |------------|-----------|-------|
-| **Sidebar Panel** | `extensions/antigravity/cascade-panel.html` | Cascade dialog sidebar |
+| **Sidebar Panel (Legacy)** | `extensions/antigravity/cascade-panel.html` | Legacy sidebar dialog |
+| **Sidebar Panel (Modern)** | `out/vs/code/electron-browser/workbench/workbench.html` | Modern sidebar entry |
 | **Manager Window** | `out/vs/code/electron-browser/workbench/workbench-jetski-agent.html` | Agent Manager standalone window |
 
 ---
@@ -118,14 +132,14 @@ Paths relative to Antigravity installation directory (e.g., `C:\Program Files\An
     └── app/
         ├── extensions/
         │   └── antigravity/
-        │       └── cascade-panel.html      <- Sidebar hook point
+        │       └── cascade-panel.html      <- Legacy sidebar hook point
         │
         └── out/
             └── vs/
                 └── code/
                     └── electron-browser/
                         └── workbench/
-                            ├── workbench.html              <- Main editor window
+                            ├── workbench.html              <- Modern sidebar hook point
                             ├── workbench-jetski-agent.html <- Manager hook point
                             └── jetskiAgent.js              <- Manager main script
 ```
@@ -233,7 +247,7 @@ Should extract as: `` `code content` ``
 - [x] Heading to Markdown # format
 - [x] Filter STYLE/SCRIPT/SVG tags
 - [x] Filter copy button text
-- [x] Inline code monospace font fix (cascade-panel)
+- [x] Inline code monospace font fix (sidebar legacy/modern)
 - [x] Remove empty lines to optimize Markdown format
 - [x] KaTeX parallel loading optimization
 
@@ -254,10 +268,11 @@ Should extract as: `` `code content` ``
 
 ### Naming Convention
 - cascade-panel uses `cascade-` prefix (e.g., `cascade-copy-button`)
+- sidebar-panel uses `sidebar-` prefix (e.g., `sidebar-copy-btn`)
 - manager-panel uses `manager-` prefix (e.g., `manager-copy-btn`)
 
 ### Extraction Logic Sync
-cascade-panel's `extract.js` and manager-panel's `copy.js` should keep extraction logic in sync. When modifying one, sync the other.
+Sidebar modules (`cascade-panel` / `sidebar-panel`) and manager-panel extraction logic should keep in sync. When modifying one, sync the others.
 
 ### Skipping Elements
 Use `skipUntilEndOfBlock` variable with `contains()` check to skip processed subtrees:
@@ -290,4 +305,4 @@ Build output: `src-tauri/target/release/anti-power.exe`
 
 - ~~Modifying `workbench-jetski-agent.html` triggers "Extension corrupted" prompt~~ (Fixed in v2.3.2+)
 - Manager window uses React + TailwindCSS stack
-- Sidebar panel loads `cascade-panel.html` via iframe
+- Sidebar uses variant-based entry (`cascade-panel.html` for legacy, `workbench.html` for modern)

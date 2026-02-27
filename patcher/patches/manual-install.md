@@ -1,5 +1,7 @@
 # Anti-Power 补丁手动安装说明
 
+[English](manual-install_EN.md) | 中文
+
 适用于 Windows, macOS, Linux 的手动安装与配置.
 
 ## 适用场景
@@ -21,6 +23,8 @@
 - anti-power.en.sh (macOS/Linux English output script)
 - cascade-panel.html
 - cascade-panel/ 目录
+- workbench.html
+- sidebar-panel/ 目录
 - workbench-jetski-agent.html
 - manager-panel/ 目录
 - manual-install.md (本文档)
@@ -38,12 +42,17 @@
 2. 进入安装目录:
    - ...\resources\app\extensions\antigravity\
    - ...\resources\app\out\vs\code\electron-browser\workbench\
-3. 备份并替换文件:
-   - 备份 cascade-panel.html -> cascade-panel.html.bak
-   - 复制 cascade-panel.html 与 cascade-panel/ 到 extensions\antigravity\
+3. 根据 `product.json` 的 `ideVersion` 选择侧边栏入口并替换:
+   - 若 `< 1.18.3`:
+     - 备份 cascade-panel.html -> cascade-panel.html.bak
+     - 复制 cascade-panel.html 与 cascade-panel/ 到 extensions\antigravity\
+   - 若 `>= 1.18.3`:
+     - 备份 workbench.html -> workbench.html.bak
+     - 复制 workbench.html 与 sidebar-panel/ 到 workbench\
+4. 备份并替换 Manager 文件:
    - 备份 workbench-jetski-agent.html -> workbench-jetski-agent.html.bak
    - 复制 workbench-jetski-agent.html 与 manager-panel/ 到 workbench\
-4. 重新打开 Antigravity 与 Manager 窗口
+5. 重新打开 Antigravity 与 Manager 窗口
 
 ## macOS (补丁包推荐: 脚本方式)
 
@@ -56,7 +65,9 @@
    ```bash
    sudo ./anti-power.sh
    ```
-4. 脚本会自动备份原文件并完成替换
+4. 脚本会根据 `product.json.ideVersion` 自动选择侧边栏入口并完成备份/替换:
+   - `< 1.18.3`: 使用旧版 `cascade-panel` 入口
+   - `>= 1.18.3`: 使用新版 `workbench.html + sidebar-panel` 入口
 5. 重新打开 Antigravity 与 Manager 窗口
 
 ## Linux (补丁包推荐: 脚本方式)
@@ -70,7 +81,9 @@
    ```bash
    sudo ./anti-power.sh
    ```
-4. 脚本会自动备份原文件并完成替换
+4. 脚本会根据 `product.json.ideVersion` 自动选择侧边栏入口并完成备份/替换:
+   - `< 1.18.3`: 使用旧版 `cascade-panel` 入口
+   - `>= 1.18.3`: 使用新版 `workbench.html + sidebar-panel` 入口
 5. 重新打开 Antigravity 与 Manager 窗口
 
 ## macOS (手动安装)
@@ -80,18 +93,24 @@
 3. 进入目录:
    - Antigravity.app/Contents/Resources/app/extensions/antigravity/
    - Antigravity.app/Contents/Resources/app/out/vs/code/electron-browser/workbench/
-4. 备份并替换文件:
-   - 备份 cascade-panel.html -> cascade-panel.html.bak
-   - 复制 cascade-panel.html 与 cascade-panel/ 到 extensions/antigravity/
+4. 根据 `product.json` 的 `ideVersion` 选择侧边栏入口并替换:
+   - 若 `< 1.18.3`:
+     - 备份 cascade-panel.html -> cascade-panel.html.bak
+     - 复制 cascade-panel.html 与 cascade-panel/ 到 extensions/antigravity/
+   - 若 `>= 1.18.3`:
+     - 备份 workbench.html -> workbench.html.bak
+     - 复制 workbench.html 与 sidebar-panel/ 到 workbench/
+5. 备份并替换 Manager 文件:
    - 备份 workbench-jetski-agent.html -> workbench-jetski-agent.html.bak
    - 复制 workbench-jetski-agent.html 与 manager-panel/ 到 workbench/
-5. 重新打开 Antigravity 与 Manager 窗口
+6. 重新打开 Antigravity 与 Manager 窗口
 
 ## 配置开关
 
 补丁会在以下路径生成配置文件, 可按需修改:
 
-- 侧边栏: extensions/antigravity/cascade-panel/config.json
+- 侧边栏 (旧版): extensions/antigravity/cascade-panel/config.json
+- 侧边栏 (新版): out/vs/code/electron-browser/workbench/sidebar-panel/config.json
 - Manager: out/vs/code/electron-browser/workbench/manager-panel/config.json
 
 示例 (侧边栏):

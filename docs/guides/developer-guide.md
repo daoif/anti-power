@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-Anti-Power 是一个为 Antigravity IDE 提供增强功能的补丁工具, 主要增强侧边栏 (cascade-panel) 和 Manager 窗口的内容复制功能.
+Anti-Power 是一个为 Antigravity IDE 提供增强功能的补丁工具, 主要增强侧边栏 (legacy: cascade-panel / modern: sidebar-panel) 和 Manager 窗口的内容复制功能.
 
 ## 目录结构
 
@@ -24,6 +24,15 @@ patcher/
 │   │   ├── math.js             # KaTeX 数学公式渲染
 │   │   ├── mermaid.js          # Mermaid 图表渲染
 │   │   └── icons.js            # 图标定义
+│   ├── sidebar-panel/      # 新版侧边栏补丁模块 (workbench.html 入口)
+│   │   ├── sidebar-panel.js    # 入口文件
+│   │   ├── sidebar-panel.css   # 样式
+│   │   ├── constants.js        # 常量定义
+│   │   ├── copy.js             # 复制按钮功能
+│   │   ├── scan.js             # DOM 扫描与按钮注入
+│   │   ├── utils.js            # 工具函数
+│   │   ├── math.js             # KaTeX 数学公式渲染
+│   │   └── mermaid.js          # Mermaid 图表渲染
 │   └── manager-panel/      # Manager 窗口补丁模块
 │       ├── manager-panel.js    # 入口文件
 │       ├── manager-panel.css   # 样式
@@ -38,7 +47,8 @@ patcher/
 
 ## 补丁安装位置
 
-- **cascade-panel**: `<Antigravity>/resources/app/extensions/antigravity/cascade-panel/`
+- **sidebar (legacy)**: `<Antigravity>/resources/app/extensions/antigravity/cascade-panel/`
+- **sidebar (modern)**: `<Antigravity>/resources/app/out/vs/code/electron-browser/workbench/sidebar-panel/`
 - **manager-panel**: `<Antigravity>/resources/app/out/vs/code/electron-browser/workbench/manager-panel/`
 
 ## 快速开发流程
@@ -49,8 +59,11 @@ patcher/
 # 从项目根目录进入 patcher 目录
 cd patcher
 
-# 复制 cascade-panel (示例路径)
+# 复制 sidebar legacy (示例路径)
 cp ./patches/cascade-panel/*.js ./patches/cascade-panel/*.css "E:/Antigravity/resources/app/extensions/antigravity/cascade-panel/"
+
+# 复制 sidebar modern (示例路径)
+cp ./patches/sidebar-panel/*.js ./patches/sidebar-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/sidebar-panel/"
 
 # 复制 manager-panel (示例路径)
 cp ./patches/manager-panel/*.js ./patches/manager-panel/*.css "E:/Antigravity/resources/app/out/vs/code/electron-browser/workbench/manager-panel/"
@@ -163,7 +176,7 @@ DOM 变化监听与按钮注入:
 - [x] 标题转 Markdown # 格式
 - [x] 过滤 STYLE/SCRIPT/SVG 等标签
 - [x] 过滤复制按钮文本
-- [x] 内联代码等宽字体样式修复 (cascade-panel)
+- [x] 内联代码等宽字体样式修复 (sidebar legacy/modern)
 - [x] 移除空行优化 Markdown 格式
 - [x] KaTeX CSS 和 JS 并行加载优化
 
@@ -182,10 +195,11 @@ DOM 变化监听与按钮注入:
 
 ### 命名约定
 - cascade-panel 使用 `cascade-` 前缀 (如 `cascade-copy-button`)
+- sidebar-panel 使用 `sidebar-` 前缀 (如 `sidebar-copy-btn`)
 - manager-panel 使用 `manager-` 前缀 (如 `manager-copy-btn`)
 
 ### 提取逻辑同步
-cascade-panel 的 `extract.js` 和 manager-panel 的 `copy.js` 应保持提取逻辑同步. 修改一处时需同步另一处.
+侧边栏模块 (`cascade-panel` / `sidebar-panel`) 与 `manager-panel` 的提取逻辑应保持同步. 修改一处时需同步另一处.
 
 ### 跳过元素的方式
 使用 `skipUntilEndOfBlock` 变量配合 `contains()` 检查来跳过已处理的子树:

@@ -104,8 +104,10 @@ fn run_anti_clean_unix(
     locale: Option<&str>,
 ) -> CleanResult<String> {
     use std::fs;
+    use std::io::Write;
     use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     let script_content = if is_zh_locale(locale) {
         ANTI_CLEAN_SCRIPT_ZH
@@ -114,20 +116,56 @@ fn run_anti_clean_unix(
     };
 
     // 写入临时脚本
-    let mut script_path = std::env::temp_dir();
-    script_path.push("anti-clean.sh");
-
-    fs::write(&script_path, script_content).map_err(|e| {
-        format!(
-            "{}: {}",
-            clean_text(locale, "cleanBackend.errors.writeTempScriptFailed"),
-            e
-        )
+    let mut script_path = None;
+    for attempt in 0..8 {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let candidate = std::env::temp_dir().join(format!(
+            "anti-clean-{}-{}-{}.sh",
+            std::process::id(),
+            nonce,
+            attempt
+        ));
+        match fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&candidate)
+        {
+            Ok(mut file) => {
+                if let Err(err) = file.write_all(script_content.as_bytes()) {
+                    let _ = fs::remove_file(&candidate);
+                    return Err(CommandError::from(format!(
+                        "{}: {}",
+                        clean_text(locale, "cleanBackend.errors.writeTempScriptFailed"),
+                        err
+                    )));
+                }
+                script_path = Some(candidate);
+                break;
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(err) => {
+                return Err(CommandError::from(format!(
+                    "{}: {}",
+                    clean_text(locale, "cleanBackend.errors.writeTempScriptFailed"),
+                    err
+                )));
+            }
+        }
+    }
+    let script_path = script_path.ok_or_else(|| {
+        CommandError::from(clean_text(
+            locale,
+            "cleanBackend.errors.writeTempScriptFailed",
+        ))
     })?;
 
     // 设置脚本可执行权限
     let perm = fs::Permissions::from_mode(0o700);
     fs::set_permissions(&script_path, perm).map_err(|e| {
+        let _ = fs::remove_file(&script_path);
         format!(
             "{}: {}",
             clean_text(locale, "cleanBackend.errors.setScriptPermissionsFailed"),
@@ -156,6 +194,7 @@ fn run_anti_clean_unix(
 
     // 执行脚本
     let output = cmd.output().map_err(|e| {
+        let _ = fs::remove_file(&script_path);
         format!(
             "{}: {}",
             clean_text(locale, "cleanBackend.errors.executeScriptFailed"),

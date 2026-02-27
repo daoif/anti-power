@@ -6,6 +6,43 @@
 
 ---
 
+## v3.2.1 (2026-02-26)
+
+### 优化
+- LaTeX 渲染支持流式增量更新重渲染, 避免内容变化后无法刷新
+- 修复 `$...$` 公式内 `_`/`__` 被 Markdown 强调标签拆分导致的下划线丢失
+- Mermaid/KaTeX 资源加载失败后不再缓存失败状态, 后续扫描可自动重试
+- 复制反馈定时器去重, 减少连续点击时按钮状态闪烁
+- 移除 Sidebar/Manager Mermaid 调试日志, 降低控制台噪音
+
+### 修复
+- 修复 Sidebar Mermaid Trusted Types policy 名称, 与 `sidebarPanel` CSP 白名单对齐
+- 修复 Unix 临时脚本/临时目录命名冲突风险, 提高并发与重复安装稳定性
+- 卸载恢复后自动清理 `.bak` 备份文件, 避免残留
+- 配置路径获取新增 `~/.config` 回退, 提升 Linux 环境兼容性
+
+### 文档
+- README/Changelog/Release Notes 同步至 v3.2.1
+
+---
+
+## v3.2.0 (2026-02-24)
+
+### 新功能
+- 适配 Antigravity 新版侧边栏入口, 根据 `product.json` 中 `ideVersion` 自动切换旧版/新版补丁路径
+
+### 优化
+- 安装器界面新增 Antigravity 版本号显示
+- 确认安装弹窗根据侧边栏入口模式动态展示变更文件
+- 新版侧边栏样式与 Manager 样式对齐, 修复复制按钮显示细节
+- 修复补丁状态回填逻辑, 避免仅安装单模块时误判另一模块为启用
+
+### 文档
+- README/Changelog/Release Notes 同步至 v3.2.0
+- README 支持的 Antigravity 版本更新至 v1.18.4
+
+---
+
 ## v3.1.0 (2026-02-06)
 
 ### 新功能

@@ -34,13 +34,22 @@ pub fn resources_app_root(root: &Path) -> PathBuf {
 }
 
 /// 验证是否为有效的 Antigravity 安装根目录
-/// 通过检查 cascade-panel.html 是否存在来判断
+/// 通过检查关键目录与入口文件存在性判断，兼容新旧侧边栏入口
 pub fn is_valid_antigravity_root(root: &Path) -> bool {
-    resources_app_root(root)
-        .join("extensions")
-        .join("antigravity")
-        .join("cascade-panel.html")
-        .exists()
+    let app_root = resources_app_root(root);
+
+    let has_antigravity_extension = app_root.join("extensions").join("antigravity").exists();
+    let has_workbench_entry = app_root
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("workbench.html")
+        .exists();
+    let has_product_json = app_root.join("product.json").exists();
+
+    has_antigravity_extension && has_workbench_entry && has_product_json
 }
 
 /// 规范化 Antigravity 安装路径

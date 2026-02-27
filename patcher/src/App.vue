@@ -13,31 +13,23 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 const { t, locale } = useI18n();
 
 // 应用版本号
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "3.2.1";
 // GitHub 仓库地址
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
-/**
- * 补丁文件清单
- * 包含将被修改的文件、新增的文件/目录、以及废弃的文件
- */
-const PATCH_FILES = computed(() => ({
-  // 将被修改的原始文件
-  modified: [
-    "cascade-panel.html",
-    "workbench-jetski-agent.html",
-  ],
-  // 将添加的新文件/目录
-  added: [
-    `cascade-panel/ ${t('app.files.cascadePanelLabel')}`,
-    `manager-panel/ ${t('app.files.managerPanelLabel')}`,
-  ],
-  // 废弃文件（旧版本遗留，新版本不再使用）
-  deprecated: [] as string[],
-}));
+type SidebarVariant = 'legacy' | 'modern';
+
+interface AntigravityVersionInfo {
+  ideVersion: string | null;
+  sidebarVariant: SidebarVariant;
+}
 
 // Antigravity 安装路径
 const antigravityPath = ref<string | null>(null);
+// 检测到的 ideVersion
+const detectedIdeVersion = ref<string | null>(null);
+// 当前侧边栏补丁模式（由 ideVersion 推导）
+const detectedSidebarVariant = ref<SidebarVariant>('legacy');
 // 是否正在检测路径
 const isDetecting = ref(false);
 // 补丁是否已安装
@@ -132,7 +124,7 @@ const isCleanActionDisabled = computed(() =>
 
 /**
  * 侧边栏功能开关配置
- * 控制 cascade-panel 中各项功能的启用状态
+ * 控制侧边栏补丁中各项功能的启用状态
  */
 const features = ref({
   enabled: true,
@@ -141,11 +133,11 @@ const features = ref({
   copyButton: true,
   tableColor: true,
   fontSizeEnabled: true,
-  fontSize: 20,
+  fontSize: 16,
   // 复制按钮子选项
-  copyButtonSmartHover: false,
+  copyButtonSmartHover: true,
   copyButtonShowBottom: 'float' as 'float' | 'feedback',
-  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonStyle: 'icon' as 'arrow' | 'icon' | 'chinese' | 'custom',
   copyButtonCustomText: '',
 });
 
@@ -158,16 +150,105 @@ const managerFeatures = ref({
   mermaid: true,
   math: true,
   copyButton: true,
-  maxWidthEnabled: false,
+  maxWidthEnabled: true,
   maxWidthRatio: 75,
-  fontSizeEnabled: false,
+  fontSizeEnabled: true,
   fontSize: 16,
   // 复制按钮子选项
-  copyButtonSmartHover: false,
+  copyButtonSmartHover: true,
   copyButtonShowBottom: 'float' as 'float' | 'feedback',
-  copyButtonStyle: 'arrow' as 'arrow' | 'icon' | 'chinese' | 'custom',
+  copyButtonStyle: 'icon' as 'arrow' | 'icon' | 'chinese' | 'custom',
   copyButtonCustomText: '',
 });
+
+const isModernSidebarVariant = computed(() => detectedSidebarVariant.value === 'modern');
+
+const detectedVersionLabel = computed(() => {
+  if (detectedIdeVersion.value) {
+    return t('status.ideVersion', { version: detectedIdeVersion.value });
+  }
+  return t('status.ideVersionUnknown');
+});
+
+const confirmModalMessage = computed(() => {
+  if (!detectedIdeVersion.value) {
+    return t('confirmModal.messageUnknown');
+  }
+  return t(
+    isModernSidebarVariant.value
+      ? 'confirmModal.messageModern'
+      : 'confirmModal.messageLegacy'
+  );
+});
+
+/**
+ * 补丁文件清单
+ * 根据当前版本模式和模块开关动态展示确认安装内容
+ */
+const PATCH_FILES = computed(() => {
+  const modified: string[] = [];
+  const added: string[] = [];
+  const deprecated: string[] = [];
+
+  if (features.value.enabled) {
+    if (isModernSidebarVariant.value) {
+      modified.push("workbench.html");
+      added.push(`sidebar-panel/ ${t('app.files.sidebarModernLabel')}`);
+      deprecated.push(`cascade-panel/ ${t('app.files.sidebarLegacyCleanupLabel')}`);
+    } else {
+      modified.push("cascade-panel.html");
+      added.push(`cascade-panel/ ${t('app.files.sidebarLegacyLabel')}`);
+      deprecated.push(`sidebar-panel/ ${t('app.files.sidebarModernCleanupLabel')}`);
+    }
+  }
+
+  if (managerFeatures.value.enabled) {
+    modified.push("workbench-jetski-agent.html");
+    added.push(`manager-panel/ ${t('app.files.managerPanelLabel')}`);
+  }
+
+  return { modified, added, deprecated };
+});
+
+const hasPatchChanges = computed(() =>
+  PATCH_FILES.value.modified.length > 0 ||
+  PATCH_FILES.value.added.length > 0 ||
+  PATCH_FILES.value.deprecated.length > 0
+);
+
+/**
+ * 读取 Antigravity ideVersion 与侧边栏模式
+ * @param path - Antigravity 安装路径
+ */
+async function readAntigravityVersion(path: string) {
+  try {
+    const info = await invoke<AntigravityVersionInfo | null>("detect_antigravity_version", { path });
+    detectedIdeVersion.value = info?.ideVersion ?? null;
+    detectedSidebarVariant.value = info?.sidebarVariant === 'modern' ? 'modern' : 'legacy';
+  } catch (e) {
+    detectedIdeVersion.value = null;
+    detectedSidebarVariant.value = 'legacy';
+    console.error(t('app.error.readVersion'), e);
+  }
+}
+
+/**
+ * 刷新路径相关状态
+ * @param path - Antigravity 安装路径
+ */
+async function refreshPathState(path: string | null) {
+  if (!path) {
+    isInstalled.value = false;
+    detectedIdeVersion.value = null;
+    detectedSidebarVariant.value = 'legacy';
+    return;
+  }
+
+  await Promise.all([
+    checkPatchStatus(path),
+    readAntigravityVersion(path),
+  ]);
+}
 
 /**
  * 检测 Antigravity 安装路径
@@ -178,10 +259,9 @@ async function detectPath() {
   try {
     const path = await invoke<string | null>("detect_antigravity_path");
     const normalized = path ? await normalizePath(path) : null;
-    antigravityPath.value = normalized ?? path;
-    if (normalized) {
-      await checkPatchStatus(normalized);
-    }
+    const resolvedPath = normalized ?? path;
+    antigravityPath.value = resolvedPath;
+    await refreshPathState(resolvedPath);
   } catch (e) {
     console.error(t('app.error.detect'), e);
   } finally {
@@ -197,32 +277,40 @@ async function checkPatchStatus(path: string) {
   try {
     isInstalled.value = await invoke<boolean>("check_patch_status", { path, locale: locale.value });
     if (isInstalled.value) {
-      // 读取侧边栏配置
-      const config = await invoke<{
-        mermaid: boolean;
-        math: boolean;
-        copyButton: boolean;
-        tableColor: boolean;
-        fontSizeEnabled?: boolean;
-        fontSize?: number;
-      } | null>("read_patch_config", { path, locale: locale.value });
-      if (config) {
-        features.value = { ...features.value, ...config };
-      }
+      // 读取侧边栏与 Manager 配置
+      const [config, managerConfig] = await Promise.all([
+        invoke<{
+          enabled?: boolean;
+          mermaid: boolean;
+          math: boolean;
+          copyButton: boolean;
+          tableColor: boolean;
+          fontSizeEnabled?: boolean;
+          fontSize?: number;
+        } | null>("read_patch_config", { path, locale: locale.value }),
+        invoke<{
+          enabled?: boolean;
+          mermaid: boolean;
+          math: boolean;
+          copyButton: boolean;
+          maxWidthEnabled?: boolean;
+          maxWidthRatio?: number;
+          fontSizeEnabled?: boolean;
+          fontSize?: number;
+        } | null>("read_manager_patch_config", { path, locale: locale.value }),
+      ]);
 
-      // 读取 Manager 配置
-      const managerConfig = await invoke<{
-        mermaid: boolean;
-        math: boolean;
-        copyButton: boolean;
-        maxWidthEnabled?: boolean;
-        maxWidthRatio?: number;
-        fontSizeEnabled?: boolean;
-        fontSize?: number;
-      } | null>("read_manager_patch_config", { path, locale: locale.value });
-      if (managerConfig) {
-        managerFeatures.value = { ...managerFeatures.value, ...managerConfig, enabled: true };
-      }
+      features.value = {
+        ...features.value,
+        ...(config ?? {}),
+        enabled: config ? (config.enabled ?? true) : false,
+      };
+
+      managerFeatures.value = {
+        ...managerFeatures.value,
+        ...(managerConfig ?? {}),
+        enabled: managerConfig ? (managerConfig.enabled ?? true) : false,
+      };
     }
   } catch (e) {
     console.error(t('app.error.checkPatch'), e);
@@ -241,10 +329,9 @@ async function browsePath() {
     });
     if (selected) {
       const normalized = await normalizePath(selected as string);
-      antigravityPath.value = normalized ?? (selected as string);
-      if (normalized) {
-        await checkPatchStatus(normalized);
-      }
+      const resolvedPath = normalized ?? (selected as string);
+      antigravityPath.value = resolvedPath;
+      await refreshPathState(resolvedPath);
     }
   } catch (e) {
     console.error(t('app.error.selectPath'), e);
@@ -257,6 +344,10 @@ async function browsePath() {
  */
 function requestInstall() {
   if (!antigravityPath.value) return;
+  if (!hasPatchChanges.value) {
+    showToast(t('toast.noPatchEnabled'));
+    return;
+  }
   showConfirm.value = true;
 }
 
@@ -267,6 +358,10 @@ function requestInstall() {
 async function confirmInstall() {
   showConfirm.value = false;
   if (!antigravityPath.value) return;
+  if (!hasPatchChanges.value) {
+    showToast(t('toast.noPatchEnabled'));
+    return;
+  }
   try {
     await invoke("install_patch", { 
       path: antigravityPath.value,
@@ -274,7 +369,7 @@ async function confirmInstall() {
       managerFeatures: managerFeatures.value,
       locale: locale.value
     });
-    isInstalled.value = true;
+    await refreshPathState(antigravityPath.value);
     showToast(t('toast.installSuccess'));
   } catch (e) {
     console.error(t('app.error.install'), e);
@@ -430,9 +525,18 @@ onMounted(() => {
 
           <section class="actions-card">
             <div class="actions-meta">
-              <span class="status-pill" :class="{ installed: isInstalled }">
-                {{ isInstalled ? $t('status.installed') : $t('status.notInstalled') }}
-              </span>
+              <div class="status-badges">
+                <span class="status-pill" :class="{ installed: isInstalled }">
+                  {{ isInstalled ? $t('status.installed') : $t('status.notInstalled') }}
+                </span>
+                <span
+                  v-if="antigravityPath"
+                  class="status-pill version-pill"
+                  :class="{ modern: isModernSidebarVariant }"
+                >
+                  {{ detectedVersionLabel }}
+                </span>
+              </div>
               <span class="status-text">
                 {{ isInstalled ? $t('status.installedHint') : $t('status.notInstalledHint') }}
               </span>
@@ -593,7 +697,7 @@ onMounted(() => {
     <ConfirmModal
       :show="showConfirm"
       :title="$t('confirmModal.title')"
-      :message="$t('confirmModal.message')"
+      :message="confirmModalMessage"
       :modifiedFiles="PATCH_FILES.modified"
       :addedFiles="PATCH_FILES.added"
       :deprecatedFiles="PATCH_FILES.deprecated"
@@ -702,9 +806,17 @@ onMounted(() => {
 
 .actions-meta {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   margin-bottom: 14px;
+}
+
+.status-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .status-pill {
@@ -727,6 +839,18 @@ onMounted(() => {
   border-color: rgba(51, 118, 205, 0.3);
   color: var(--ag-accent);
   box-shadow: 0 0 8px rgba(51, 118, 205, 0.1);
+}
+
+.version-pill {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.24);
+  color: var(--ag-text-secondary);
+}
+
+.version-pill.modern {
+  background: var(--ag-success-subtle);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: var(--ag-success);
 }
 
 .status-text {

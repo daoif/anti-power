@@ -1,32 +1,44 @@
-# Release Notes / 发布说明 (v3.1.0)
-
-## 新功能
-
-- 清理工具新增 Windows 平台支持, 可清理 Antigravity, Gemini CLI, Codex 与 Claude Code 的对话缓存
+# Release Notes / 发布说明 (v3.2.1)
 
 ## 优化
 
-- 后端命令错误处理支持多语言, 根据当前界面语言返回错误信息
-- 前端向后端命令透传 locale, 统一跨平台错误提示体验
+- LaTeX 渲染支持流式增量更新重渲染, 修复内容更新后无法刷新问题
+- Mermaid/KaTeX 资源加载失败后支持自动重试, 提升弱网和偶发失败场景稳定性
+- 复制成功反馈改为定时器去重, 减少连续点击时按钮闪烁
+- 移除 Sidebar/Manager Mermaid 调试日志, 降低控制台噪音
+
+## 修复
+
+- 修复 `$...$` 公式内 `_`/`__` 被 Markdown 强调标签拆分后导致的下划线丢失
+- 修复 Sidebar Mermaid Trusted Types policy 名称, 与 `sidebarPanel` CSP 白名单保持一致
+- 修复 Unix 提权安装与清理流程中的临时目录/脚本命名冲突风险
+- 卸载恢复后自动清理 `.bak` 备份文件, 避免残留
+- 配置路径解析新增 `~/.config` 回退, 提升 Linux 兼容性
 
 ## 文档
 
-- README/Changelog/Release Notes 同步至 v3.1.0
+- README/Changelog/Release Notes 同步至 v3.2.1
 
 ---
 
-## New Features
-
-- Cleaning tool now supports Windows, including conversation cache cleanup for Antigravity, Gemini CLI, Codex and Claude Code.
-
 ## Improvements
 
-- Backend command error handling is now localized to match the current UI language.
-- Frontend now passes locale to backend commands for consistent cross-platform error messages.
+- LaTeX rendering now supports re-render on streaming incremental updates, fixing stale output after content changes.
+- Mermaid/KaTeX load failures now retry automatically, improving resilience under unstable network conditions.
+- Copy-success feedback now deduplicates timers to reduce button flicker during rapid clicks.
+- Removed Sidebar/Manager Mermaid debug logs to reduce console noise.
+
+## Fixes
+
+- Fixed underscore loss in `$...$` formulas when `_`/`__` tokens were split by Markdown emphasis tags.
+- Fixed Sidebar Mermaid Trusted Types policy naming to align with the `sidebarPanel` CSP allowlist.
+- Fixed temp directory/script naming collision risks in Unix privileged install and cleanup flows.
+- Auto-clean `.bak` backup files after uninstall restore.
+- Added `~/.config` fallback in config path resolution for better Linux compatibility.
 
 ## Documentation
 
-- Synced README/Changelog/Release Notes to v3.1.0
+- Synced README/Changelog/Release Notes to v3.2.1.
 
 ---
 

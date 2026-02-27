@@ -1,7 +1,7 @@
 /**
- * Manager Panel 复制功能
+ * Sidebar Panel 复制功能
  *
- * 本模块提供 Manager 窗口的复制按钮功能，完全独立于 cascade-panel。
+ * 本模块提供 Sidebar 面板的复制按钮功能，完全独立于 cascade-panel。
  * 提取逻辑与 cascade-panel/extract.js 保持同步。
  *
  * 主要功能：
@@ -123,7 +123,7 @@ const extractListItemContent = (li) => {
             }
 
             // 跳过复制按钮
-            if (classString.includes(BUTTON_CLASS) || classString.includes('manager-copy-btn')) {
+            if (classString.includes(BUTTON_CLASS) || classString.includes('sidebar-copy-btn')) {
                 skipUntil = node;
                 continue;
             }
@@ -151,7 +151,7 @@ const extractListItemContent = (li) => {
             // 跳过代码块内部文本
             if (parent && parent.closest('pre, .code-block, [class*="language-"]')) continue;
             // 跳过复制按钮内部文本
-            if (parent && parent.closest(`.${BUTTON_CLASS}, .manager-copy-btn`)) continue;
+            if (parent && parent.closest(`.${BUTTON_CLASS}, .sidebar-copy-btn`)) continue;
             content += node.textContent;
         }
     }
@@ -341,7 +341,7 @@ const extractFormattedText = (el) => {
         '[class*="language-"], .code-block, [aria-label^="highlighted-code"], pre'
     );
     const hasTable = el.querySelector('table');
-    const hasMermaid = el.querySelector('.manager-mermaid-container');
+    const hasMermaid = el.querySelector('.sidebar-mermaid-container');
     const hasList = el.querySelector('ol, ul');
     const hasMath = el.querySelector('.katex, mjx-container');
     const hasHeading = el.querySelector('h1, h2, h3, h4, h5, h6');
@@ -424,7 +424,7 @@ const extractFormattedText = (el) => {
             }
 
             // Mermaid 容器：恢复源码
-            if (classString.includes('manager-mermaid-container')) {
+            if (classString.includes('sidebar-mermaid-container')) {
                 const source = currentNode[MERMAID_SOURCE_PROP];
                 if (source) {
                     result += `\n\`\`\`mermaid\n${source}\n\`\`\`\n`;
@@ -533,7 +533,7 @@ const extractFormattedText = (el) => {
             const parent = currentNode.parentElement;
             if (parent) {
                 // 跳过渲染器内部文本
-                if (parent.closest('.katex, mjx-container, .MathJax, .manager-mermaid-container')) {
+                if (parent.closest('.katex, mjx-container, .MathJax, .sidebar-mermaid-container')) {
                     continue;
                 }
                 if (parent.closest('[class*="language-"]')) {
@@ -560,7 +560,7 @@ const extractFormattedText = (el) => {
                 }
 
                 // 跳过复制按钮内部文本
-                if (parent.closest(`.${BUTTON_CLASS}, .manager-copy-btn, .manager-feedback-copy`)) {
+                if (parent.closest(`.${BUTTON_CLASS}, .sidebar-copy-btn, .sidebar-feedback-copy`)) {
                     continue;
                 }
             }
@@ -584,7 +584,7 @@ const extractFormattedText = (el) => {
  * @returns {Object} 配置对象
  */
 const getConfig = () => {
-    return window.__MANAGER_CONFIG__ || {};
+    return window.__SIDEBAR_CONFIG__ || {};
 };
 
 /**
@@ -605,25 +605,25 @@ const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
 
         // 右上角区域：右侧 120px, 顶部 60px
         if (x > rect.width - 120 && y < 60) {
-            topBtn.classList.add('manager-copy-button-visible');
+            topBtn.classList.add('sidebar-copy-button-visible');
         } else {
-            topBtn.classList.remove('manager-copy-button-visible');
+            topBtn.classList.remove('sidebar-copy-button-visible');
         }
 
         // 右下角区域：右侧 120px, 底部 60px
         if (bottomBtn) {
             if (x > rect.width - 120 && y > rect.height - 60) {
-                bottomBtn.classList.add('manager-copy-button-visible');
+                bottomBtn.classList.add('sidebar-copy-button-visible');
             } else {
-                bottomBtn.classList.remove('manager-copy-button-visible');
+                bottomBtn.classList.remove('sidebar-copy-button-visible');
             }
         }
     });
 
     contentEl.addEventListener('mouseleave', () => {
-        topBtn.classList.remove('manager-copy-button-visible');
+        topBtn.classList.remove('sidebar-copy-button-visible');
         if (bottomBtn) {
-            bottomBtn.classList.remove('manager-copy-button-visible');
+            bottomBtn.classList.remove('sidebar-copy-button-visible');
         }
     });
 };
@@ -697,12 +697,14 @@ export const ensureContentCopyButton = (contentEl) => {
  *
  * @returns {void}
  */
-export const addFeedbackCopyButtons = () => {
-    const feedbackContainers = document.querySelectorAll('[data-tooltip-id^="up-"]');
+export const addFeedbackCopyButtons = (scopeRoot = document) => {
+    if (!scopeRoot || !scopeRoot.querySelectorAll) return;
+
+    const feedbackContainers = scopeRoot.querySelectorAll('[data-tooltip-id^="up-"]');
 
     feedbackContainers.forEach((goodBtn) => {
         const parent = goodBtn.parentElement;
-        if (!parent || parent.querySelector('.manager-feedback-copy')) return;
+        if (!parent || parent.querySelector('.sidebar-feedback-copy')) return;
 
         // 找到对应的内容区
         let contentEls = null;
@@ -719,7 +721,7 @@ export const addFeedbackCopyButtons = () => {
         }
         if (!contentEls || contentEls.length === 0) return;
 
-        const btn = createCopyButton(`${COPY_BTN_CLASS} manager-feedback-copy`, 'bottom');
+        const btn = createCopyButton(`${COPY_BTN_CLASS} sidebar-feedback-copy`, 'bottom');
         btn.style.marginRight = '0.5rem';
         btn.addEventListener('click', async (e) => {
             e.preventDefault();

@@ -1,0 +1,99 @@
+<!-- Copyright (C) Microsoft Corporation. All rights reserved. -->
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Content-Security-Policy" content="
+				default-src
+					'none'
+				;
+				img-src
+					'self'
+					data:
+					blob:
+					vscode-remote-resource:
+					vscode-managed-remote-resource:
+					https:
+				;
+				media-src
+					'self'
+					data:
+					https://127.0.0.1:*
+					blob:
+					https://www.gstatic.com/
+				;
+				frame-src
+					'self'
+					vscode-webview:
+					data:
+				;
+				script-src
+					'self'
+					'unsafe-eval'
+					blob:
+					https://cdn.jsdelivr.net
+				;
+				style-src
+					'self'
+					'unsafe-inline'
+					https://cdn.jsdelivr.net
+				;
+				connect-src
+					'self'
+					data:
+					http://127.0.0.1:*
+					http://jetski-unleash.corp.goog/
+					http://antigravity-unleash.goog/
+					https:
+					ws:
+				;
+				font-src
+					'self'
+					vscode-remote-resource:
+					vscode-managed-remote-resource:
+					https://*.vscode-unpkg.net
+					https://cdn.jsdelivr.net
+				;
+				require-trusted-types-for
+					'script'
+				;
+				trusted-types
+					amdLoader
+					cellRendererEditorText
+					collapsedCellPreview
+					defaultWorkerFactory
+					diffEditorWidget
+					diffReview
+					domLineBreaksComputer
+					dompurify
+					dompurifyMermaid
+					editorGhostText
+					editorViewLayer
+					mermaid
+					notebookRenderer
+					stickyScrollViewLayer
+					tokenizeToString
+					notebookChatEditController
+					richScreenReaderContent
+					renderCodeBlock
+				;
+		" />
+
+	<!-- Workbench CSS -->
+	<link rel="stylesheet" href="../../../workbench/workbench.desktop.main.css">
+
+	<!-- Anti-Power Sidebar Panel CSS -->
+	<link rel="stylesheet" href="./sidebar-panel/sidebar-panel.css">
+</head>
+
+<body aria-label="">
+</body>
+
+<!-- Startup (do not modify order of script tags!) -->
+<script src="./workbench.js" type="module"></script>
+
+<!-- Anti-Power Sidebar Panel 增强脚本 -->
+<script src="./sidebar-panel/sidebar-panel.js" type="module"></script>
+
+</html>

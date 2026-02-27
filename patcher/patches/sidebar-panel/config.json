@@ -3,7 +3,7 @@
     "math": true,
     "copyButton": true,
     "tableColor": true,
-    "maxWidthEnabled": true,
+    "maxWidthEnabled": false,
     "maxWidthRatio": 75,
     "fontSizeEnabled": true,
     "fontSize": 16,

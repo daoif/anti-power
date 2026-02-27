@@ -1,7 +1,7 @@
 /**
- * Manager Panel 工具函数
+ * Sidebar Panel 工具函数
  *
- * 本模块提供 Manager 窗口补丁的通用工具函数，完全独立于 cascade-panel。
+ * 本模块提供 Sidebar 面板补丁的通用工具函数，完全独立于 cascade-panel。
  *
  * 主要功能：
  * - 动态资源加载（脚本、样式）
@@ -314,7 +314,7 @@ export const loadScript = (src) => {
  * @returns {Object}
  */
 const getConfig = () => {
-    return window.__MANAGER_CONFIG__ || {};
+    return window.__SIDEBAR_CONFIG__ || {};
 };
 
 /**
@@ -363,7 +363,7 @@ const createCopyIcon = () => {
         'M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184'
     );
     svg.appendChild(path);
-    svg.classList.add('manager-copy-icon', 'manager-copy-icon-copy');
+    svg.classList.add('sidebar-copy-icon', 'sidebar-copy-icon-copy');
     return svg;
 };
 
@@ -372,7 +372,7 @@ const createCheckIcon = () => {
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', 'M4.5 12.75l6 6 9-13.5');
     svg.appendChild(path);
-    svg.classList.add('manager-copy-icon', 'manager-copy-icon-check');
+    svg.classList.add('sidebar-copy-icon', 'sidebar-copy-icon-check');
     return svg;
 };
 
@@ -394,11 +394,11 @@ export const setCopyState = (btn, copied) => {
     }
 
     // 纯图标模式下去掉空白间距，保证图标居中
-    btn.style.gap = label ? '0.25rem' : '0';
+    btn.style.setProperty('gap', label ? '0.25rem' : '0', 'important');
 
     // 显式控制图标可见性，避免被宿主页面样式覆盖
-    const copyIcon = btn.querySelector('.manager-copy-icon-copy');
-    const checkIcon = btn.querySelector('.manager-copy-icon-check');
+    const copyIcon = btn.querySelector('.sidebar-copy-icon-copy');
+    const checkIcon = btn.querySelector('.sidebar-copy-icon-check');
     if (copyIcon) {
         copyIcon.style.display = copied ? 'none' : 'inline-block';
     }

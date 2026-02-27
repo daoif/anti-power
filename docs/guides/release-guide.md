@@ -12,6 +12,7 @@
 | 前端显示 | `patcher/src/App.vue` -> `APP_VERSION` |
 | README 版本徽章 | `README.md` -> 顶部版本号徽章 |
 | README_EN 版本徽章 | `README_EN.md` -> 顶部版本号徽章 |
+| README 支持版本说明 | `README.md` / `README_EN.md` -> 支持的 Antigravity 版本 |
 | 更新日志 | `CHANGELOG.md` / `CHANGELOG_EN.md` -> 添加新版本记录 |
 | Release 说明 | `release-notes.md` -> 更新发布说明 |
 
@@ -21,7 +22,7 @@
 
 ### 1. 更新版本号
 
-按上表同步所有文件中的版本号.
+按上表同步所有文件中的版本号与支持版本说明.
 
 ### 2. 编写发布说明
 

@@ -1,7 +1,7 @@
 /**
- * Manager Panel 数学公式渲染
+ * Sidebar Panel 数学公式渲染
  *
- * 本模块负责 Manager 窗口的数学公式渲染，完全独立于 cascade-panel。
+ * 本模块负责 Sidebar 面板的数学公式渲染，完全独立于 cascade-panel。
  *
  * 渲染策略：
  * - 使用 KaTeX 进行渲染（不使用 auto-render）
@@ -24,11 +24,11 @@ import {
     KATEX_CSS_URL,
     KATEX_JS_URL,
 } from './constants.js';
-import { loadStyle, loadScript } from './utils.js';
+import { loadStyle, loadScript, withTrustedHTML } from './utils.js';
 
 let katexLoaded = false;
 let katexLoading = null;
-const MATH_TEXT_SNAPSHOT_PROP = '__managerMathTextSnapshot';
+const MATH_TEXT_SNAPSHOT_PROP = '__sidebarMathTextSnapshot';
 const DELIMITERS = [
     { left: '$$', right: '$$', display: true },
     { left: '\\[', right: '\\]', display: true },
@@ -67,7 +67,7 @@ const ensureKatex = async () => {
                 katexLoaded = true;
                 return true;
             } catch (err) {
-                console.warn('[Manager] KaTeX 加载失败:', err);
+                console.warn('[Sidebar] KaTeX 加载失败:', err);
                 return false;
             }
         })();
@@ -192,14 +192,14 @@ const shouldSkipTextNode = (node) => {
     const parent = node.parentElement;
     if (!parent) return true;
     if (parent.closest('pre, code, .code-block')) return true;
-    if (parent.closest('.manager-mermaid-container, .katex, .katex-display, mjx-container, .katex-inline-wrapper, .katex-display-wrapper')) return true;
+    if (parent.closest('.sidebar-mermaid-container, .katex, .katex-display, mjx-container, .katex-inline-wrapper, .katex-display-wrapper')) return true;
     return false;
 };
 
 const shouldSkipElementNode = (node) => {
     if (!node) return true;
     if (node.closest('pre, code, .code-block')) return true;
-    if (node.closest('.manager-mermaid-container, .katex, .katex-display, mjx-container, .katex-inline-wrapper, .katex-display-wrapper')) return true;
+    if (node.closest('.sidebar-mermaid-container, .katex, .katex-display, mjx-container, .katex-inline-wrapper, .katex-display-wrapper')) return true;
     return false;
 };
 
@@ -415,11 +415,13 @@ export const renderMath = async (el) => {
     if (!loaded || !window.katex?.renderToString) return;
 
     try {
-        renderMathIntoElement(el);
+        await withTrustedHTML(() => {
+            renderMathIntoElement(el);
+        });
         el.setAttribute(MATH_ATTR, '1');
         el[MATH_TEXT_SNAPSHOT_PROP] = el.textContent || '';
     } catch (err) {
-        console.warn('[Manager] 数学公式渲染失败:', err);
+        console.warn('[Sidebar] 数学公式渲染失败:', err);
         // 保留重试机会，避免一次失败后被标记锁死
         el.removeAttribute(MATH_ATTR);
     }

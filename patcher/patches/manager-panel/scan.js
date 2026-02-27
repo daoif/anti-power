@@ -20,8 +20,8 @@ import { scanMermaid } from './mermaid.js';
  * 功能配置
  */
 let config = {
-    mermaid: false,
-    math: false,
+    mermaid: true,
+    math: true,
     copyButton: true,
 };
 

@@ -50,7 +50,7 @@ impl Default for FeatureFlags {
             copy_button: true,
             table_color: true,
             font_size_enabled: true,
-            font_size: 20.0,
+            font_size: 16.0,
         }
     }
 }
@@ -58,6 +58,7 @@ impl Default for FeatureFlags {
 /// 获取配置文件路径
 fn get_config_path() -> PathBuf {
     dirs::config_dir()
+        .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
         .unwrap_or_else(|| PathBuf::from("."))
         .join("anti-power")
         .join("config.json")

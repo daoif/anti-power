@@ -6,6 +6,43 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.2.1 (2026-02-26)
+
+### Improvements
+- LaTeX rendering now supports re-render on streaming incremental updates, avoiding stale output after content changes
+- Restored `_`/`__` inside `$...$` formulas when Markdown emphasis tags split underscore tokens
+- Mermaid/KaTeX load failures are no longer cached, so later scans can retry automatically
+- Deduplicated copy-success timers to reduce button flicker on rapid clicks
+- Removed Sidebar/Manager Mermaid debug logs to reduce console noise
+
+### Fixes
+- Fixed Sidebar Mermaid Trusted Types policy name to match the `sidebarPanel` CSP allowlist
+- Fixed Unix temp script/temp directory naming collision risks for better repeated install stability
+- Auto-clean `.bak` backup files after uninstall restore
+- Added `~/.config` fallback when resolving config path for better Linux compatibility
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.2.1
+
+---
+
+## v3.2.0 (2026-02-24)
+
+### New Features
+- Adapted to the new Antigravity sidebar entry, with automatic legacy/modern patch path switching based on `ideVersion` in `product.json`
+
+### Improvements
+- Added Antigravity version display in the installer UI
+- Confirmation modal now shows file changes dynamically based on sidebar entry mode
+- Aligned modern sidebar styles with Manager styles and fixed copy-button display details
+- Fixed patch status state sync to avoid incorrectly enabling the other module in single-module installs
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.2.0
+- Updated supported Antigravity version in README to v1.18.4
+
+---
+
 ## v3.1.0 (2026-02-06)
 
 ### New Features

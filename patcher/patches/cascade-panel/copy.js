@@ -41,7 +41,7 @@ const getLabelText = (copied, position) => {
     if (copied) return 'Copied!';
 
     const config = getConfig();
-    const style = config.copyButtonStyle || 'arrow';
+    const style = config.copyButtonStyle || 'icon';
     const customText = config.copyButtonCustomText || '';
 
     switch (style) {
@@ -82,7 +82,7 @@ export const setCopyState = (button, copied) => {
     const position = button.dataset.copyPosition || 'top';
     const label = getLabelText(copied, position);
     const config = getConfig();
-    const style = config.copyButtonStyle || 'arrow';
+    const style = config.copyButtonStyle || 'icon';
 
     // 自定义模式不显示图标，其他模式显示图标
     let icon = '';
@@ -258,7 +258,7 @@ export const ensureContentCopyButton = (contentEl) => {
     }
 
     const config = getConfig();
-    const smartHover = config.copyButtonSmartHover || false;
+    const smartHover = config.copyButtonSmartHover ?? true;
     const bottomPosition = config.copyButtonShowBottom || 'float';
 
     // 右上角按钮（悬停显示）

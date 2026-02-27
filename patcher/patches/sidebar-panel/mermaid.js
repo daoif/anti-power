@@ -1,7 +1,7 @@
 /**
- * Manager Panel Mermaid 图表渲染
+ * Sidebar Panel Mermaid 图表渲染
  *
- * 本模块负责 Manager 窗口的 Mermaid 图表渲染，完全独立于 cascade-panel。
+ * 本模块负责 Sidebar 面板的 Mermaid 图表渲染，完全独立于 cascade-panel。
  *
  * 渲染流程：
  * 1. 扫描代码块并检测 Mermaid 语法
@@ -33,8 +33,8 @@ import {
 let mermaidLoaded = false;
 let mermaidLoading = null;
 let mermaidId = 0;
-const MERMAID_RENDERING_PROP = '__managerMermaidRendering';
-const MERMAID_ERROR_PROP = '__managerMermaidErrorSource';
+const MERMAID_RENDERING_PROP = '__sidebarMermaidRendering';
+const MERMAID_ERROR_PROP = '__sidebarMermaidErrorSource';
 const MERMAID_STABLE_DELAY = 400;
 const mermaidDeferred = new WeakMap();
 
@@ -47,15 +47,15 @@ const ensureMermaidPolicy = () => {
     const tt = window.trustedTypes;
     if (!tt?.createPolicy) return null;
 
-    // 尝试使用 CSP 中允许的 policy 名称（managerPanel 是我们专门添加的）
-    const policyNames = ['managerPanel', 'dompurifyMermaid', 'mermaid', 'dompurify'];
+    // 尝试使用 CSP 中允许的 policy 名称（sidebarPanel 是我们专门添加的）
+    const policyNames = ['sidebarPanel', 'dompurifyMermaid', 'mermaid', 'dompurify'];
     for (const name of policyNames) {
         try {
             mermaidPolicy = tt.createPolicy(name, {
                 createHTML: (html) => html,
                 createScriptURL: (url) => url,
             });
-            console.log(`[Manager] 成功创建 Trusted Types policy: ${name}`);
+            console.log(`[Sidebar] 成功创建 Trusted Types policy: ${name}`);
             return mermaidPolicy;
         } catch {
             // 该名称可能已被使用或不允许，尝试下一个
@@ -91,7 +91,7 @@ const ensureMermaid = async () => {
                 }
                 return false;
             } catch (err) {
-                console.warn('[Manager] Mermaid 加载失败:', err);
+                console.warn('[Sidebar] Mermaid 加载失败:', err);
                 return false;
             }
         })();
@@ -256,7 +256,7 @@ export const renderMermaid = async (el) => {
             await window.mermaid.parse(source);
         }
 
-        renderId = `manager-mermaid-${++mermaidId}`;
+        renderId = `sidebar-mermaid-${++mermaidId}`;
 
         hideTarget = resolveHideTarget(codeBlock);
         container = hideTarget?.previousElementSibling;
@@ -284,16 +284,14 @@ export const renderMermaid = async (el) => {
 
         const { svg, bindFunctions } = renderResult;
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(svg, 'image/svg+xml');
-        const svgEl = doc.querySelector('svg');
+        clearChildren(container);
+        await withTrustedHTML(() => {
+            container.innerHTML = svg;
+        }, mermaidPolicy);
+        const svgEl = container.querySelector('svg');
         if (!svgEl) {
             throw new Error('Mermaid SVG parse failed');
         }
-
-        clearChildren(container);
-        const importedSvg = document.importNode(svgEl, true);
-        container.appendChild(importedSvg);
         container[MERMAID_SOURCE_PROP] = source;
 
         const copyBtn = createCopyButton(`${COPY_BTN_CLASS} ${MERMAID_COPY_BTN_CLASS}`);
@@ -318,7 +316,7 @@ export const renderMermaid = async (el) => {
         codeBlock.setAttribute(MERMAID_ATTR, '1');
         delete codeBlock[MERMAID_ERROR_PROP];
     } catch (err) {
-        console.warn('[Manager] Mermaid 渲染失败:', err);
+        console.warn('[Sidebar] Mermaid 渲染失败:', err);
         codeBlock[MERMAID_ERROR_PROP] = source;
         codeBlock.removeAttribute(MERMAID_ATTR);
         if (hideTarget) hideTarget.style.display = '';

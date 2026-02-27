@@ -21,9 +21,58 @@ use std::process::Command;
 /// 需要从 product.json checksums 中移除的文件路径
 /// (这些文件会被补丁修改，如果不移除校验和，Antigravity 会报"已损坏")
 const CHECKSUMS_TO_REMOVE: &[&str] = &[
+    "extensions/antigravity/cascade-panel.html",
+    "vs/code/electron-browser/workbench/workbench.html",
     "vs/code/electron-browser/workbench/workbench-jetski-agent.html",
     // 未来如果有其他需要清理的，添加到这里
 ];
+
+/// 侧边栏补丁模式:
+/// - Legacy: 小于 1.18.3，沿用 cascade-panel.html 入口
+/// - Modern: 大于等于 1.18.3，使用 workbench.html 入口
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SidebarPatchVariant {
+    Legacy,
+    Modern,
+}
+
+/// 简化的语义版本号（仅比较 major/minor/patch）
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct IdeVersion {
+    major: u32,
+    minor: u32,
+    patch: u32,
+}
+
+impl IdeVersion {
+    const MODERN_SIDEBAR_THRESHOLD: Self = Self {
+        major: 1,
+        minor: 18,
+        patch: 3,
+    };
+
+    fn parse(raw: &str) -> Option<Self> {
+        let mut parts = raw.trim().split('.');
+
+        let major = parse_version_component(parts.next()?)?;
+        let minor = parse_version_component(parts.next().unwrap_or("0"))?;
+        let patch = parse_version_component(parts.next().unwrap_or("0"))?;
+
+        Some(Self {
+            major,
+            minor,
+            patch,
+        })
+    }
+}
+
+fn parse_version_component(input: &str) -> Option<u32> {
+    let digits: String = input.chars().take_while(|ch| ch.is_ascii_digit()).collect();
+    if digits.is_empty() {
+        return None;
+    }
+    digits.parse::<u32>().ok()
+}
 
 enum PatchMode {
     Install,
@@ -64,6 +113,23 @@ fn map_embedded_error(locale: Option<&str>, err: EmbeddedError) -> CommandError 
     }
 }
 
+fn read_ide_version(resources_root: &Path) -> Option<IdeVersion> {
+    let product_json_path = resources_root.join("product.json");
+    let content = fs::read_to_string(product_json_path).ok()?;
+    let json: Value = serde_json::from_str(&content).ok()?;
+    let raw = json.get("ideVersion")?.as_str()?;
+    IdeVersion::parse(raw)
+}
+
+fn detect_sidebar_patch_variant(resources_root: &Path) -> SidebarPatchVariant {
+    match read_ide_version(resources_root) {
+        Some(version) if version >= IdeVersion::MODERN_SIDEBAR_THRESHOLD => {
+            SidebarPatchVariant::Modern
+        }
+        _ => SidebarPatchVariant::Legacy,
+    }
+}
+
 /// 侧边栏功能开关配置
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -100,10 +166,10 @@ impl Default for FeatureConfig {
             copy_button: true,
             table_color: true,
             font_size_enabled: true,
-            font_size: 20.0,
-            copy_button_smart_hover: false,
+            font_size: 16.0,
+            copy_button_smart_hover: true,
             copy_button_bottom_position: "float".to_string(),
-            copy_button_style: "arrow".to_string(),
+            copy_button_style: "icon".to_string(),
             copy_button_custom_text: "".to_string(),
         }
     }
@@ -141,17 +207,17 @@ pub struct ManagerFeatureConfig {
 impl Default for ManagerFeatureConfig {
     fn default() -> Self {
         Self {
-            enabled: false,
-            mermaid: false,
-            math: false,
+            enabled: true,
+            mermaid: true,
+            math: true,
             copy_button: true,
-            max_width_enabled: false,
+            max_width_enabled: true,
             max_width_ratio: 75.0,
-            font_size_enabled: false,
+            font_size_enabled: true,
             font_size: 16.0,
-            copy_button_smart_hover: false,
+            copy_button_smart_hover: true,
             copy_button_bottom_position: "float".to_string(),
-            copy_button_style: "arrow".to_string(),
+            copy_button_style: "icon".to_string(),
             copy_button_custom_text: "".to_string(),
         }
     }
@@ -233,14 +299,32 @@ fn install_patch_internal(
         );
     }
 
+    let sidebar_variant = detect_sidebar_patch_variant(resources_root);
+
     // 根据 enabled 状态处理侧边栏补丁
     if features.enabled {
-        // 备份并安装侧边栏补丁
-        backup_cascade_files(&extensions_dir, locale)?;
-        write_cascade_patches(&extensions_dir, features, locale)?;
+        match sidebar_variant {
+            SidebarPatchVariant::Legacy => {
+                // 旧版入口：extensions/antigravity/cascade-panel.html
+                backup_legacy_sidebar_files(&extensions_dir, locale)?;
+                write_legacy_sidebar_patches(&extensions_dir, features, locale)?;
+
+                // 清理新版残留
+                restore_modern_sidebar_files(&workbench_dir, locale)?;
+            }
+            SidebarPatchVariant::Modern => {
+                // 新版入口：workbench/workbench.html
+                backup_modern_sidebar_files(&workbench_dir, locale)?;
+                write_modern_sidebar_patches(&workbench_dir, features, locale)?;
+
+                // 清理旧版残留
+                restore_legacy_sidebar_files(&extensions_dir, locale)?;
+            }
+        }
     } else {
-        // 禁用时还原侧边栏文件
-        restore_cascade_files(&extensions_dir, locale)?;
+        // 禁用时还原所有侧边栏文件（兼容跨版本升级）
+        restore_legacy_sidebar_files(&extensions_dir, locale)?;
+        restore_modern_sidebar_files(&workbench_dir, locale)?;
     }
 
     // 根据 enabled 状态处理 Manager 补丁
@@ -248,13 +332,15 @@ fn install_patch_internal(
         // 备份并安装 Manager 补丁
         backup_manager_files(&workbench_dir, locale)?;
         write_manager_patches(&workbench_dir, manager_features, locale)?;
-
-        // 清理 product.json 中的 checksums (防止 Antigravity 报"已损坏")
-        let product_json_path = resources_root.join("product.json");
-        clean_checksums(&product_json_path, locale)?;
     } else {
         // 禁用时还原 Manager 文件
         restore_manager_files(&workbench_dir, locale)?;
+    }
+
+    // 只要任一补丁开启，就清理 product.json checksums，避免应用校验失败
+    if features.enabled || manager_features.enabled {
+        let product_json_path = resources_root.join("product.json");
+        clean_checksums(&product_json_path, locale)?;
     }
 
     Ok(())
@@ -368,27 +454,31 @@ fn update_config_internal(
     manager_features: &ManagerFeatureConfig,
     locale: Option<&str>,
 ) -> PatchResult<()> {
-    // 侧边栏配置
-    let cascade_config_path = resources_root
+    // 侧边栏配置（旧版）
+    let legacy_sidebar_config_path = resources_root
         .join("extensions")
         .join("antigravity")
         .join("cascade-panel")
         .join("config.json");
 
-    if !cascade_config_path
+    // 侧边栏配置（新版）
+    let modern_sidebar_config_path = resources_root
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("sidebar-panel")
+        .join("config.json");
+
+    let has_legacy_sidebar = legacy_sidebar_config_path
         .parent()
         .map(|p| p.exists())
-        .unwrap_or(false)
-    {
-        return Err(patch_text(locale, "patchBackend.errors.patchNotInstalled"));
-    }
-
-    let mut writable_checks = Vec::new();
-    if let Some(parent) = cascade_config_path.parent() {
-        if parent.exists() {
-            writable_checks.push(parent.to_path_buf());
-        }
-    }
+        .unwrap_or(false);
+    let has_modern_sidebar = modern_sidebar_config_path
+        .parent()
+        .map(|p| p.exists())
+        .unwrap_or(false);
 
     // Manager 配置
     let manager_config_path = resources_root
@@ -400,11 +490,27 @@ fn update_config_internal(
         .join("manager-panel")
         .join("config.json");
 
-    if manager_config_path
+    let has_manager = manager_config_path
         .parent()
         .map(|p| p.exists())
-        .unwrap_or(false)
-    {
+        .unwrap_or(false);
+
+    if !has_legacy_sidebar && !has_modern_sidebar && !has_manager {
+        return Err(patch_text(locale, "patchBackend.errors.patchNotInstalled"));
+    }
+
+    let mut writable_checks = Vec::new();
+    if has_legacy_sidebar {
+        if let Some(parent) = legacy_sidebar_config_path.parent() {
+            writable_checks.push(parent.to_path_buf());
+        }
+    }
+    if has_modern_sidebar {
+        if let Some(parent) = modern_sidebar_config_path.parent() {
+            writable_checks.push(parent.to_path_buf());
+        }
+    }
+    if has_manager {
         if let Some(parent) = manager_config_path.parent() {
             writable_checks.push(parent.to_path_buf());
         }
@@ -424,13 +530,14 @@ fn update_config_internal(
         }
     }
 
-    write_config_file(&cascade_config_path, features, locale)?;
+    if has_legacy_sidebar {
+        write_config_file(&legacy_sidebar_config_path, features, locale)?;
+    }
+    if has_modern_sidebar {
+        write_config_file(&modern_sidebar_config_path, features, locale)?;
+    }
 
-    if manager_config_path
-        .parent()
-        .map(|p| p.exists())
-        .unwrap_or(false)
-    {
+    if has_manager {
         write_manager_config_file(&manager_config_path, manager_features, locale)?;
     }
 
@@ -445,14 +552,32 @@ pub fn check_patch_status(path: String, locale: Option<String>) -> Result<bool, 
         resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
 
-    let config_path = resources_root
+    let legacy_config_path = resources_root
         .join("extensions")
         .join("antigravity")
         .join("cascade-panel")
         .join("config.json");
 
-    // 如果 config.json 存在, 则认为补丁已安装
-    Ok(config_path.exists())
+    let modern_config_path = resources_root
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("sidebar-panel")
+        .join("config.json");
+
+    let manager_config_path = resources_root
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("manager-panel")
+        .join("config.json");
+
+    // 任一补丁配置存在即认为已安装（支持仅安装 manager 的场景）
+    Ok(legacy_config_path.exists() || modern_config_path.exists() || manager_config_path.exists())
 }
 
 /// 读取已安装的补丁配置
@@ -466,15 +591,28 @@ pub fn read_patch_config(
         resolve_antigravity_root(&path, locale_ref).map_err(|err| err.to_message(locale_ref))?;
     let resources_root = paths::resources_app_root(&antigravity_root);
 
-    let config_path = resources_root
+    let legacy_config_path = resources_root
         .join("extensions")
         .join("antigravity")
         .join("cascade-panel")
         .join("config.json");
 
-    if !config_path.exists() {
+    let modern_config_path = resources_root
+        .join("out")
+        .join("vs")
+        .join("code")
+        .join("electron-browser")
+        .join("workbench")
+        .join("sidebar-panel")
+        .join("config.json");
+
+    let config_path = if legacy_config_path.exists() {
+        legacy_config_path
+    } else if modern_config_path.exists() {
+        modern_config_path
+    } else {
         return Ok(None);
-    }
+    };
 
     let content = fs::read_to_string(&config_path)
         .map_err(|e| {
@@ -546,12 +684,28 @@ pub fn read_manager_patch_config(
     Ok(Some(config))
 }
 
-/// 备份侧边栏相关文件
-fn backup_cascade_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
+/// 备份旧版侧边栏相关文件
+fn backup_legacy_sidebar_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_panel.exists() && !cascade_backup.exists() {
         fs::copy(&cascade_panel, &cascade_backup).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.backupCascadeFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
+    }
+    Ok(())
+}
+
+/// 备份新版侧边栏相关文件
+fn backup_modern_sidebar_files(workbench_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
+    let workbench = workbench_dir.join("workbench.html");
+    let workbench_backup = workbench_dir.join("workbench.html.bak");
+    if workbench.exists() && !workbench_backup.exists() {
+        fs::copy(&workbench, &workbench_backup).map_err(|e| {
             patch_with(
                 locale,
                 "patchBackend.errors.backupCascadeFailed",
@@ -578,8 +732,8 @@ fn backup_manager_files(workbench_dir: &Path, locale: Option<&str>) -> PatchResu
     Ok(())
 }
 
-/// 写入侧边栏补丁文件
-fn write_cascade_patches(
+/// 写入旧版侧边栏补丁文件
+fn write_legacy_sidebar_patches(
     extensions_dir: &Path,
     features: &FeatureConfig,
     locale: Option<&str>,
@@ -642,6 +796,72 @@ fn write_cascade_patches(
     // 生成侧边栏配置文件
     let cascade_config_path = cascade_panel_dir.join("config.json");
     write_config_file(&cascade_config_path, features, locale)?;
+
+    Ok(())
+}
+
+/// 写入新版侧边栏补丁文件
+fn write_modern_sidebar_patches(
+    workbench_dir: &Path,
+    features: &FeatureConfig,
+    locale: Option<&str>,
+) -> PatchResult<()> {
+    let sidebar_panel_dir = workbench_dir.join("sidebar-panel");
+
+    // 先删除旧目录, 确保文件结构干净
+    if sidebar_panel_dir.exists() {
+        fs::remove_dir_all(&sidebar_panel_dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.removeOldCascadeDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
+    }
+
+    // 创建目录
+    fs::create_dir_all(&sidebar_panel_dir).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.createCascadeDirFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
+    // 写入新版侧边栏相关补丁文件
+    let patch_files =
+        embedded::get_all_files_runtime().map_err(|e| map_embedded_error(locale, e))?;
+    for (relative_path, content) in patch_files {
+        if relative_path != "workbench.html" && !relative_path.starts_with("sidebar-panel/") {
+            continue;
+        }
+
+        let full_path = workbench_dir.join(&relative_path);
+
+        if let Some(parent) = full_path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).map_err(|e| {
+                    patch_with(
+                        locale,
+                        "patchBackend.errors.createDirFailed",
+                        &[("detail", e.to_string())],
+                    )
+                })?;
+            }
+        }
+
+        fs::write(&full_path, content).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.writeFileFailed",
+                &[("detail", format!("{:?}: {}", full_path, e))],
+            )
+        })?;
+    }
+
+    // 生成新版侧边栏配置文件
+    let sidebar_config_path = sidebar_panel_dir.join("config.json");
+    write_config_file(&sidebar_config_path, features, locale)?;
 
     Ok(())
 }
@@ -793,8 +1013,8 @@ fn write_manager_config_file(
     Ok(())
 }
 
-/// 恢复侧边栏文件 (禁用补丁时调用)
-fn restore_cascade_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
+/// 恢复旧版侧边栏文件 (禁用补丁时调用)
+fn restore_legacy_sidebar_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
     // 恢复 cascade-panel.html
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
@@ -806,12 +1026,44 @@ fn restore_cascade_files(extensions_dir: &Path, locale: Option<&str>) -> PatchRe
                 &[("detail", e.to_string())],
             )
         })?;
+        let _ = fs::remove_file(&cascade_backup);
     }
 
     // 删除侧边栏补丁目录
     let cascade_dir = extensions_dir.join("cascade-panel");
     if cascade_dir.exists() {
         fs::remove_dir_all(&cascade_dir).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.removeCascadeDirFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
+    }
+
+    Ok(())
+}
+
+/// 恢复新版侧边栏文件 (禁用补丁时调用)
+fn restore_modern_sidebar_files(workbench_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
+    // 恢复 workbench.html
+    let workbench = workbench_dir.join("workbench.html");
+    let workbench_backup = workbench_dir.join("workbench.html.bak");
+    if workbench_backup.exists() {
+        fs::copy(&workbench_backup, &workbench).map_err(|e| {
+            patch_with(
+                locale,
+                "patchBackend.errors.restoreCascadeFailed",
+                &[("detail", e.to_string())],
+            )
+        })?;
+        let _ = fs::remove_file(&workbench_backup);
+    }
+
+    // 删除新版侧边栏补丁目录
+    let sidebar_dir = workbench_dir.join("sidebar-panel");
+    if sidebar_dir.exists() {
+        fs::remove_dir_all(&sidebar_dir).map_err(|e| {
             patch_with(
                 locale,
                 "patchBackend.errors.removeCascadeDirFailed",
@@ -836,6 +1088,7 @@ fn restore_manager_files(workbench_dir: &Path, locale: Option<&str>) -> PatchRes
                 &[("detail", e.to_string())],
             )
         })?;
+        let _ = fs::remove_file(&jetski_backup);
     }
 
     // 删除 Manager 补丁目录
@@ -859,7 +1112,8 @@ fn restore_backup_files(
     workbench_dir: &Path,
     locale: Option<&str>,
 ) -> PatchResult<()> {
-    restore_cascade_files(extensions_dir, locale)?;
+    restore_legacy_sidebar_files(extensions_dir, locale)?;
+    restore_modern_sidebar_files(workbench_dir, locale)?;
     restore_manager_files(workbench_dir, locale)?;
     Ok(())
 }
@@ -1032,6 +1286,29 @@ fn handle_privileged_or_error(
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+struct TempDirGuard {
+    path: PathBuf,
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl TempDirGuard {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl Drop for TempDirGuard {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn run_privileged_patch(
     mode: PatchMode,
     resources_root: &Path,
@@ -1039,8 +1316,8 @@ fn run_privileged_patch(
     manager_features: Option<&ManagerFeatureConfig>,
     locale: Option<&str>,
 ) -> PatchResult<()> {
-    let temp_dir = prepare_temp_patch_dir(locale)?;
-    write_embedded_files_to_dir(&temp_dir, locale)?;
+    let temp_dir = TempDirGuard::new(prepare_temp_patch_dir(locale)?);
+    write_embedded_files_to_dir(temp_dir.path(), locale)?;
 
     if matches!(mode, PatchMode::Install | PatchMode::UpdateConfig) {
         let feature_config = features
@@ -1048,17 +1325,19 @@ fn run_privileged_patch(
         let manager_config = manager_features
             .ok_or_else(|| patch_text(locale, "patchBackend.errors.missingManagerConfig"))?;
 
-        let cascade_config_path = temp_dir.join("cascade-panel").join("config.json");
+        let cascade_config_path = temp_dir.path().join("cascade-panel").join("config.json");
         write_config_file(&cascade_config_path, feature_config, locale)?;
 
-        let manager_config_path = temp_dir.join("manager-panel").join("config.json");
+        let sidebar_config_path = temp_dir.path().join("sidebar-panel").join("config.json");
+        write_config_file(&sidebar_config_path, feature_config, locale)?;
+
+        let manager_config_path = temp_dir.path().join("manager-panel").join("config.json");
         write_manager_config_file(&manager_config_path, manager_config, locale)?;
     }
 
     let script_name = select_privileged_script(locale);
-    let script_path = temp_dir.join(script_name);
+    let script_path = temp_dir.path().join(script_name);
     if !script_path.exists() {
-        let _ = fs::remove_dir_all(&temp_dir);
         return Err(patch_with(
             locale,
             "patchBackend.errors.notFound",
@@ -1073,16 +1352,12 @@ fn run_privileged_patch(
         .map(|config| config.enabled)
         .unwrap_or(true);
     let args = build_script_args(mode, resources_root, cascade_enabled, manager_enabled);
-    let status_path = temp_dir.join("privileged-status.txt");
+    let status_path = temp_dir.path().join("privileged-status.txt");
 
     match run_privileged_script(&script_path, &args, &status_path, locale) {
-        Ok(()) => {
-            let _ = fs::remove_dir_all(&temp_dir);
-            Ok(())
-        }
+        Ok(()) => Ok(()),
         Err(err) => {
             let message = annotate_privileged_error(err, resources_root, locale);
-            let _ = fs::remove_dir_all(&temp_dir);
             Err(patch_with(
                 locale,
                 "patchBackend.errors.privilegedScriptFailed",
@@ -1136,28 +1411,37 @@ fn run_privileged_patch(
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn prepare_temp_patch_dir(locale: Option<&str>) -> PatchResult<PathBuf> {
-    let mut dir = env::temp_dir();
-    dir.push(format!("anti-power-privileged-{}", std::process::id()));
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-    if dir.exists() {
-        fs::remove_dir_all(&dir).map_err(|e| {
-            patch_with(
-                locale,
-                "patchBackend.errors.cleanTempDirFailed",
-                &[("detail", e.to_string())],
-            )
-        })?;
+    for attempt in 0..8 {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let dir = env::temp_dir().join(format!(
+            "anti-power-privileged-{}-{}-{}",
+            std::process::id(),
+            nonce,
+            attempt
+        ));
+
+        match fs::create_dir(&dir) {
+            Ok(()) => return Ok(dir),
+            Err(err) if err.kind() == ErrorKind::AlreadyExists => continue,
+            Err(err) => {
+                return Err(patch_with(
+                    locale,
+                    "patchBackend.errors.createTempDirFailed",
+                    &[("detail", err.to_string())],
+                ));
+            }
+        }
     }
 
-    fs::create_dir_all(&dir).map_err(|e| {
-        patch_with(
-            locale,
-            "patchBackend.errors.createTempDirFailed",
-            &[("detail", e.to_string())],
-        )
-    })?;
-
-    Ok(dir)
+    Err(patch_text(
+        locale,
+        "patchBackend.errors.allocateUniqueTempDirFailed",
+    ))
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

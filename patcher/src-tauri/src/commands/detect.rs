@@ -5,6 +5,9 @@
 //! - macOS/Linux: 标准路径探测，未命中时返回 None
 
 use super::paths;
+use serde::Serialize;
+use serde_json::Value;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 // 平台特定实现直接内联，避免子模块路径问题
@@ -34,6 +37,31 @@ pub fn detect_antigravity_path() -> Option<String> {
     }
 }
 
+/// Antigravity 版本信息
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AntigravityVersionInfo {
+    /// product.json 中的 ideVersion（可能为空）
+    pub ide_version: Option<String>,
+    /// 侧边栏补丁模式: legacy 或 modern
+    pub sidebar_variant: String,
+}
+
+/// 检测 Antigravity ideVersion 与侧边栏补丁模式
+#[tauri::command]
+pub fn detect_antigravity_version(path: String) -> Option<AntigravityVersionInfo> {
+    let normalized = normalize_path(Path::new(&path))?;
+    let resources_root = paths::resources_app_root(Path::new(&normalized));
+
+    let ide_version = read_ide_version(&resources_root);
+    let sidebar_variant = detect_sidebar_variant(ide_version.as_deref()).to_string();
+
+    Some(AntigravityVersionInfo {
+        ide_version,
+        sidebar_variant,
+    })
+}
+
 /// 规范化 Antigravity 安装路径
 #[tauri::command]
 pub fn normalize_antigravity_path(path: String) -> Option<String> {
@@ -44,6 +72,40 @@ pub fn normalize_antigravity_path(path: String) -> Option<String> {
 fn normalize_path(path: &Path) -> Option<String> {
     paths::normalize_antigravity_root(path)
         .and_then(|normalized| normalized.to_str().map(|s| s.to_string()))
+}
+
+const MODERN_SIDEBAR_THRESHOLD: (u32, u32, u32) = (1, 18, 3);
+
+fn read_ide_version(resources_root: &Path) -> Option<String> {
+    let product_json_path = resources_root.join("product.json");
+    let content = fs::read_to_string(product_json_path).ok()?;
+    let json: Value = serde_json::from_str(&content).ok()?;
+    json.get("ideVersion")?
+        .as_str()
+        .map(|version| version.to_string())
+}
+
+fn detect_sidebar_variant(ide_version: Option<&str>) -> &'static str {
+    match ide_version.and_then(parse_version_triplet) {
+        Some(version) if version >= MODERN_SIDEBAR_THRESHOLD => "modern",
+        _ => "legacy",
+    }
+}
+
+fn parse_version_triplet(raw: &str) -> Option<(u32, u32, u32)> {
+    let mut parts = raw.trim().split('.');
+    let major = parse_version_component(parts.next()?)?;
+    let minor = parse_version_component(parts.next().unwrap_or("0"))?;
+    let patch = parse_version_component(parts.next().unwrap_or("0"))?;
+    Some((major, minor, patch))
+}
+
+fn parse_version_component(input: &str) -> Option<u32> {
+    let digits: String = input.chars().take_while(|ch| ch.is_ascii_digit()).collect();
+    if digits.is_empty() {
+        return None;
+    }
+    digits.parse::<u32>().ok()
 }
 
 // Windows 实现

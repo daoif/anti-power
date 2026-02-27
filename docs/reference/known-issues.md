@@ -52,7 +52,7 @@
 **影响范围**:
 - Manager 窗口中的所有代码块 (普通代码块和嵌套列表内的代码块)
 
-**原因**: Manager 窗口的 DOM 结构中不包含 `language-xxx` class, 也没有其他可识别的语言标识信息. 这是 Antigravity 的设计限制, 与侧边栏 (cascade-panel) 的实现不同.
+**原因**: Manager 窗口的 DOM 结构中不包含 `language-xxx` class, 也没有其他可识别的语言标识信息. 这是 Antigravity 的设计限制, 与侧边栏模块实现不同.
 
 **对比**:
 | 特征 | 侧边栏 | Manager |
@@ -60,4 +60,4 @@
 | `language-xxx` class | 有 | 无 |
 | `.font-sans` 语言标签 | 有 | 无 |
 
-**备注**: 侧边栏 (cascade-panel) 的代码块语言标识正常支持. 这是上游 Antigravity 的限制, 补丁无法从不存在的数据中提取语言信息.
+**备注**: 侧边栏模块 (legacy/modern) 的代码块语言标识通常可正常支持. 这是上游 Antigravity 的限制, 补丁无法从不存在的数据中提取语言信息.

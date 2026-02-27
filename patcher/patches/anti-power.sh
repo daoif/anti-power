@@ -16,6 +16,9 @@ MODE="install"
 APP_PATH=""
 CASCADE_ENABLED="true"
 MANAGER_ENABLED="true"
+SIDEBAR_VARIANT="legacy"
+IDE_VERSION=""
+VERSION_THRESHOLD="1.18.3"
 
 # 参数解析
 while [ $# -gt 0 ]; do
@@ -83,13 +86,113 @@ TARGET_DIR_1="$APP_PATH/extensions/antigravity"
 TARGET_DIR_2="$APP_PATH/out/vs/code/electron-browser/workbench"
 PRODUCT_JSON="$APP_PATH/product.json"
 
-# 1. Cascade Panel
-install_cascade() {
-    echo -e "\n[1/3] 正在处理 Cascade Panel..."
+find_python_bin() {
+    if command -v python3 >/dev/null 2>&1; then
+        echo "python3"
+    elif command -v python >/dev/null 2>&1; then
+        echo "python"
+    else
+        echo ""
+    fi
+}
+
+normalize_version() {
+    local input="$1"
+    local major minor patch
+    IFS='.' read -r major minor patch _ <<<"$input"
+
+    major="${major%%[^0-9]*}"
+    minor="${minor%%[^0-9]*}"
+    patch="${patch%%[^0-9]*}"
+
+    [ -z "$major" ] && major=0
+    [ -z "$minor" ] && minor=0
+    [ -z "$patch" ] && patch=0
+
+    echo "${major}.${minor}.${patch}"
+}
+
+version_ge() {
+    local left right
+    local l_major l_minor l_patch r_major r_minor r_patch
+
+    left=$(normalize_version "$1")
+    right=$(normalize_version "$2")
+
+    IFS='.' read -r l_major l_minor l_patch <<<"$left"
+    IFS='.' read -r r_major r_minor r_patch <<<"$right"
+
+    if [ "$l_major" -gt "$r_major" ]; then
+        return 0
+    fi
+    if [ "$l_major" -lt "$r_major" ]; then
+        return 1
+    fi
+
+    if [ "$l_minor" -gt "$r_minor" ]; then
+        return 0
+    fi
+    if [ "$l_minor" -lt "$r_minor" ]; then
+        return 1
+    fi
+
+    if [ "$l_patch" -ge "$r_patch" ]; then
+        return 0
+    fi
+    return 1
+}
+
+read_ide_version() {
+    if [ ! -f "$PRODUCT_JSON" ]; then
+        echo ""
+        return 0
+    fi
+
+    local py
+    py=$(find_python_bin)
+    if [ -z "$py" ]; then
+        echo ""
+        return 0
+    fi
+
+    "$py" - "$PRODUCT_JSON" <<'PY' 2>/dev/null || true
+import json
+import sys
+
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    value = data.get('ideVersion', '')
+    print(value if isinstance(value, str) else '')
+except Exception:
+    print('')
+PY
+}
+
+detect_sidebar_variant() {
+    IDE_VERSION="$(read_ide_version)"
+
+    if [ -n "$IDE_VERSION" ] && version_ge "$IDE_VERSION" "$VERSION_THRESHOLD"; then
+        SIDEBAR_VARIANT="modern"
+    else
+        SIDEBAR_VARIANT="legacy"
+    fi
+
+    if [ -n "$IDE_VERSION" ]; then
+        echo "检测到 ideVersion: $IDE_VERSION"
+    else
+        echo "未读取到 ideVersion，默认使用 legacy 侧边栏补丁"
+    fi
+    echo "侧边栏补丁模式: $SIDEBAR_VARIANT"
+}
+
+# 1. Cascade Panel (legacy)
+install_cascade_legacy() {
+    echo -e "\n[1/3] 正在处理 Cascade Panel (legacy)..."
     echo "目标目录: $TARGET_DIR_1"
 
     if [ -d "$TARGET_DIR_1" ]; then
-    # 备份
         if [ -f "$TARGET_DIR_1/cascade-panel.html" ]; then
             if [ ! -f "$TARGET_DIR_1/cascade-panel.html.bak" ]; then
                 echo "备份 cascade-panel.html -> cascade-panel.html.bak"
@@ -99,12 +202,10 @@ install_cascade() {
             fi
         fi
 
-    # 复制文件
         echo "复制 cascade-panel.html..."
         cp "$PATCHES_DIR/cascade-panel.html" "$TARGET_DIR_1/"
 
         echo "复制 cascade-panel 文件夹..."
-    # 如果目标文件夹已存在，cp -r 可能会合并或覆盖，这里直接覆盖
         if [ -d "$TARGET_DIR_1/cascade-panel" ]; then
             rm -rf "$TARGET_DIR_1/cascade-panel"
         fi
@@ -114,8 +215,8 @@ install_cascade() {
     fi
 }
 
-restore_cascade() {
-    echo -e "\n[1/3] 正在恢复 Cascade Panel..."
+restore_cascade_legacy() {
+    echo -e "\n[1/3] 正在恢复 Cascade Panel (legacy)..."
     echo "目标目录: $TARGET_DIR_1"
     if [ -d "$TARGET_DIR_1" ]; then
         if [ -f "$TARGET_DIR_1/cascade-panel.html.bak" ]; then
@@ -131,13 +232,57 @@ restore_cascade() {
     fi
 }
 
+# 1. Sidebar Panel (modern)
+install_sidebar_modern() {
+    echo -e "\n[1/3] 正在处理 Sidebar Panel (modern)..."
+    echo "目标目录: $TARGET_DIR_2"
+
+    if [ -d "$TARGET_DIR_2" ]; then
+        if [ -f "$TARGET_DIR_2/workbench.html" ]; then
+            if [ ! -f "$TARGET_DIR_2/workbench.html.bak" ]; then
+                echo "备份 workbench.html -> workbench.html.bak"
+                cp "$TARGET_DIR_2/workbench.html" "$TARGET_DIR_2/workbench.html.bak"
+            else
+                echo "备份已存在，跳过备份步骤 (保留原始备份)"
+            fi
+        fi
+
+        echo "复制 workbench.html..."
+        cp "$PATCHES_DIR/workbench.html" "$TARGET_DIR_2/"
+
+        echo "复制 sidebar-panel 文件夹..."
+        if [ -d "$TARGET_DIR_2/sidebar-panel" ]; then
+            rm -rf "$TARGET_DIR_2/sidebar-panel"
+        fi
+        cp -r "$PATCHES_DIR/sidebar-panel" "$TARGET_DIR_2/"
+    else
+        echo "警告: 目录 $TARGET_DIR_2 不存在，跳过任务 1"
+    fi
+}
+
+restore_sidebar_modern() {
+    echo -e "\n[1/3] 正在恢复 Sidebar Panel (modern)..."
+    echo "目标目录: $TARGET_DIR_2"
+    if [ -d "$TARGET_DIR_2" ]; then
+        if [ -f "$TARGET_DIR_2/workbench.html.bak" ]; then
+            echo "恢复 workbench.html.bak -> workbench.html"
+            cp "$TARGET_DIR_2/workbench.html.bak" "$TARGET_DIR_2/workbench.html"
+        fi
+        if [ -d "$TARGET_DIR_2/sidebar-panel" ]; then
+            echo "删除 sidebar-panel 文件夹..."
+            rm -rf "$TARGET_DIR_2/sidebar-panel"
+        fi
+    else
+        echo "警告: 目录 $TARGET_DIR_2 不存在，跳过任务 1"
+    fi
+}
+
 # 2. Workbench Jetski Agent
 install_manager() {
     echo -e "\n[2/3] 正在处理 Workbench Jetski Agent..."
     echo "目标目录: $TARGET_DIR_2"
 
     if [ -d "$TARGET_DIR_2" ]; then
-    # 备份
         if [ -f "$TARGET_DIR_2/workbench-jetski-agent.html" ]; then
             if [ ! -f "$TARGET_DIR_2/workbench-jetski-agent.html.bak" ]; then
                 echo "备份 workbench-jetski-agent.html -> workbench-jetski-agent.html.bak"
@@ -181,38 +326,38 @@ restore_manager() {
 update_product_json() {
     echo -e "\n[3/3] 正在处理 product.json..."
 
-    if [ -f "$PRODUCT_JSON" ]; then
-        if [ ! -f "$PRODUCT_JSON.bak" ]; then
-            echo "备份 product.json -> product.json.bak"
-            cp "$PRODUCT_JSON" "$PRODUCT_JSON.bak"
-        else
-            echo "备份已存在，跳过备份步骤 (保留原始备份)"
-        fi
+    if [ ! -f "$PRODUCT_JSON" ]; then
+        echo "错误: 找不到 product.json ($PRODUCT_JSON)"
+        exit 1
+    fi
 
-        echo "清空 checksums 字段..."
-        PYTHON_BIN=""
-        if command -v python3 >/dev/null 2>&1; then
-            PYTHON_BIN="python3"
-        elif command -v python >/dev/null 2>&1; then
-            PYTHON_BIN="python"
-        else
-            echo "警告: 未找到 Python, 跳过 checksums 清理"
-            return 0
-        fi
+    if [ ! -f "$PRODUCT_JSON.bak" ]; then
+        echo "备份 product.json -> product.json.bak"
+        cp "$PRODUCT_JSON" "$PRODUCT_JSON.bak"
+    else
+        echo "备份已存在，跳过备份步骤 (保留原始备份)"
+    fi
 
-        $PYTHON_BIN -c "
+    local py
+    py=$(find_python_bin)
+    if [ -z "$py" ]; then
+        echo "警告: 未找到 Python, 跳过 checksums 清理"
+        return 0
+    fi
+
+    "$py" - "$PRODUCT_JSON" <<'PY'
 import json
 import sys
 
-file_path = '$PRODUCT_JSON'
+file_path = sys.argv[1]
 try:
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     if 'checksums' in data:
         data['checksums'] = {}
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent='\\t')
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent='\t')
         print('成功: checksums 已清空')
     else:
         print('提示: checksums 字段不存在')
@@ -220,20 +365,25 @@ try:
 except Exception as e:
     print(f'错误: 处理 JSON 时失败: {e}')
     sys.exit(1)
-"
-    else
-        echo "错误: 找不到 product.json ($PRODUCT_JSON)"
-        exit 1
-    fi
+PY
 }
 
 update_configs_only() {
-    echo -e "\n[1/2] 正在更新 Cascade Panel 配置..."
+    local updated=false
+
+    echo -e "\n[1/2] 正在更新侧边栏配置..."
     if [ -f "$PATCHES_DIR/cascade-panel/config.json" ] && [ -d "$TARGET_DIR_1/cascade-panel" ]; then
         cp "$PATCHES_DIR/cascade-panel/config.json" "$TARGET_DIR_1/cascade-panel/"
         echo "已更新 cascade-panel/config.json"
-    else
-        echo "警告: 未找到 cascade-panel 配置或目标目录不存在"
+        updated=true
+    fi
+    if [ -f "$PATCHES_DIR/sidebar-panel/config.json" ] && [ -d "$TARGET_DIR_2/sidebar-panel" ]; then
+        cp "$PATCHES_DIR/sidebar-panel/config.json" "$TARGET_DIR_2/sidebar-panel/"
+        echo "已更新 sidebar-panel/config.json"
+        updated=true
+    fi
+    if [ "$updated" = "false" ]; then
+        echo "警告: 未找到可更新的侧边栏配置目录"
     fi
 
     echo -e "\n[2/2] 正在更新 Manager 配置..."
@@ -245,9 +395,12 @@ update_configs_only() {
     fi
 }
 
+detect_sidebar_variant
+
 case "$MODE" in
     uninstall)
-        restore_cascade
+        restore_cascade_legacy
+        restore_sidebar_modern
         restore_manager
         ;;
     update-config)
@@ -255,16 +408,26 @@ case "$MODE" in
         ;;
     install|*)
         if [ "$CASCADE_ENABLED" = "true" ]; then
-            install_cascade
+            if [ "$SIDEBAR_VARIANT" = "modern" ]; then
+                restore_cascade_legacy
+                install_sidebar_modern
+            else
+                restore_sidebar_modern
+                install_cascade_legacy
+            fi
         else
-            restore_cascade
+            restore_cascade_legacy
+            restore_sidebar_modern
         fi
 
         if [ "$MANAGER_ENABLED" = "true" ]; then
             install_manager
-            update_product_json
         else
             restore_manager
+        fi
+
+        if [ "$CASCADE_ENABLED" = "true" ] || [ "$MANAGER_ENABLED" = "true" ]; then
+            update_product_json
         fi
         ;;
 esac
