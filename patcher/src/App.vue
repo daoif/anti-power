@@ -12,7 +12,7 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 
 const { t, locale } = useI18n();
 
-const APP_VERSION = "3.2.1";
+const APP_VERSION = "3.2.2";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 type SidebarVariant = 'legacy' | 'modern';

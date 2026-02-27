@@ -24,6 +24,9 @@ const COMMON_LANGS = new Set([
 // Exclude these elements and their descendants from Markdown extraction
 const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
 
+// Inline elements with Markdown equivalents
+const INLINE_MARKDOWN_TAGS = new Set(['STRONG', 'B', 'EM', 'I', 'DEL', 'S', 'STRIKE', 'A']);
+
 /**
  * Handle SVGAnimatedString as well as string class names
  *
@@ -62,6 +65,47 @@ const extractLatexFromMath = (mathEl) => {
     }
 
     return null;
+};
+
+/**
+ * Preserve inline Markdown formatting where possible
+ *
+ * @param {Node} node
+ * @returns {string} Markdown text
+ */
+const extractInlineMarkdown = (node) => {
+    if (!node) return '';
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const el = /** @type {Element} */ (node);
+    const tag = el.tagName;
+
+    if (SKIP_TAGS.has(tag)) return '';
+    if (tag === 'BR') return '\n';
+
+    if (tag === 'CODE' && !el.closest('pre')) {
+        return `\`${el.textContent || ''}\``;
+    }
+
+    if (el.classList.contains('katex') || tag === 'MJX-CONTAINER') {
+        const latex = extractLatexFromMath(el);
+        return latex || '';
+    }
+
+    const content = Array.from(el.childNodes).map(extractInlineMarkdown).join('');
+    if (!content.trim()) return '';
+
+    if (tag === 'A') {
+        const href = el.getAttribute('href') || '';
+        if (!href || href.startsWith('javascript:')) return content;
+        return `[${content}](${href})`;
+    }
+    if (tag === 'STRONG' || tag === 'B') return `**${content.trim()}**`;
+    if (tag === 'EM' || tag === 'I') return `*${content.trim()}*`;
+    if (tag === 'DEL' || tag === 'S' || tag === 'STRIKE') return `~~${content.trim()}~~`;
+
+    return content;
 };
 
 /**
@@ -112,6 +156,12 @@ const extractListItemContent = (li) => {
             }
 
             if (classString.includes(BUTTON_CLASS) || classString.includes('sidebar-copy-btn')) {
+                skipUntil = node;
+                continue;
+            }
+
+            if (INLINE_MARKDOWN_TAGS.has(tag)) {
+                content += extractInlineMarkdown(node);
                 skipUntil = node;
                 continue;
             }
@@ -315,9 +365,19 @@ const extractFormattedText = (el) => {
     const hasList = el.querySelector('ol, ul');
     const hasMath = el.querySelector('.katex, mjx-container');
     const hasHeading = el.querySelector('h1, h2, h3, h4, h5, h6');
+    const hasInlineCode = Array.from(el.querySelectorAll('code')).some(codeEl => !codeEl.closest('pre'));
+    const hasInlineFormat = el.querySelector('strong, b, em, i, del, s, strike, a') || hasInlineCode;
 
     // Use cached raw text only if the DOM has no structure that needs Markdown conversion
-    if (!hasCodeBlock && !hasTable && !hasMermaid && !hasList && !hasMath && !hasHeading) {
+    if (
+        !hasCodeBlock &&
+        !hasTable &&
+        !hasMermaid &&
+        !hasList &&
+        !hasMath &&
+        !hasHeading &&
+        !hasInlineFormat
+    ) {
         if (el[RAW_TEXT_PROP] !== undefined) {
             return String(el[RAW_TEXT_PROP]).trim();
         }
@@ -355,6 +415,45 @@ const extractFormattedText = (el) => {
                 const prefix = '#'.repeat(level);
                 const headingText = currentNode.textContent.trim();
                 result += `\n${prefix} ${headingText}\n`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // Preserve paragraph breaks in Markdown
+            if (currentNode.tagName === 'P') {
+                const paragraph = extractInlineMarkdown(currentNode).trim();
+                if (paragraph) result += `\n${paragraph}\n`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            if (currentNode.tagName === 'BLOCKQUOTE') {
+                const block = extractInlineMarkdown(currentNode).trim();
+                if (block) {
+                    const quoted = block
+                        .split('\n')
+                        .map(line => (line.trim() ? `> ${line}` : '>'))
+                        .join('\n');
+                    result += `\n${quoted}\n`;
+                }
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            if (currentNode.tagName === 'HR') {
+                result += '\n---\n';
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            if (currentNode.tagName === 'BR') {
+                result += '\n';
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            if (INLINE_MARKDOWN_TAGS.has(currentNode.tagName)) {
+                result += extractInlineMarkdown(currentNode);
                 skipUntilEndOfBlock = currentNode;
                 continue;
             }
@@ -530,11 +629,9 @@ const extractFormattedText = (el) => {
         }
     }
 
-    // Remove blank lines from the copied Markdown
+    // Keep one blank line to preserve Markdown paragraph and heading boundaries
     return result
-        .split('\n')
-        .filter(line => line.trim() !== '')
-        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 };
 
