@@ -13,7 +13,7 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 const { t, locale } = useI18n();
 
 // 应用版本号
-const APP_VERSION = "3.2.1";
+const APP_VERSION = "3.2.2";
 // GitHub 仓库地址
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 

@@ -6,6 +6,20 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.2.2 (2026-02-27)
+
+### Improvements
+- Added inline Markdown semantic preservation in copy extraction, including bold/italic/strikethrough/links/inline code
+- Added conversion rules for paragraphs/blockquotes/horizontal rules/explicit line breaks to improve readability for complex copied content
+- Disabled raw-text fast path when inline formatting exists to avoid losing formatting
+- Updated blank-line handling to collapse consecutive empty lines to at most one while preserving paragraph and heading structure
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.2.2
+- Updated supported Antigravity version in README to v1.19.6
+
+---
+
 ## v3.2.1 (2026-02-26)
 
 ### Improvements

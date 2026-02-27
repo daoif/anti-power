@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/Version-v3.2.1-blue.svg" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v3.2.2-blue.svg" alt="Version">
   </a>
   <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/Supports_Antigravity-v1.18.4-green.svg" alt="Antigravity">
+    <img src="https://img.shields.io/badge/Supports_Antigravity-v1.19.6-green.svg" alt="Antigravity">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License">
@@ -144,7 +144,7 @@ For manual installation, please refer to [manual-install_EN.md](patcher/patches/
 
 ## 📋 Version Info
 
-Current Version: **v3.2.1** | Supports Antigravity: **v1.18.4**
+Current Version: **v3.2.2** | Supports Antigravity: **v1.19.6**
 
 For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 
@@ -172,6 +172,8 @@ Thanks to the following contributors for their support:
 - [@mikessslxxx](https://github.com/mikessslxxx) - Math formula rendering, Manager enhancements
 - [@syanle](https://github.com/syanle) - Linux support
 - [@Sophomoresty](https://github.com/Sophomoresty) - Copy function optimization, developer documentation
+- [@Wusir7355608](https://github.com/Wusir7355608)
+- [@aiaiads](https://github.com/aiaiads)
 
 ---
 
