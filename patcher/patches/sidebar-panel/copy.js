@@ -736,11 +736,10 @@ const extractFormattedText = (el) => {
         }
     }
 
-    // 去除所有空行，优化 Markdown 格式
+    // 合并连续空行为最多一个，保留段落分隔所需的空行
+    // 注意：不能删除所有空行，否则 --- 会紧贴段落被 Typora 误解为 Setext 二级标题
     return result
-        .split('\n')
-        .filter(line => line.trim() !== '')
-        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 };
 
