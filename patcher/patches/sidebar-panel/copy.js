@@ -32,6 +32,49 @@ const COMMON_LANGS = new Set([
 const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
 
 /**
+ * 递归提取内联元素的子节点内容
+ *
+ * 用于处理嵌套的内联格式 (如 **加粗中的 `code`**).
+ *
+ * @param {Element} el - 内联元素
+ * @returns {string} 提取的 Markdown 格式文本
+ */
+const extractInlineContent = (el) => {
+    let result = '';
+    for (const child of el.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+            result += child.textContent || '';
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+            const tag = child.tagName;
+            const inner = extractInlineContent(child);
+            const trimmed = inner.trim();
+            if (!trimmed) continue;
+            if (tag === 'STRONG' || tag === 'B') {
+                result += `**${trimmed}**`;
+            } else if (tag === 'EM' || tag === 'I') {
+                result += `*${trimmed}*`;
+            } else if (tag === 'DEL' || tag === 'S' || tag === 'STRIKE') {
+                result += `~~${trimmed}~~`;
+            } else if (tag === 'CODE' && !child.closest('pre')) {
+                result += `\`${child.textContent || ''}\``;
+            } else if (tag === 'A') {
+                const href = child.getAttribute('href') || '';
+                if (href && href !== '#' && !href.startsWith('javascript:')) {
+                    result += `[${trimmed}](${href})`;
+                } else {
+                    result += trimmed;
+                }
+            } else if (tag === 'BR') {
+                result += '\n';
+            } else {
+                result += inner;
+            }
+        }
+    }
+    return result;
+};
+
+/**
  * 获取类名字符串
  *
  * 兼容 SVG 元素的 SVGAnimatedString 类型。
@@ -135,6 +178,45 @@ const extractListItemContent = (li) => {
                 continue;
             }
 
+            // 加粗处理
+            if (tag === 'STRONG' || tag === 'B') {
+                const inner = extractInlineContent(node).trim();
+                if (inner) content += `**${inner}**`;
+                skipUntil = node;
+                continue;
+            }
+
+            // 斜体处理
+            if (tag === 'EM' || tag === 'I') {
+                const inner = extractInlineContent(node).trim();
+                if (inner) content += `*${inner}*`;
+                skipUntil = node;
+                continue;
+            }
+
+            // 删除线处理
+            if (tag === 'DEL' || tag === 'S' || tag === 'STRIKE') {
+                const inner = extractInlineContent(node).trim();
+                if (inner) content += `~~${inner}~~`;
+                skipUntil = node;
+                continue;
+            }
+
+            // 链接处理
+            if (tag === 'A') {
+                const href = node.getAttribute('href') || '';
+                const inner = extractInlineContent(node).trim();
+                if (inner) {
+                    if (href && href !== '#' && !href.startsWith('javascript:')) {
+                        content += `[${inner}](${href})`;
+                    } else {
+                        content += inner;
+                    }
+                }
+                skipUntil = node;
+                continue;
+            }
+
             // 处理 KaTeX 公式
             if (node.classList.contains('katex')) {
                 const latex = extractLatexFromMath(node);
@@ -152,6 +234,8 @@ const extractListItemContent = (li) => {
             if (parent && parent.closest('pre, .code-block, [class*="language-"]')) continue;
             // 跳过复制按钮内部文本
             if (parent && parent.closest(`.${BUTTON_CLASS}, .sidebar-copy-btn`)) continue;
+            // 跳过已由内联格式处理器处理的文本
+            if (parent && parent.closest('strong, b, em, i, del, s, strike, a')) continue;
             content += node.textContent;
         }
     }
@@ -345,9 +429,10 @@ const extractFormattedText = (el) => {
     const hasList = el.querySelector('ol, ul');
     const hasMath = el.querySelector('.katex, mjx-container');
     const hasHeading = el.querySelector('h1, h2, h3, h4, h5, h6');
+    const hasInlineFormat = el.querySelector('strong, b, em, i, del, s, strike, a[href], code:not(pre code)');
 
     // 仅当没有任何需要特殊处理的结构时才使用缓存的原始文本
-    if (!hasCodeBlock && !hasTable && !hasMermaid && !hasList && !hasMath && !hasHeading) {
+    if (!hasCodeBlock && !hasTable && !hasMermaid && !hasList && !hasMath && !hasHeading && !hasInlineFormat) {
         if (el[RAW_TEXT_PROP] !== undefined) {
             return String(el[RAW_TEXT_PROP]).trim();
         }
@@ -388,6 +473,85 @@ const extractFormattedText = (el) => {
                 const headingText = currentNode.textContent.trim();
                 result += `\n${prefix} ${headingText}\n`;
                 skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 加粗处理
+            if (currentNode.tagName === 'STRONG' || currentNode.tagName === 'B') {
+                const inner = extractInlineContent(currentNode).trim();
+                if (inner) result += `**${inner}**`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 斜体处理
+            if (currentNode.tagName === 'EM' || currentNode.tagName === 'I') {
+                const inner = extractInlineContent(currentNode).trim();
+                if (inner) result += `*${inner}*`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 删除线处理
+            if (currentNode.tagName === 'DEL' || currentNode.tagName === 'S' || currentNode.tagName === 'STRIKE') {
+                const inner = extractInlineContent(currentNode).trim();
+                if (inner) result += `~~${inner}~~`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 行内代码处理（非代码块内的 code）
+            if (currentNode.tagName === 'CODE' && !currentNode.closest('pre')) {
+                const text = currentNode.textContent || '';
+                if (text.trim()) result += `\`${text}\``;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 链接处理
+            if (currentNode.tagName === 'A') {
+                const href = currentNode.getAttribute('href') || '';
+                const inner = extractInlineContent(currentNode).trim();
+                if (inner) {
+                    if (href && href !== '#' && !href.startsWith('javascript:')) {
+                        result += `[${inner}](${href})`;
+                    } else {
+                        result += inner;
+                    }
+                }
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 段落处理
+            if (currentNode.tagName === 'P') {
+                const inner = extractInlineContent(currentNode).trim();
+                if (inner) result += `\n${inner}\n`;
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 换行处理
+            if (currentNode.tagName === 'BR') {
+                result += '\n';
+                continue;
+            }
+
+            // 块引用处理
+            if (currentNode.tagName === 'BLOCKQUOTE') {
+                const inner = extractInlineContent(currentNode).trim();
+                if (inner) {
+                    const lines = inner.split('\n');
+                    const quoted = lines.map(line => `> ${line}`).join('\n');
+                    result += `\n${quoted}\n`;
+                }
+                skipUntilEndOfBlock = currentNode;
+                continue;
+            }
+
+            // 水平线处理
+            if (currentNode.tagName === 'HR') {
+                result += '\n---\n';
                 continue;
             }
 
@@ -561,6 +725,10 @@ const extractFormattedText = (el) => {
 
                 // 跳过复制按钮内部文本
                 if (parent.closest(`.${BUTTON_CLASS}, .sidebar-copy-btn, .sidebar-feedback-copy`)) {
+                    continue;
+                }
+                // 跳过已由内联格式处理器处理的文本
+                if (parent.closest('strong, b, em, i, del, s, strike, a, p, blockquote')) {
                     continue;
                 }
             }
