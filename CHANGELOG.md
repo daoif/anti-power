@@ -6,6 +6,20 @@
 
 ---
 
+## v3.2.3 (2026-03-02)
+
+### 优化
+- Windows 清理工具新增 `sqlite3` 可执行文件自动解析, 除 PATH 外支持 Chocolatey/Git for Windows/Scoop/WinGet 常见安装路径
+- 启动时优先对已保存的 Antigravity 路径做规范化与状态刷新, 减少路径已配置但状态未回填的问题
+
+### 修复
+- 自动检测路径失败时, 保留用户已保存路径, 避免启动后路径输入被清空
+
+### 文档
+- README/Changelog/Release Notes 同步至 v3.2.3
+
+---
+
 ## v3.2.2 (2026-02-27)
 
 ### 优化

@@ -6,6 +6,20 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.2.3 (2026-03-02)
+
+### Improvements
+- Windows cleaning now auto-resolves the `sqlite3` executable, with support for common install locations beyond PATH (Chocolatey/Git for Windows/Scoop/WinGet)
+- On startup, the installer now normalizes the saved Antigravity path and refreshes install state first, reducing path-state mismatch issues
+
+### Fixes
+- Preserved the user-saved path when auto-detection fails, preventing the path field from being cleared on launch
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.2.3
+
+---
+
 ## v3.2.2 (2026-02-27)
 
 ### Improvements

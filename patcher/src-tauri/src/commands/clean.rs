@@ -264,9 +264,8 @@ fn run_anti_clean_windows(
             )));
         }
 
-        if !has_sqlite3() {
-            return Err(clean_error(locale, "cleanBackend.errors.sqlite3Missing"));
-        }
+        let sqlite3_executable = resolve_sqlite3_executable()
+            .ok_or_else(|| clean_error(locale, "cleanBackend.errors.sqlite3Missing"))?;
 
         let db_dir = data_dir.join("User").join("globalStorage");
         let timestamp = SystemTime::now()
@@ -296,9 +295,15 @@ fn run_anti_clean_windows(
             "\n[Antigravity] {}",
             clean_text(locale, "cleanBackend.sections.antigravity.cleanDb")
         ));
-        clean_db(&db_dir.join("state.vscdb"), locale, &mut output_lines)?;
+        clean_db(
+            &db_dir.join("state.vscdb"),
+            &sqlite3_executable,
+            locale,
+            &mut output_lines,
+        )?;
         clean_db(
             &db_dir.join("state.vscdb.backup"),
+            &sqlite3_executable,
             locale,
             &mut output_lines,
         )?;
@@ -452,16 +457,90 @@ fn resolve_antigravity_data_dir() -> Option<std::path::PathBuf> {
 }
 
 #[cfg(target_os = "windows")]
-fn has_sqlite3() -> bool {
-    new_windows_command("sqlite3")
-        .arg("--version")
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
+fn resolve_sqlite3_executable() -> Option<std::path::PathBuf> {
+    use std::ffi::OsStr;
+    use std::path::PathBuf;
+
+    fn can_execute_sqlite3<S: AsRef<OsStr>>(program: S) -> bool {
+        new_windows_command(program)
+            .arg("--version")
+            .output()
+            .map(|output| output.status.success())
+            .unwrap_or(false)
+    }
+
+    if can_execute_sqlite3("sqlite3") {
+        return Some(PathBuf::from("sqlite3"));
+    }
+
+    let mut candidates = Vec::new();
+
+    // Chocolatey
+    if let Some(choco_install) = std::env::var_os("ChocolateyInstall") {
+        candidates.push(PathBuf::from(choco_install).join("bin").join("sqlite3.exe"));
+    } else {
+        candidates.push(PathBuf::from(r"C:\ProgramData\chocolatey\bin\sqlite3.exe"));
+    }
+
+    // Git for Windows
+    if let Some(program_files) = std::env::var_os("ProgramFiles") {
+        let git_dir = PathBuf::from(program_files).join("Git");
+        candidates.push(git_dir.join("mingw64").join("bin").join("sqlite3.exe"));
+        candidates.push(git_dir.join("usr").join("bin").join("sqlite3.exe"));
+    }
+    if let Some(program_files_x86) = std::env::var_os("ProgramFiles(x86)") {
+        let git_dir = PathBuf::from(program_files_x86).join("Git");
+        candidates.push(git_dir.join("mingw64").join("bin").join("sqlite3.exe"));
+        candidates.push(git_dir.join("usr").join("bin").join("sqlite3.exe"));
+    }
+
+    // Scoop
+    if let Some(scoop) = std::env::var_os("SCOOP") {
+        candidates.push(
+            PathBuf::from(scoop)
+                .join("apps")
+                .join("sqlite")
+                .join("current")
+                .join("sqlite3.exe"),
+        );
+    } else if let Some(home) = std::env::var_os("USERPROFILE") {
+        candidates.push(
+            PathBuf::from(home)
+                .join("scoop")
+                .join("apps")
+                .join("sqlite")
+                .join("current")
+                .join("sqlite3.exe"),
+        );
+    }
+
+    // WinGet
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+        let winget_root = PathBuf::from(local_app_data).join("Microsoft").join("WinGet");
+        candidates.push(winget_root.join("Links").join("sqlite3.exe"));
+
+        let packages_dir = winget_root.join("Packages");
+        if let Ok(entries) = std::fs::read_dir(packages_dir) {
+            for entry in entries.flatten() {
+                let package_name = entry.file_name().to_string_lossy().to_ascii_lowercase();
+                if package_name.starts_with("sqlite.sqlite_") {
+                    candidates.push(entry.path().join("sqlite3.exe"));
+                }
+            }
+        }
+    }
+
+    for candidate in candidates {
+        if candidate.is_file() && can_execute_sqlite3(&candidate) {
+            return Some(candidate);
+        }
+    }
+
+    None
 }
 
 #[cfg(target_os = "windows")]
-fn new_windows_command(program: &str) -> std::process::Command {
+fn new_windows_command<S: AsRef<std::ffi::OsStr>>(program: S) -> std::process::Command {
     use std::os::windows::process::CommandExt;
 
     let mut command = std::process::Command::new(program);
@@ -546,6 +625,7 @@ fn backup_file(
 #[cfg(target_os = "windows")]
 fn clean_db(
     db_path: &std::path::Path,
+    sqlite3_executable: &std::path::Path,
     locale: Option<&str>,
     output_lines: &mut Vec<String>,
 ) -> CleanResult<()> {
@@ -562,7 +642,7 @@ fn clean_db(
         return Ok(());
     }
 
-    let (before, after) = sqlite_clean_and_count(db_path, locale)?;
+    let (before, after) = sqlite_clean_and_count(db_path, sqlite3_executable, locale)?;
 
     let name = db_path
         .file_name()
@@ -583,6 +663,7 @@ fn clean_db(
 #[cfg(target_os = "windows")]
 fn sqlite_clean_and_count(
     db_path: &std::path::Path,
+    sqlite3_executable: &std::path::Path,
     locale: Option<&str>,
 ) -> CleanResult<(i64, i64)> {
     let sql = format!(
@@ -592,7 +673,7 @@ fn sqlite_clean_and_count(
         TRAJECTORY_SUMMARIES_KEY
     );
 
-    let output = new_windows_command("sqlite3")
+    let output = new_windows_command(sqlite3_executable)
         .arg(db_path)
         .arg(sql)
         .output()
