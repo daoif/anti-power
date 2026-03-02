@@ -12,7 +12,7 @@ import ConfirmModal from "./components/ConfirmModal.vue";
 
 const { t, locale } = useI18n();
 
-const APP_VERSION = "3.2.2";
+const APP_VERSION = "3.2.3";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 type SidebarVariant = 'legacy' | 'modern';
@@ -476,8 +476,23 @@ async function updateConfigOnly() {
   }
 }
 
-onMounted(() => {
-  detectPath();
+onMounted(async () => {
+  if (antigravityPath.value) {
+    const normalized = await normalizePath(antigravityPath.value);
+    const resolvedPath = normalized ?? antigravityPath.value;
+    antigravityPath.value = resolvedPath;
+    await refreshPathState(resolvedPath);
+
+    if (!isInstalled.value && !detectedIdeVersion.value) {
+      const savedPath = antigravityPath.value;
+      await detectPath();
+      if (!antigravityPath.value && savedPath) {
+        antigravityPath.value = savedPath;
+      }
+    }
+    return;
+  }
+  await detectPath();
 });
 </script>
 

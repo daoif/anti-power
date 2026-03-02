@@ -85,7 +85,7 @@ English | [中文](AGENTS_ZH.md)
   - Solution: Use elevated PowerShell `Set-Content -Encoding UTF8` to write directly, or write ASCII first then append in segments.
 - Writing to `patcher/patches/` or cleaning `tests/` may get `Access denied` in sandbox, need elevated commands for write/delete.
 
-## Recent Changes (v2.3.1 - v3.2.2)
+## Recent Changes (v2.3.1 - v3.2.3)
 
 - Cross-platform support (macOS/Linux) + path normalization/detection; Unix privileged install flow (sudo/pkexec)
 - macOS Universal Build artifacts in release pipeline
@@ -95,3 +95,5 @@ English | [中文](AGENTS_ZH.md)
 - Better Markdown copy: nested lists + code fences, inline formatting/links, blockquotes/paragraph breaks, SVG filtering, empty-line cleanup
 - LaTeX/Mermaid rendering flow strengthened: retry after load failures, streaming re-render support, and reduced Mermaid debug logs
 - Privileged install and Unix clean script now use unique temp paths with automatic cleanup; restore flow removes stale `.bak` backups
+- Windows clean backend now auto-resolves `sqlite3` executable from PATH/Chocolatey/Git for Windows/Scoop/WinGet, reducing sqlite3-missing failures
+- Installer startup path restore now normalizes saved paths first, refreshes state first, and keeps saved paths when fallback auto-detection fails
