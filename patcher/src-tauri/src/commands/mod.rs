@@ -8,6 +8,7 @@ mod detect;
 mod i18n;
 mod patch;
 mod paths;
+mod sessions;
 
 pub use clean::run_anti_clean;
 pub use config::{get_config, save_config};
@@ -16,3 +17,4 @@ pub use patch::{
     check_patch_status, install_patch, read_manager_patch_config, read_patch_config,
     uninstall_patch, update_config,
 };
+pub use sessions::{delete_session, load_session_messages, scan_sessions};

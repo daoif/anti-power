@@ -37,7 +37,9 @@ English | [中文](AGENTS_ZH.md)
 
 - `patcher/patches/`: Patch source files injected into Antigravity (HTML/JS/CSS).
 - `patcher/src-tauri/`: Installer backend logic (path detection, backup/write, config).
+- `patcher/src-tauri/src/commands/sessions.rs`: Session scan/load/delete backend for Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw.
 - `patcher/src/`: Installer frontend UI (feature toggles, install/uninstall buttons).
+- `patcher/src/components/SessionViewer.vue`: Installer session viewer UI for local conversation records.
 - `.github/workflows/`: Build/release pipeline (notably macOS Universal build artifacts).
 - `docs/`: Development, release, structure, known issues and screenshots (see `docs/README.md`).
 - `docs/guides/developer-guide_EN.md`: Comprehensive developer documentation (English) with DOM structure, code conventions, and development workflow.
@@ -85,7 +87,7 @@ English | [中文](AGENTS_ZH.md)
   - Solution: Use elevated PowerShell `Set-Content -Encoding UTF8` to write directly, or write ASCII first then append in segments.
 - Writing to `patcher/patches/` or cleaning `tests/` may get `Access denied` in sandbox, need elevated commands for write/delete.
 
-## Recent Changes (v2.3.1 - v3.2.3)
+## Recent Changes (v2.3.1 - v3.3.0)
 
 - Cross-platform support (macOS/Linux) + path normalization/detection; Unix privileged install flow (sudo/pkexec)
 - macOS Universal Build artifacts in release pipeline
@@ -97,3 +99,5 @@ English | [中文](AGENTS_ZH.md)
 - Privileged install and Unix clean script now use unique temp paths with automatic cleanup; restore flow removes stale `.bak` backups
 - Windows clean backend now auto-resolves `sqlite3` executable from PATH/Chocolatey/Git for Windows/Scoop/WinGet, reducing sqlite3-missing failures
 - Installer startup path restore now normalizes saved paths first, refreshes state first, and keeps saved paths when fallback auto-detection fails
+- Installer adds a Session Viewer for local conversation records, and the clean tool now includes OpenCode and OpenClaw
+- Sidebar and Manager code block font sizes now follow panel/editor font-size settings for more consistent readability

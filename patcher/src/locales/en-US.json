@@ -96,8 +96,8 @@
         "title": "Manager Window Settings"
     },
     "cleanTool": {
-        "cleanCache": "Clean Cache",
-        "cleaning": "Cleaning...",
+        "cleanCache": "Clean Sessions",
+        "cleaning": "Cleaning Sessions...",
         "confirmMessage": "This will clean conversation data for {targets}. It is recommended to close running application instances first. Continue?",
         "confirmMessageNoApp": "This will clean conversation data for {targets}. Continue?",
         "confirmTitle": "Clean Confirmation",
@@ -113,7 +113,9 @@
             "antigravity": "Antigravity",
             "claude": "Claude Code",
             "codex": "Codex Archived",
-            "gemini": "Gemini CLI"
+            "gemini": "Gemini CLI",
+            "opencode": "OpenCode",
+            "openclaw": "OpenClaw"
         },
         "title": "Conversation Clean Tool"
     },
@@ -162,7 +164,7 @@
                 "cleanArchive": "Cleaning archived sessions..."
             },
             "shared": {
-                "cleanCache": "Cleaning conversation caches..."
+                "cleanCache": "Cleaning session caches..."
             }
         }
     },
@@ -268,6 +270,53 @@
         "restoreFailed": "✗ Restore Failed: {error}",
         "restoreSuccess": "✓ Restored Original",
         "updateFailed": "✗ Update Failed: {error}"
+    },
+    "sessionViewer": {
+        "close": "Close",
+        "copyMessage": "Copy Message",
+        "copied": "Copied",
+        "deleteSession": "Delete Session",
+        "deleteConfirmTitle": "Confirm Deletion",
+        "deleteConfirmMessage": "Delete session \"{name}\"? This cannot be undone.",
+        "selectAll": "Select All",
+        "selectedCount": "{count} selected",
+        "batchDelete": "Delete Selected",
+        "batchDeleteConfirmTitle": "Confirm Batch Deletion",
+        "batchDeleteConfirmMessage": "Delete {count} selected sessions? This cannot be undone.",
+        "filterAll": "All",
+        "loadFailed": "Load failed: {error}",
+        "loadingMessages": "Loading...",
+        "messageCount": "{count} messages",
+        "noMessages": "Select a session to view its content",
+        "noSessions": "No sessions found",
+        "openButton": "View Sessions",
+        "projectDir": "Project Dir",
+        "providers": {
+            "claude": "Claude Code",
+            "codex": "Codex",
+            "gemini": "Gemini CLI",
+            "opencode": "OpenCode",
+            "openclaw": "OpenClaw"
+        },
+        "roles": {
+            "assistant": "Assistant",
+            "system": "System",
+            "tool": "Tool",
+            "user": "User"
+        },
+        "scanFailed": "Scan failed: {error}",
+        "scanning": "Scanning...",
+        "searchPlaceholder": "Search sessions...",
+        "sessionCount": "{count} sessions",
+        "timeAgo": {
+            "daysAgo": "{n}d ago",
+            "hoursAgo": "{n}h ago",
+            "justNow": "just now",
+            "minutesAgo": "{n}m ago",
+            "monthsAgo": "{n}mo ago",
+            "weeksAgo": "{n}w ago"
+        },
+        "title": "Session Viewer"
     },
     "titleBar": {
         "about": "About",

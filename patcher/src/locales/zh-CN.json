@@ -96,8 +96,8 @@
         "title": "Manager 窗口设置"
     },
     "cleanTool": {
-        "cleanCache": "清理缓存",
-        "cleaning": "清理中...",
+        "cleanCache": "清理对话",
+        "cleaning": "清理对话中...",
         "confirmMessage": "将清理 {targets} 的对话与缓存，建议先关闭正在运行的应用。确定继续？",
         "confirmMessageNoApp": "将清理 {targets} 的对话与缓存。确定继续？",
         "confirmTitle": "清理确认",
@@ -113,7 +113,9 @@
             "antigravity": "Antigravity",
             "claude": "Claude Code",
             "codex": "Codex 归档",
-            "gemini": "Gemini CLI"
+            "gemini": "Gemini CLI",
+            "opencode": "OpenCode",
+            "openclaw": "OpenClaw"
         },
         "title": "对话清理工具"
     },
@@ -268,6 +270,53 @@
         "restoreFailed": "✗ 恢复失败: {error}",
         "restoreSuccess": "✓ 已恢复原版",
         "updateFailed": "✗ 更新失败: {error}"
+    },
+    "sessionViewer": {
+        "close": "关闭",
+        "copyMessage": "复制消息",
+        "copied": "已复制",
+        "deleteSession": "删除此对话",
+        "deleteConfirmTitle": "确认删除",
+        "deleteConfirmMessage": "确定要删除对话「{name}」吗？此操作无法撤销。",
+        "selectAll": "全选",
+        "selectedCount": "已选 {count} 项",
+        "batchDelete": "删除选中",
+        "batchDeleteConfirmTitle": "确认批量删除",
+        "batchDeleteConfirmMessage": "确定要删除选中的 {count} 个对话吗？此操作无法撤销。",
+        "filterAll": "全部",
+        "loadFailed": "加载失败: {error}",
+        "loadingMessages": "加载中...",
+        "messageCount": "{count} 条消息",
+        "noMessages": "选择一个对话以查看内容",
+        "noSessions": "未找到对话记录",
+        "openButton": "查看对话",
+        "projectDir": "项目目录",
+        "providers": {
+            "claude": "Claude Code",
+            "codex": "Codex",
+            "gemini": "Gemini CLI",
+            "opencode": "OpenCode",
+            "openclaw": "OpenClaw"
+        },
+        "roles": {
+            "assistant": "助手",
+            "system": "系统",
+            "tool": "工具",
+            "user": "用户"
+        },
+        "scanFailed": "扫描失败: {error}",
+        "scanning": "正在扫描...",
+        "searchPlaceholder": "搜索对话...",
+        "sessionCount": "{count} 个对话",
+        "timeAgo": {
+            "daysAgo": "{n} 天前",
+            "hoursAgo": "{n} 小时前",
+            "justNow": "刚刚",
+            "minutesAgo": "{n} 分钟前",
+            "monthsAgo": "{n} 个月前",
+            "weeksAgo": "{n} 周前"
+        },
+        "title": "对话浏览器"
     },
     "titleBar": {
         "about": "关于",

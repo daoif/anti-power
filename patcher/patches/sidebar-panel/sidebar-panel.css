@@ -1,10 +1,22 @@
 /* Modern sidebar styles are independent of the legacy Cascade panel */
 
+:root {
+    --sidebar-panel-code-font-size: max(
+        var(--sidebar-panel-font-size, var(--vscode-font-size, 13px)),
+        var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
+    );
+}
+
 pre,
 pre .code-block,
 pre .line-content,
-pre code {
+pre code,
+[class*="language-"],
+[class*="language-"] .code-block,
+[class*="language-"] .line-content,
+[aria-label^="highlighted-code"] {
     font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace !important;
+    font-size: var(--sidebar-panel-code-font-size) !important;
 }
 
 /* Custom message font size */

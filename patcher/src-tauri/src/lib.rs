@@ -6,9 +6,10 @@ mod commands;
 mod embedded;
 
 use commands::{
-    check_patch_status, detect_antigravity_path, detect_antigravity_version, get_config,
-    install_patch, normalize_antigravity_path, read_manager_patch_config, read_patch_config,
-    run_anti_clean, save_config, uninstall_patch, update_config,
+    check_patch_status, delete_session, detect_antigravity_path, detect_antigravity_version,
+    get_config, install_patch, load_session_messages, normalize_antigravity_path,
+    read_manager_patch_config, read_patch_config, run_anti_clean, save_config, scan_sessions,
+    uninstall_patch, update_config,
 };
 use tauri::Manager;
 
@@ -44,7 +45,10 @@ pub fn run() {
             read_manager_patch_config,
             get_config,
             save_config,
-            run_anti_clean
+            run_anti_clean,
+            scan_sessions,
+            load_session_messages,
+            delete_session
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
