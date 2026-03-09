@@ -50,12 +50,21 @@ pub struct CleanTargets {
     pub gemini: bool,
     pub codex: bool,
     pub claude: bool,
+    #[serde(default)]
+    pub opencode: bool,
+    #[serde(default)]
+    pub openclaw: bool,
 }
 
 impl CleanTargets {
     /// 是否至少选择了一个清理目标
     fn has_any(&self) -> bool {
-        self.antigravity || self.gemini || self.codex || self.claude
+        self.antigravity
+            || self.gemini
+            || self.codex
+            || self.claude
+            || self.opencode
+            || self.openclaw
     }
 }
 
@@ -191,6 +200,12 @@ fn run_anti_clean_unix(
     if targets.claude {
         cmd.arg("--claude");
     }
+    if targets.opencode {
+        cmd.arg("--opencode");
+    }
+    if targets.openclaw {
+        cmd.arg("--openclaw");
+    }
 
     // 执行脚本
     let output = cmd.output().map_err(|e| {
@@ -248,9 +263,26 @@ fn run_anti_clean_windows(
         if targets.claude {
             check_running_windows("Claude Code", "claude", &running_processes, locale)?;
         }
+        if targets.opencode {
+            check_running_windows("OpenCode", "opencode", &running_processes, locale)?;
+        }
+        if targets.openclaw {
+            check_running_windows("OpenClaw", "openclaw", &running_processes, locale)?;
+        }
     }
 
     let mut output_lines = Vec::new();
+    let opencode_data_dir = resolve_opencode_data_dir(&home_dir);
+    let sqlite3_executable = if targets.antigravity
+        || (targets.opencode && opencode_data_dir.join("opencode.db").exists())
+    {
+        Some(
+            resolve_sqlite3_executable()
+                .ok_or_else(|| clean_error(locale, "cleanBackend.errors.sqlite3Missing"))?,
+        )
+    } else {
+        None
+    };
 
     if targets.antigravity {
         let data_dir = resolve_antigravity_data_dir()
@@ -263,8 +295,8 @@ fn run_anti_clean_windows(
                 data_dir.display()
             )));
         }
-
-        let sqlite3_executable = resolve_sqlite3_executable()
+        let sqlite3_executable = sqlite3_executable
+            .as_deref()
             .ok_or_else(|| clean_error(locale, "cleanBackend.errors.sqlite3Missing"))?;
 
         let db_dir = data_dir.join("User").join("globalStorage");
@@ -435,6 +467,38 @@ fn run_anti_clean_windows(
         )?;
     }
 
+    if targets.opencode {
+        output_lines.push(format!(
+            "\n[OpenCode] {}",
+            clean_text(locale, "cleanBackend.sections.shared.cleanCache")
+        ));
+        let opencode_storage = opencode_data_dir.join("storage");
+        clean_opencode_storage(&opencode_storage, locale, &mut output_lines)?;
+        if opencode_data_dir.join("opencode.db").exists() {
+            let sqlite3_executable = sqlite3_executable
+                .as_deref()
+                .ok_or_else(|| clean_error(locale, "cleanBackend.errors.sqlite3Missing"))?;
+            clean_opencode_db(
+                &opencode_data_dir.join("opencode.db"),
+                sqlite3_executable,
+                locale,
+                &mut output_lines,
+            )?;
+        }
+    }
+
+    if targets.openclaw {
+        output_lines.push(format!(
+            "\n[OpenClaw] {}",
+            clean_text(locale, "cleanBackend.sections.shared.cleanCache")
+        ));
+        clean_openclaw_session_dirs(
+            &home_dir.join(".openclaw").join("agents"),
+            locale,
+            &mut output_lines,
+        )?;
+    }
+
     output_lines.push(format!("\n{}", clean_text(locale, "cleanBackend.done")));
     Ok(output_lines.join("\n"))
 }
@@ -443,6 +507,192 @@ fn run_anti_clean_windows(
 #[cfg(target_os = "windows")]
 fn resolve_home_dir() -> Option<std::path::PathBuf> {
     dirs::home_dir().or_else(|| std::env::var_os("USERPROFILE").map(std::path::PathBuf::from))
+}
+
+#[cfg(target_os = "windows")]
+fn resolve_opencode_data_dir(home_dir: &std::path::Path) -> std::path::PathBuf {
+    std::env::var_os("XDG_DATA_HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| home_dir.join(".local").join("share"))
+        .join("opencode")
+}
+
+#[cfg(target_os = "windows")]
+fn clean_opencode_storage(
+    storage_dir: &std::path::Path,
+    locale: Option<&str>,
+    output_lines: &mut Vec<String>,
+) -> CleanResult<()> {
+    for relative in [
+        "session",
+        "message",
+        "part",
+        "todo",
+        "session_share",
+        "session_diff",
+        "agent-usage-reminder",
+        "directory-readme",
+    ] {
+        clean_dir_contents(&storage_dir.join(relative), locale, output_lines)?;
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn clean_openclaw_session_dirs(
+    agents_dir: &std::path::Path,
+    locale: Option<&str>,
+    output_lines: &mut Vec<String>,
+) -> CleanResult<()> {
+    if !agents_dir.exists() {
+        output_lines.push(format!(
+            "{}: {}",
+            clean_text(locale, "cleanBackend.labels.skipDirMissing"),
+            agents_dir.display()
+        ));
+        return Ok(());
+    }
+
+    if !agents_dir.is_dir() {
+        output_lines.push(format!(
+            "{}: {}",
+            clean_text(locale, "cleanBackend.labels.skipNotDir"),
+            agents_dir.display()
+        ));
+        return Ok(());
+    }
+
+    let mut found_sessions_dir = false;
+    for entry in std::fs::read_dir(agents_dir).map_err(|e| {
+        format!(
+            "{} {}: {}",
+            clean_text(locale, "cleanBackend.errors.readDirFailed"),
+            agents_dir.display(),
+            e
+        )
+    })? {
+        let entry = entry.map_err(|e| {
+            format!(
+                "{} {}: {}",
+                clean_text(locale, "cleanBackend.errors.readDirEntryFailed"),
+                agents_dir.display(),
+                e
+            )
+        })?;
+        let sessions_dir = entry.path().join("sessions");
+        if sessions_dir.is_dir() {
+            found_sessions_dir = true;
+            clean_dir_contents(&sessions_dir, locale, output_lines)?;
+        }
+    }
+
+    if !found_sessions_dir {
+        output_lines.push(format!(
+            "{}: {}",
+            clean_text(locale, "cleanBackend.labels.skipDirMissing"),
+            agents_dir.join("*/sessions").display()
+        ));
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn clean_opencode_db(
+    db_path: &std::path::Path,
+    sqlite3_executable: &std::path::Path,
+    locale: Option<&str>,
+    output_lines: &mut Vec<String>,
+) -> CleanResult<()> {
+    if !db_path.exists() {
+        let name = db_path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("unknown");
+        output_lines.push(format!(
+            "{}: {}",
+            clean_text(locale, "cleanBackend.labels.skipNotFound"),
+            name
+        ));
+        return Ok(());
+    }
+
+    let (before, after) = sqlite_clean_opencode_and_count(db_path, sqlite3_executable, locale)?;
+    let name = db_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("unknown");
+    output_lines.push(apply_vars(
+        clean_text(locale, "cleanBackend.logs.cleanedDb"),
+        &[
+            ("name", name.to_string()),
+            ("before", before.to_string()),
+            ("after", after.to_string()),
+        ],
+    ));
+
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn sqlite_clean_opencode_and_count(
+    db_path: &std::path::Path,
+    sqlite3_executable: &std::path::Path,
+    locale: Option<&str>,
+) -> CleanResult<(i64, i64)> {
+    let sql = r#"
+select count(*) from session;
+PRAGMA foreign_keys = ON;
+BEGIN IMMEDIATE;
+DELETE FROM session;
+DELETE FROM project;
+COMMIT;
+VACUUM;
+select count(*) from session;
+"#;
+
+    let output = new_windows_command(sqlite3_executable)
+        .arg(db_path)
+        .arg(sql)
+        .output()
+        .map_err(|e| {
+            format!(
+                "{} {}: {}",
+                clean_text(locale, "cleanBackend.errors.sqlite3ExecFailed"),
+                db_path.display(),
+                e
+            )
+        })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let detail = if !stderr.is_empty() { stderr } else { stdout };
+        return Err(CommandError::from(format!(
+            "{} {}: {}",
+            clean_text(locale, "cleanBackend.errors.sqliteCleanFailed"),
+            db_path.display(),
+            detail
+        )));
+    }
+
+    let counts: Vec<i64> = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .filter_map(|line| line.parse::<i64>().ok())
+        .collect();
+
+    if counts.len() < 2 {
+        return Err(CommandError::from(format!(
+            "{} {}",
+            clean_text(locale, "cleanBackend.errors.sqliteCountFailed"),
+            db_path.display()
+        )));
+    }
+
+    Ok((counts[0], *counts.last().unwrap_or(&counts[0])))
 }
 
 /// Windows: Antigravity 数据目录定位
@@ -516,7 +766,9 @@ fn resolve_sqlite3_executable() -> Option<std::path::PathBuf> {
 
     // WinGet
     if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
-        let winget_root = PathBuf::from(local_app_data).join("Microsoft").join("WinGet");
+        let winget_root = PathBuf::from(local_app_data)
+            .join("Microsoft")
+            .join("WinGet");
         candidates.push(winget_root.join("Links").join("sqlite3.exe"));
 
         let packages_dir = winget_root.join("Packages");

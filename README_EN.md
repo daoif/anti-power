@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/Version-v3.2.3-blue.svg" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v3.3.0-blue.svg" alt="Version">
   </a>
   <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/Supports_Antigravity-v1.19.6-green.svg" alt="Antigravity">
+    <img src="https://img.shields.io/badge/Supports_Antigravity-v1.20.4-green.svg" alt="Antigravity">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-orange.svg" alt="License">
@@ -42,8 +42,9 @@ Anti-Power enhances the Antigravity Sidebar and Manager window by applying patch
 | **Math Formula Rendering** | Supports `$...$` inline formulas and `$$...$$` block formulas |
 | **One-Click Copy** | Sidebar and Manager provide a Copy button that automatically converts to Markdown |
 | **Table Color Fix** | Fixes invisible table text issues in dark themes |
-| **Manager Layout Adjustment** | Supports conversation width and font size adjustment |
+| **Manager Layout Adjustment** | Supports conversation width and font size adjustment, with code block font sizes adapting as well |
 | **Floating Copy Button** | Top-right hover button + bottom-right persistent button for easy copying |
+| **Session Viewer** | View and delete local conversations from Claude Code, Codex, Gemini CLI, OpenCode, and OpenClaw |
 
 ### Copy Features
 
@@ -57,7 +58,8 @@ Anti-Power enhances the Antigravity Sidebar and Manager window by applying patch
 - **Multi-language**: Support for English and Chinese interfaces
 - **Themes**: Support for Light and Dark modes
 - **Path Detection**: Auto-detect IDE directory for a hassle-free installation
-- **Conversation Cleanup**: Supports conversation cache cleanup on Windows/macOS/Linux
+- **Session Viewer**: View and batch-delete local conversations from Claude Code, Codex, Gemini CLI, OpenCode, and OpenClaw
+- **Conversation Cleanup**: Supports cleaning conversation caches for Antigravity, Gemini CLI, Codex, Claude Code, OpenCode, and OpenClaw on Windows/macOS/Linux
 
 ---
 
@@ -144,7 +146,7 @@ For manual installation, please refer to [manual-install_EN.md](patcher/patches/
 
 ## 📋 Version Info
 
-Current Version: **v3.2.3** | Supports Antigravity: **v1.19.6**
+Current Version: **v3.3.0** | Supports Antigravity: **v1.20.4**
 
 For full changelog, see [CHANGELOG_EN.md](CHANGELOG_EN.md).
 

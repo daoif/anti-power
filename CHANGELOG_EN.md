@@ -6,6 +6,23 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.3.0 (2026-03-09)
+
+### New Features
+- Added a Session Viewer to the installer for viewing and deleting local conversations from Claude Code, Codex, Gemini CLI, OpenCode, and OpenClaw
+- Added multi-select batch deletion for sessions to make history cleanup faster
+
+### Improvements
+- Added OpenCode and OpenClaw targets to the cleaning tool, expanding coverage across common AI tools
+- Code block font size in the Sidebar and Manager now follows the panel font size and editor font size for better readability under custom size settings
+- Expanded highlighted-code style coverage so legacy Sidebar, modern Sidebar, and Manager keep consistent code rendering
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.3.0
+- Updated supported Antigravity version in README to v1.20.4
+
+---
+
 ## v3.2.3 (2026-03-02)
 
 ### Improvements

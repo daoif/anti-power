@@ -19,6 +19,8 @@ TARGET_ANTIGRAVITY=0
 TARGET_GEMINI=0
 TARGET_CODEX=0
 TARGET_CLAUDE=0
+TARGET_OPENCODE=0
+TARGET_OPENCLAW=0
 
 # Parse args
 for arg in "$@"; do
@@ -28,22 +30,28 @@ for arg in "$@"; do
         --gemini) TARGET_GEMINI=1 ;;
         --codex) TARGET_CODEX=1 ;;
         --claude) TARGET_CLAUDE=1 ;;
+        --opencode) TARGET_OPENCODE=1 ;;
+        --openclaw) TARGET_OPENCLAW=1 ;;
         --all)
             TARGET_ANTIGRAVITY=1
             TARGET_GEMINI=1
             TARGET_CODEX=1
             TARGET_CLAUDE=1
+            TARGET_OPENCODE=1
+            TARGET_OPENCLAW=1
             ;;
         *) DATA_DIR="$arg" ;;
     esac
 done
 
 # If no target is specified, clean all (backward compatible)
-if [ "$TARGET_ANTIGRAVITY" -eq 0 ] && [ "$TARGET_GEMINI" -eq 0 ] && [ "$TARGET_CODEX" -eq 0 ] && [ "$TARGET_CLAUDE" -eq 0 ]; then
+if [ "$TARGET_ANTIGRAVITY" -eq 0 ] && [ "$TARGET_GEMINI" -eq 0 ] && [ "$TARGET_CODEX" -eq 0 ] && [ "$TARGET_CLAUDE" -eq 0 ] && [ "$TARGET_OPENCODE" -eq 0 ] && [ "$TARGET_OPENCLAW" -eq 0 ]; then
     TARGET_ANTIGRAVITY=1
     TARGET_GEMINI=1
     TARGET_CODEX=1
     TARGET_CLAUDE=1
+    TARGET_OPENCODE=1
+    TARGET_OPENCLAW=1
 fi
 
 backup_file() {
@@ -69,6 +77,36 @@ clean_db() {
     sqlite3 "$db" "delete from ItemTable where key='antigravityUnifiedStateSync.trajectorySummaries';"
 
     after=$(sqlite3 "$db" "select count(*) from ItemTable where key='antigravityUnifiedStateSync.trajectorySummaries';")
+
+    echo "Cleaned $name (before=$before, after=$after)"
+}
+
+clean_opencode_db() {
+    local db="$1"
+    local name="$(basename "$db")"
+    if [ ! -f "$db" ]; then
+        echo "Skip: $name not found"
+        return
+    fi
+
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        echo "Error: sqlite3 not found. Please install it first."
+        exit 1
+    fi
+
+    local before after
+    before=$(sqlite3 "$db" "select count(*) from session;")
+
+    sqlite3 "$db" "
+PRAGMA foreign_keys = ON;
+BEGIN IMMEDIATE;
+DELETE FROM session;
+DELETE FROM project;
+COMMIT;
+VACUUM;
+"
+
+    after=$(sqlite3 "$db" "select count(*) from session;")
 
     echo "Cleaned $name (before=$before, after=$after)"
 }
@@ -104,6 +142,22 @@ check_running() {
     fi
 }
 
+clean_openclaw_session_dirs() {
+    local agents_dir="$HOME/.openclaw/agents"
+    local found=0
+
+    for sessions_dir in "$agents_dir"/*/sessions; do
+        if [ -d "$sessions_dir" ]; then
+            found=1
+            clean_dir_contents "$sessions_dir"
+        fi
+    done
+
+    if [ "$found" -eq 0 ]; then
+        echo "Skip: Directory not found: $agents_dir/*/sessions"
+    fi
+}
+
 if [ "$FORCE" -ne 1 ]; then
     if [ "$TARGET_ANTIGRAVITY" -eq 1 ]; then
         check_running "Antigravity" "antigravity"
@@ -119,6 +173,14 @@ if [ "$FORCE" -ne 1 ]; then
 
     if [ "$TARGET_CLAUDE" -eq 1 ]; then
         check_running "Claude Code" "claude"
+    fi
+
+    if [ "$TARGET_OPENCODE" -eq 1 ]; then
+        check_running "OpenCode" "opencode"
+    fi
+
+    if [ "$TARGET_OPENCLAW" -eq 1 ]; then
+        check_running "OpenClaw" "openclaw"
     fi
 fi
 
@@ -189,6 +251,21 @@ if [ "$TARGET_CLAUDE" -eq 1 ]; then
     clean_dir_contents "$HOME/.claude/todos"
     clean_dir_contents "$HOME/.claude/debug"
     clean_file "$HOME/.claude/history.jsonl"
+fi
+
+if [ "$TARGET_OPENCODE" -eq 1 ]; then
+    echo -e "\n[OpenCode] Cleaning conversation cache..."
+    OPENCODE_DATA_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+    OPENCODE_STORAGE="$OPENCODE_DATA_ROOT/storage"
+    for relative in session message part todo session_share session_diff agent-usage-reminder directory-readme; do
+        clean_dir_contents "$OPENCODE_STORAGE/$relative"
+    done
+    clean_opencode_db "$OPENCODE_DATA_ROOT/opencode.db"
+fi
+
+if [ "$TARGET_OPENCLAW" -eq 1 ]; then
+    echo -e "\n[OpenClaw] Cleaning conversation cache..."
+    clean_openclaw_session_dirs
 fi
 
 echo -e "\nDone!"

@@ -1,11 +1,23 @@
 /* Manager Panel 样式 - 完全独立于 cascade-panel */
 
+:root {
+    --manager-panel-code-font-size: max(
+        var(--manager-panel-font-size, var(--vscode-font-size, 13px)),
+        var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
+    );
+}
+
 /* 代码块等宽字体 */
 pre,
 pre .code-block,
 pre .line-content,
-pre code {
+pre code,
+[class*="language-"],
+[class*="language-"] .code-block,
+[class*="language-"] .line-content,
+[aria-label^="highlighted-code"] {
     font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace !important;
+    font-size: var(--manager-panel-code-font-size) !important;
 }
 
 /* 字体大小自定义 */

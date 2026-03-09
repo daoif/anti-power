@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v3.2.3-blue.svg" alt="版本">
+    <img src="https://img.shields.io/badge/版本-v3.3.0-blue.svg" alt="版本">
   </a>
   <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/支持_Antigravity-v1.19.6-green.svg" alt="Antigravity">
+    <img src="https://img.shields.io/badge/支持_Antigravity-v1.20.4-green.svg" alt="Antigravity">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/协议-MIT-orange.svg" alt="开源协议">
@@ -42,8 +42,9 @@ Anti-Power 以补丁方式增强 Antigravity 的侧边栏和 Manager 窗口, 提
 | **数学公式渲染** | 支持 `$...$` 行内公式和 `$$...$$` 块级公式 |
 | **一键复制** | 侧边栏与 Manager 提供 Copy 按钮, 自动转 Markdown |
 | **表格颜色修复** | 修复深色主题下表格文字不可见问题 |
-| **Manager 布局调节** | 支持对话宽度与字号调节 |
+| **Manager 布局调节** | 支持对话宽度与字号调节, 代码块字号也会同步适配 |
 | **悬浮复制按钮** | 右上角悬停按钮 + 右下角常驻按钮, 方便随时复制 |
+| **对话浏览器** | 支持查看与删除 Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的本地对话 |
 
 ### 复制功能
 
@@ -57,7 +58,8 @@ Anti-Power 以补丁方式增强 Antigravity 的侧边栏和 Manager 窗口, 提
 - **多语言支持**: 支持切换中英文界面
 - **深浅色主题**: 支持切换深/浅色模式
 - **路径检测**: 自动识别 IDE 目录, 安装流程简单省心
-- **清理对话**: 支持 Windows/macOS/Linux 清理对话缓存
+- **对话浏览**: 支持查看与批量删除 Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的本地对话
+- **清理对话**: 支持 Windows/macOS/Linux 清理 Antigravity, Gemini CLI, Codex, Claude Code, OpenCode, OpenClaw 的对话缓存
 
 ---
 
@@ -148,7 +150,7 @@ sudo ./anti-power.sh
 
 ## 📋 版本信息
 
-当前版本: **v3.2.3** | 支持 Antigravity: **v1.19.6**
+当前版本: **v3.3.0** | 支持 Antigravity: **v1.20.4**
 
 完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
 

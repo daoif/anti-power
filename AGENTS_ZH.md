@@ -37,7 +37,9 @@
 
 - `patcher/patches/`: 注入到 Antigravity 的补丁源文件 (HTML/JS/CSS).
 - `patcher/src-tauri/`: 安装器后端逻辑 (路径检测, 备份/写入, 配置).
+- `patcher/src-tauri/src/commands/sessions.rs`: 对话浏览相关后端, 负责 Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的会话扫描/读取/删除.
 - `patcher/src/`: 安装器前端 UI (功能开关, 安装/卸载按钮).
+- `patcher/src/components/SessionViewer.vue`: 安装器中的对话浏览器界面.
 - `.github/workflows/`: 构建与发布流水线 (包含 macOS Universal 构建产物).
 - `docs/`: 开发, 发布, 结构, 已知问题与截图 (见 `docs/README.md`).
 - `docs/guides/developer-guide.md`: 完整的中文开发者文档, 包含 DOM 结构, 代码规范, 开发流程.
@@ -85,7 +87,7 @@
   - 解决: 使用提权 PowerShell `Set-Content -Encoding UTF8` 直接写入, 或先写 ASCII 再分段追加.
 - 写入 `patcher/patches/` 或清理 `tests/` 在沙箱下可能 `Access denied`, 需要使用提权命令执行写入/删除.
 
-## 近期变更 (v2.3.1 - v3.2.3)
+## 近期变更 (v2.3.1 - v3.3.0)
 
 - macOS/Linux 跨平台支持 + 路径规范化与检测; Unix 提权安装流程 (sudo/pkexec)
 - 发布产物支持 macOS Universal (Intel/Apple Silicon)
@@ -97,3 +99,5 @@
 - Unix 提权安装与清理脚本改为唯一临时路径并自动回收, 卸载恢复后同步清理 `.bak` 备份残留
 - Windows 清理后端新增 `sqlite3` 可执行文件自动解析, 覆盖 PATH/Chocolatey/Git for Windows/Scoop/WinGet 常见安装来源, 降低 sqlite3 缺失导致的清理失败
 - 安装器启动路径恢复逻辑优化: 优先规范化已保存路径并刷新状态, 自动检测回退失败时保留已保存路径
+- 安装器新增本地对话浏览器, 清理工具新增 OpenCode, OpenClaw 支持
+- 侧边栏与 Manager 的代码块字号改为跟随面板/编辑器字号设置, 提升显示一致性

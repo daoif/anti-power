@@ -9,11 +9,13 @@ import FeatureCard from "./components/FeatureCard.vue";
 import ManagerFeatureCard from "./components/ManagerFeatureCard.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
+import SessionViewer from "./components/SessionViewer.vue";
+import FlowBackground from "./components/FlowBackground.vue";
 
 const { t, locale } = useI18n();
 
 // 应用版本号
-const APP_VERSION = "3.2.3";
+const APP_VERSION = "3.3.0";
 // GitHub 仓库地址
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
@@ -38,6 +40,8 @@ const isInstalled = ref(false);
 const showAbout = ref(false);
 // 是否显示确认弹窗
 const showConfirm = ref(false);
+// 是否显示对话记录查看器
+const showSessionViewer = ref(false);
 // 当前平台标识
 const platform = navigator.platform.toLowerCase();
 // 是否支持清理功能
@@ -76,6 +80,8 @@ const defaultTargets = {
   gemini: false,
   codex: false,
   claude: false,
+  opencode: false,
+  openclaw: false,
 };
 const cleanTargets = ref({ ...defaultTargets });
 
@@ -111,6 +117,8 @@ const cleanTargetLabels = computed(() => {
   if (cleanTargets.value.gemini) labels.push(t('cleanTool.targets.gemini'));
   if (cleanTargets.value.codex) labels.push(t('cleanTool.targets.codex'));
   if (cleanTargets.value.claude) labels.push(t('cleanTool.targets.claude'));
+  if (cleanTargets.value.opencode) labels.push(t('cleanTool.targets.opencode'));
+  if (cleanTargets.value.openclaw) labels.push(t('cleanTool.targets.openclaw'));
   return labels;
 });
 
@@ -525,6 +533,7 @@ onMounted(async () => {
 
 <template>
   <div class="app-wrapper">
+    <FlowBackground />
     <TitleBar :title="$t('app.title')" @openAbout="showAbout = true" />
     
     <main class="app-container">
@@ -612,19 +621,33 @@ onMounted(async () => {
                   <input type="checkbox" v-model="cleanTargets.claude" :disabled="isCleaning || !cleanEnabled" />
                   <span>{{ $t('cleanTool.targets.claude') }}</span>
                 </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.opencode" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.opencode') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.openclaw" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.openclaw') }}</span>
+                </label>
                 <p v-if="!hasAnyCleanTarget" class="clean-target-hint">
                   {{ $t('cleanTool.targetHint') }}
                 </p>
               </div>
-              <div class="clean-actions">
-                <button 
+              <div class="clean-actions clean-actions-with-session">
+                <button
+                  @click="showSessionViewer = true"
+                  class="secondary-btn session-viewer-btn"
+                >
+                  {{ $t('sessionViewer.openButton') }}
+                </button>
+                <button
                   @click="runAntiClean(false)"
                   :disabled="isCleanActionDisabled"
                   class="secondary-btn"
                 >
                   {{ isCleaning ? $t('cleanTool.cleaning') : $t('cleanTool.cleanCache') }}
                 </button>
-                <button 
+                <button
                   @click="runAntiClean(true)"
                   :disabled="isCleanActionDisabled"
                   class="secondary-btn danger"
@@ -669,19 +692,33 @@ onMounted(async () => {
                   <input type="checkbox" v-model="cleanTargets.claude" :disabled="isCleaning || !cleanEnabled" />
                   <span>{{ $t('cleanTool.targets.claude') }}</span>
                 </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.opencode" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.opencode') }}</span>
+                </label>
+                <label class="clean-target-option">
+                  <input type="checkbox" v-model="cleanTargets.openclaw" :disabled="isCleaning || !cleanEnabled" />
+                  <span>{{ $t('cleanTool.targets.openclaw') }}</span>
+                </label>
                 <p v-if="!hasAnyCleanTarget" class="clean-target-hint">
                   {{ $t('cleanTool.targetHint') }}
                 </p>
               </div>
-              <div class="clean-actions">
-                <button 
+              <div class="clean-actions clean-actions-with-session">
+                <button
+                  @click="showSessionViewer = true"
+                  class="secondary-btn session-viewer-btn"
+                >
+                  {{ $t('sessionViewer.openButton') }}
+                </button>
+                <button
                   @click="runAntiClean(false)"
                   :disabled="isCleanActionDisabled"
                   class="secondary-btn"
                 >
                   {{ isCleaning ? $t('cleanTool.cleaning') : $t('cleanTool.cleanCache') }}
                 </button>
-                <button 
+                <button
                   @click="runAntiClean(true)"
                   :disabled="isCleanActionDisabled"
                   class="secondary-btn danger"
@@ -720,6 +757,11 @@ onMounted(async () => {
       @cancel="showConfirm = false"
     />
 
+    <SessionViewer
+      :show="showSessionViewer"
+      @close="showSessionViewer = false"
+    />
+
     <!-- Toast 提示 -->
     <Transition name="toast">
       <div v-if="showToastFlag" class="toast">
@@ -731,6 +773,7 @@ onMounted(async () => {
 
 <style scoped>
 .app-wrapper {
+  position: relative;
   height: 100vh;
   min-width: 420px;
   display: flex;
@@ -742,6 +785,8 @@ onMounted(async () => {
 }
 
 .app-container {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto; /* 滚动条在这里，且容器全宽 */
   min-height: 0;
@@ -998,6 +1043,14 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+}
+
+.clean-actions-with-session {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.session-viewer-btn {
+  margin-top: 0;
 }
 
 /* 主操作按钮 */

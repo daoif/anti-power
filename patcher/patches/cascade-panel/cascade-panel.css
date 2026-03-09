@@ -1,6 +1,10 @@
 /* Base layout reset */
 :root {
     --cascade-panel-font-size: var(--vscode-font-size, 13px);
+    --cascade-panel-code-font-size: max(
+        var(--cascade-panel-font-size, var(--vscode-font-size, 13px)),
+        var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
+    );
 }
 
 html {
@@ -35,8 +39,10 @@ pre:not(.inline) .line-content,
 pre:not(.inline) code,
 [class*="language-"],
 [class*="language-"] .code-block,
-[class*="language-"] .line-content {
+[class*="language-"] .line-content,
+[aria-label^="highlighted-code"] {
     font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace !important;
+    font-size: var(--cascade-panel-code-font-size) !important;
 }
 
 /* 复制按钮基础样式 - 使用蓝色主题 */
