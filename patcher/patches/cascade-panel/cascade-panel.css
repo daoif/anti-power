@@ -1,8 +1,8 @@
 /* Base layout reset */
 :root {
     --cascade-panel-font-size: var(--vscode-font-size, 13px);
-    --cascade-panel-code-font-size: max(
-        var(--cascade-panel-font-size, var(--vscode-font-size, 13px)),
+    --cascade-panel-code-font-size: var(
+        --cascade-panel-font-size,
         var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
     );
 }

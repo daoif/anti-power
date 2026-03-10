@@ -1,8 +1,8 @@
 /* Modern sidebar styles are independent of the legacy Cascade panel */
 
 :root {
-    --sidebar-panel-code-font-size: max(
-        var(--sidebar-panel-font-size, var(--vscode-font-size, 13px)),
+    --sidebar-panel-code-font-size: var(
+        --sidebar-panel-font-size,
         var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
     );
 }

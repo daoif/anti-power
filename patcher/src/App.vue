@@ -14,7 +14,7 @@ import FlowBackground from "./components/FlowBackground.vue";
 
 const { t, locale } = useI18n();
 
-const APP_VERSION = "3.3.0";
+const APP_VERSION = "3.3.1";
 const GITHUB_URL = "https://github.com/daoif/anti-power";
 
 type SidebarVariant = 'legacy' | 'modern';

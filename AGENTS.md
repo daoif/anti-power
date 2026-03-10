@@ -87,7 +87,7 @@ English | [中文](AGENTS_ZH.md)
   - Solution: Use elevated PowerShell `Set-Content -Encoding UTF8` to write directly, or write ASCII first then append in segments.
 - Writing to `patcher/patches/` or cleaning `tests/` may get `Access denied` in sandbox, need elevated commands for write/delete.
 
-## Recent Changes (v2.3.1 - v3.3.0)
+## Recent Changes (v2.3.1 - v3.3.1)
 
 - Cross-platform support (macOS/Linux) + path normalization/detection; Unix privileged install flow (sudo/pkexec)
 - macOS Universal Build artifacts in release pipeline
@@ -100,4 +100,4 @@ English | [中文](AGENTS_ZH.md)
 - Windows clean backend now auto-resolves `sqlite3` executable from PATH/Chocolatey/Git for Windows/Scoop/WinGet, reducing sqlite3-missing failures
 - Installer startup path restore now normalizes saved paths first, refreshes state first, and keeps saved paths when fallback auto-detection fails
 - Installer adds a Session Viewer for local conversation records, and the clean tool now includes OpenCode and OpenClaw
-- Sidebar and Manager code block font sizes now follow panel/editor font-size settings for more consistent readability
+- Sidebar and Manager code block font sizes now follow the panel custom font size, with editor font size as the fallback when no custom size is set
