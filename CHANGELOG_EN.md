@@ -6,6 +6,17 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.3.1 (2026-03-10)
+
+### Fixes
+- Fixed the code-block font-size regression in the modern Sidebar, Manager, and legacy Sidebar. When the panel custom font size is smaller than the editor font size, code blocks now respect the panel font size instead of being locked to the larger editor size
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.3.1
+- Updated supported Antigravity version in README to v1.20.5
+
+---
+
 ## v3.3.0 (2026-03-09)
 
 ### New Features

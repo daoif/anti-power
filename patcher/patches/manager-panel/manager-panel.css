@@ -1,8 +1,8 @@
 /* Manager Panel 样式 - 完全独立于 cascade-panel */
 
 :root {
-    --manager-panel-code-font-size: max(
-        var(--manager-panel-font-size, var(--vscode-font-size, 13px)),
+    --manager-panel-code-font-size: var(
+        --manager-panel-font-size,
         var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
     );
 }

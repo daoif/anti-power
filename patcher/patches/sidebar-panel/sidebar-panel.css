@@ -1,8 +1,8 @@
 /* Sidebar Panel 样式 - 完全独立于 cascade-panel */
 
 :root {
-    --sidebar-panel-code-font-size: max(
-        var(--sidebar-panel-font-size, var(--vscode-font-size, 13px)),
+    --sidebar-panel-code-font-size: var(
+        --sidebar-panel-font-size,
         var(--vscode-editor-font-size, var(--vscode-font-size, 13px))
     );
 }

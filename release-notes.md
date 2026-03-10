@@ -1,38 +1,26 @@
-# Release Notes / 发布说明 (v3.3.0)
+# Release Notes / 发布说明 (v3.3.1)
 
-## 新功能
+## 修复
 
-- 安装器新增对话浏览器, 支持查看与删除 Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的本地对话记录
-- 支持批量选择并删除多条对话, 便于集中清理历史记录
-
-## 优化
-
-- 清理工具新增 OpenCode 与 OpenClaw 支持, 清理范围覆盖更多常见 AI 工具
-- 侧边栏与 Manager 的代码块字号现在会跟随面板字号与编辑器字号, 提升不同字号配置下的代码可读性
-- 补充高亮代码节点样式覆盖, 统一旧版侧边栏, 新版侧边栏与 Manager 的代码显示效果
+- 修复侧边栏, Manager 与旧版侧边栏中代码块字号的回归问题
+- 当面板自定义字号小于编辑器字号时, 代码块现在会优先跟随面板字号, 不再被更大的编辑器字号锁定
 
 ## 文档
 
-- README/Changelog/Release Notes 同步至 v3.3.0
-- README 支持的 Antigravity 版本更新至 v1.20.4
+- README/Changelog/Release Notes 同步至 v3.3.1
+- README 支持的 Antigravity 版本更新至 v1.20.5
 
 ---
 
-## New Features
+## Fixes
 
-- Added a Session Viewer to the installer for viewing and deleting local conversations from Claude Code, Codex, Gemini CLI, OpenCode, and OpenClaw.
-- Added multi-select batch deletion for sessions to make history cleanup faster.
-
-## Improvements
-
-- Added OpenCode and OpenClaw targets to the cleaning tool, expanding coverage across common AI tools.
-- Code block font size in the Sidebar and Manager now follows the panel font size and editor font size for better readability under custom size settings.
-- Expanded highlighted-code style coverage so legacy Sidebar, modern Sidebar, and Manager keep consistent code rendering.
+- Fixed the code-block font-size regression in the modern Sidebar, Manager, and legacy Sidebar
+- When the panel custom font size is smaller than the editor font size, code blocks now respect the panel font size instead of being locked to the larger editor size
 
 ## Documentation
 
-- Synced README/Changelog/Release Notes to v3.3.0.
-- Updated supported Antigravity version in README to v1.20.4.
+- Synced README/Changelog/Release Notes to v3.3.1.
+- Updated supported Antigravity version in README to v1.20.5.
 
 ---
 
