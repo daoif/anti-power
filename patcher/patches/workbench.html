@@ -37,6 +37,7 @@
 				style-src
 					'self'
 					'unsafe-inline'
+					https://fonts.googleapis.com
 					https://cdn.jsdelivr.net
 				;
 				connect-src
@@ -53,6 +54,7 @@
 					vscode-remote-resource:
 					vscode-managed-remote-resource:
 					https://*.vscode-unpkg.net
+					https://fonts.gstatic.com
 					https://cdn.jsdelivr.net
 				;
 				require-trusted-types-for
@@ -65,18 +67,20 @@
 					defaultWorkerFactory
 					diffEditorWidget
 					diffReview
-					domLineBreaksComputer
 					dompurify
 					dompurifyMermaid
+					domLineBreaksComputer
 					editorGhostText
 					editorViewLayer
 					mermaid
+					notebookChatEditController
 					notebookRenderer
+					renderCodeBlock
+					richScreenReaderContent
+					sidebarPanel
 					stickyScrollViewLayer
 					tokenizeToString
-					notebookChatEditController
-					richScreenReaderContent
-					renderCodeBlock
+					google#safe
 				;
 		" />
 
