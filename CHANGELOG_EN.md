@@ -6,6 +6,17 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v3.3.2 (2026-03-13)
+
+### Fixes
+- Fixed abnormal Manager UI rendering on the latest Antigravity (icons showing raw ligature names and layout issues) by syncing the patched `workbench-jetski-agent.html` CSP/Trusted Types allowlists to upstream
+- Synced modern Sidebar `workbench.html` CSP allowlists to upstream to prevent similar font/icon resource regressions
+
+### Documentation
+- Synced README/Changelog/Release Notes to v3.3.2
+
+---
+
 ## v3.3.1 (2026-03-10)
 
 ### Fixes
