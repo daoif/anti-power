@@ -1,26 +1,24 @@
-# Release Notes / 发布说明 (v3.3.1)
+# Release Notes / 发布说明 (v3.3.2)
 
 ## 修复
 
-- 修复侧边栏, Manager 与旧版侧边栏中代码块字号的回归问题
-- 当面板自定义字号小于编辑器字号时, 代码块现在会优先跟随面板字号, 不再被更大的编辑器字号锁定
+- 修复最新 Antigravity + 最新插件激活后 Manager 显示异常 (图标文字化, 布局异常), 同步 `workbench-jetski-agent.html` 入口模板的 CSP/Trusted Types 与上游保持一致
+- 同步新版侧边栏 `workbench.html` 入口模板 CSP 白名单, 避免同类字体/图标资源策略变更导致的异常
 
 ## 文档
 
-- README/Changelog/Release Notes 同步至 v3.3.1
-- README 支持的 Antigravity 版本更新至 v1.20.5
+- README/Changelog/Release Notes 同步至 v3.3.2
 
 ---
 
 ## Fixes
 
-- Fixed the code-block font-size regression in the modern Sidebar, Manager, and legacy Sidebar
-- When the panel custom font size is smaller than the editor font size, code blocks now respect the panel font size instead of being locked to the larger editor size
+- Fixed abnormal Manager UI rendering on the latest Antigravity (icons showing raw ligature names and layout issues) by syncing the patched `workbench-jetski-agent.html` CSP/Trusted Types allowlists to upstream
+- Synced modern Sidebar `workbench.html` CSP allowlists to upstream to prevent similar font/icon resource regressions
 
 ## Documentation
 
-- Synced README/Changelog/Release Notes to v3.3.1.
-- Updated supported Antigravity version in README to v1.20.5.
+- Synced README/Changelog/Release Notes to v3.3.2.
 
 ---
 

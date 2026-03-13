@@ -6,6 +6,17 @@
 
 ---
 
+## v3.3.2 (2026-03-13)
+
+### 修复
+- 修复最新 Antigravity + 最新插件激活后 Manager 显示异常 (图标文字化, 布局异常), 同步 `workbench-jetski-agent.html` 入口模板的 CSP/Trusted Types 与上游保持一致
+- 同步新版侧边栏 `workbench.html` 入口模板 CSP 白名单, 避免同类字体/图标资源策略变更导致的异常
+
+### 文档
+- README/Changelog/Release Notes 同步至 v3.3.2
+
+---
+
 ## v3.3.1 (2026-03-10)
 
 ### 修复

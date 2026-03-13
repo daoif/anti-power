@@ -21,10 +21,14 @@
 					data:
 					blob:
 					https://www.gstatic.com
+					https://127.0.0.1:*
+					vscode-remote-resource:
+					vscode-managed-remote-resource:
 				;
 				frame-src
 					'self'
 					vscode-webview:
+					data:
 				;
 				script-src
 					'self'
@@ -35,12 +39,14 @@
 				style-src
 					'self'
 					'unsafe-inline'
+					https://fonts.googleapis.com
 					https://cdn.jsdelivr.net
 				;
 				connect-src
 					'self'
 					data:
 					http://127.0.0.1:*
+					http://localhost:*
 					http://jetski-unleash.corp.goog/
 					http://antigravity-unleash.goog/
 					https:
@@ -51,8 +57,33 @@
 					vscode-remote-resource:
 					vscode-managed-remote-resource:
 					https://*.vscode-unpkg.net
+					https://fonts.gstatic.com
 					https://cdn.jsdelivr.net
-			" />
+				;
+				require-trusted-types-for
+					'script'
+				;
+				trusted-types
+					amdLoader
+					cellRendererEditorText
+					defaultWorkerFactory
+					diffEditorWidget
+					diffReview
+					domLineBreaksComputer
+					dompurify
+					dompurifyMermaid
+					editorGhostText
+					editorViewLayer
+					managerPanel
+					mermaid
+					notebookRenderer
+					stickyScrollViewLayer
+					tokenizeToString
+					notebookChatEditController
+					renderCodeBlock
+					google#safe
+				;
+		" />
 
 	<!-- Jetski Agent CSS -->
 	<link rel="stylesheet" href="../../../../tw-base.tailwind.css">
@@ -60,7 +91,6 @@
 
 	<!-- Anti-Power Manager Panel CSS -->
 	<link rel="stylesheet" href="./manager-panel/manager-panel.css">
-
 </head>
 
 <body aria-label="">
