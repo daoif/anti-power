@@ -150,7 +150,7 @@ sudo ./anti-power.sh
 
 ## 📋 版本信息
 
-当前版本: **v3.3.2** | 支持 Antigravity: **v1.20.5**
+当前版本: **v3.3.2** | 支持 Antigravity: **v1.22.2**
 
 完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
 
