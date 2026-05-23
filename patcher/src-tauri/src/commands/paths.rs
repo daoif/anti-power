@@ -34,11 +34,16 @@ pub fn resources_app_root(root: &Path) -> PathBuf {
 }
 
 /// Check whether the path is a valid Antigravity installation root
-/// Accept either sidebar entry point when validating the installation
+/// Require product.json and either sidebar entry point
+/// Modern installations may omit the legacy `extensions/antigravity` directory
 pub fn is_valid_antigravity_root(root: &Path) -> bool {
     let app_root = resources_app_root(root);
 
-    let has_antigravity_extension = app_root.join("extensions").join("antigravity").exists();
+    let has_legacy_sidebar_entry = app_root
+        .join("extensions")
+        .join("antigravity")
+        .join("cascade-panel.html")
+        .exists();
     let has_workbench_entry = app_root
         .join("out")
         .join("vs")
@@ -49,7 +54,7 @@ pub fn is_valid_antigravity_root(root: &Path) -> bool {
         .exists();
     let has_product_json = app_root.join("product.json").exists();
 
-    has_antigravity_extension && has_workbench_entry && has_product_json
+    has_product_json && (has_legacy_sidebar_entry || has_workbench_entry)
 }
 
 /// Normalize the Antigravity installation path

@@ -1,7 +1,11 @@
 /** Observe content mutations and dispatch enabled enhancements */
 
 import { CONTENT_SELECTOR } from './constants.js';
-import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';
+import {
+    ensureContentCopyButton,
+    addFeedbackCopyButtons,
+    bindMathSelectionCopyHandler,
+} from './copy.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
@@ -153,6 +157,9 @@ const initClassic = () => {
  */
 export const start = (userConfig = {}) => {
     config = { ...config, ...userConfig };
+    if (config.math) {
+        bindMathSelectionCopyHandler();
+    }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {

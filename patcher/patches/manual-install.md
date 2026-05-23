@@ -39,7 +39,7 @@
 ## Windows (手动安装)
 
 1. 关闭所有 Antigravity 窗口
-2. 进入安装目录:
+2. 进入安装目录 (新版常见为 `Antigravity IDE`, 旧版为 `Antigravity`):
    - ...\resources\app\extensions\antigravity\
    - ...\resources\app\out\vs\code\electron-browser\workbench\
 3. 根据 `product.json` 的 `ideVersion` 选择侧边栏入口并替换:
@@ -89,10 +89,11 @@
 ## macOS (手动安装)
 
 1. 关闭所有 Antigravity 窗口
-2. 打开 Applications, 右键 Antigravity, 选择 显示包内容
+2. 打开 Applications, 右键 Antigravity IDE (或旧版 Antigravity), 选择 显示包内容
 3. 进入目录:
-   - Antigravity.app/Contents/Resources/app/extensions/antigravity/
-   - Antigravity.app/Contents/Resources/app/out/vs/code/electron-browser/workbench/
+   - Antigravity IDE.app/Contents/Resources/app/extensions/antigravity/
+   - Antigravity IDE.app/Contents/Resources/app/out/vs/code/electron-browser/workbench/
+   - 旧版路径仍可能是 Antigravity.app/Contents/Resources/app/...
 4. 根据 `product.json` 的 `ideVersion` 选择侧边栏入口并替换:
    - 若 `< 1.18.3`:
      - 备份 cascade-panel.html -> cascade-panel.html.bak

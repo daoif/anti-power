@@ -5,8 +5,39 @@
 
 // Selectors for Antigravity Sidebar message content
 export const PANEL_SELECTOR = '.antigravity-agent-side-panel';
-export const CONTENT_SELECTOR = '.leading-relaxed.select-text';
-export const SECTION_SELECTOR = '[data-section-index]';
+export const CONTENT_SELECTOR = [
+    '.leading-relaxed.select-text',
+    '.whitespace-pre-wrap.select-text',
+    '.select-text.whitespace-pre-wrap',
+    '[data-testid*="markdown" i]',
+    '[class*="markdown" i]',
+].join(',');
+export const SECTION_SELECTOR = [
+    '[data-section-index]',
+    '[data-testid*="message" i]',
+    '[data-testid*="turn" i]',
+    '[class*="message" i]',
+].join(',');
+export const STRUCTURED_CONTENT_SELECTOR = [
+    'p',
+    'blockquote',
+    'table',
+    'ol',
+    'ul',
+    'pre',
+    'code',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    '.code-block',
+    '.line-content',
+    '.katex',
+    'mjx-container',
+    '[class*="language-"]',
+].join(',');
 
 export const BOUND_ATTR = 'data-sidebar-copy-bound';
 export const MATH_ATTR = 'data-sidebar-math-rendered';
