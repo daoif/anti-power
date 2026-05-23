@@ -2,31 +2,22 @@
   <img src="docs/assets/images/LOGO.png" alt="Anti-Power" width="120">
 </p>
 
-<h1 align="center">Anti-Power 增强补丁</h1>
+<h1 align="center">Anti-Power</h1>
 
 <p align="center">
-  <a href="https://github.com/daoif/anti-power/releases">
-    <img src="https://img.shields.io/badge/版本-v3.3.2-blue.svg" alt="版本">
-  </a>
-  <a href="https://codeium.com/antigravity">
-    <img src="https://img.shields.io/badge/支持_Antigravity-v1.22.2-green.svg" alt="Antigravity">
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/协议-MIT-orange.svg" alt="开源协议">
-  </a>
+  <a href="https://github.com/daoif/anti-power/releases"><img src="https://img.shields.io/badge/版本-v4.0.0-blue.svg" alt="版本"></a>
+  <a href="https://antigravity.google/docs/ide-getting-started"><img src="https://img.shields.io/badge/支持_Antigravity_IDE-v2.0.6-green.svg" alt="Antigravity IDE"></a>
 </p>
 
 <p align="center">
   中文 | <a href="README_EN.md">English</a>
 </p>
 
-> **Antigravity AI IDE** 侧边栏和 Manager 窗口补丁。
+> 为 **Antigravity IDE** 的侧边栏和 Manager 提供 Markdown 复制, LaTeX 和 Mermaid 渲染, 以及深色主题下的表格配色修复.
 
 <p align="center">
   <a href="https://qm.qq.com/q/AHUKoyLVKg">QQ 交流群: 993975349</a>
 </p>
-
----
 
 ## 功能
 
@@ -54,13 +45,9 @@
 - 使用**对话浏览器**查看和批量删除 Claude Code、Codex、Gemini CLI、OpenCode 和 OpenClaw 的本地对话
 - 清理 Windows、macOS 和 Linux 上 Antigravity、Gemini CLI、Codex、Claude Code、OpenCode 和 OpenClaw 的对话缓存
 
----
-
 ## 效果截图
 
-查看[效果截图](docs/reference/screenshots.md)。
-
----
+[效果截图](docs/reference/screenshots.md)
 
 ## 安装
 
@@ -118,7 +105,6 @@ sudo ./anti-power.sh
 
 如需手动安装, 请参考 [manual-install.md](patcher/patches/manual-install.md).
 
----
 </details>
 
 ## 使用说明
@@ -126,40 +112,28 @@ sudo ./anti-power.sh
 - **更新覆盖**: Antigravity 更新可能覆盖补丁. 若被覆盖, 请重新安装.
 - **版本兼容**: 使用前请核对当前 Antigravity 版本是否与支持版本一致.
 - **备份文件**: 替换前先备份原文件, 以便恢复.
-- **已知问题**: 详见 [known-issues.md](docs/reference/known-issues.md)
-
----
 
 ## 文档
 
 - [文档索引与项目结构](docs/README.md)
-- 效果截图: [screenshots.md](docs/reference/screenshots.md)
 - 已知问题: [known-issues.md](docs/reference/known-issues.md)
 - 开发者文档: [developer-guide.md](docs/guides/developer-guide.md) | [English](docs/guides/developer-guide_EN.md)
 - 发布指南: [release-guide.md](docs/guides/release-guide.md)
 
----
-
 ## 版本与兼容性
 
-当前版本: **v3.3.2** | 支持 Antigravity: **v1.22.2**
+当前版本: **v4.0.0** | 支持 Antigravity IDE: **v2.0.6**
 
 完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
-
----
 
 ## 表格颜色修复参考
 
 - **视频教程**: [Antigravity 完美深色主题修改指南](https://www.bilibili.com/video/BV1vTrgBXEA1)
 - **图文教程**: [表格文字看不清的终极解决方案](https://dpit.lib00.com/zh/content/1192/antigravity-perfect-dark-theme-modification-guide-fix-invisible-table-text)
 
----
-
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request.
-
----
 
 ## 致谢
 
@@ -168,8 +142,6 @@ sudo ./anti-power.sh
 - [@Sophomoresty](https://github.com/Sophomoresty)
 - [@Wusir7355608](https://github.com/Wusir7355608)
 - [@aiaiads](https://github.com/aiaiads)
-
----
 
 ## 许可证
 

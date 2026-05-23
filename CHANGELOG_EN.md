@@ -4,6 +4,26 @@
 
 ---
 
+## v4.0.0 (2026-05-23)
+
+### New Features
+- Detects new `Antigravity IDE` install paths and data directory names on Windows, macOS, and Linux, including in install and cleanup scripts
+- Updated the supported version to `Antigravity IDE v2.0.6`
+
+### Improvements
+- Improved Sidebar/Manager message content discovery for newer DOM structures and reduced accidental binding inside inputs, buttons, and control areas
+- Copying a selection that contains KaTeX/MathJax formulas now restores their LaTeX source in both Sidebar variants and the Manager
+- Cleanup now also covers `.gemini/antigravity-ide` conversation cache directories
+
+### Fixes
+- Fixed overly strict install validation for newer IDE builds without the legacy `extensions/antigravity` directory
+
+### Documentation
+- Synced README/Changelog/Release Notes to v4.0.0
+- Updated the supported Antigravity IDE version in README to v2.0.6
+
+---
+
 ## v3.3.2 (2026-03-13)
 
 ### Fixes

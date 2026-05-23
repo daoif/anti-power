@@ -87,7 +87,7 @@
   - 解决: 使用提权 PowerShell `Set-Content -Encoding UTF8` 直接写入, 或先写 ASCII 再分段追加.
 - 写入 `patcher/patches/` 或清理 `tests/` 在沙箱下可能 `Access denied`, 需要使用提权命令执行写入/删除.
 
-## 近期变更 (v2.3.1 - v3.3.2)
+## 近期变更 (v2.3.1 - v4.0.0)
 
 - macOS/Linux 跨平台支持 + 路径规范化与检测; Unix 提权安装流程 (sudo/pkexec)
 - 发布产物支持 macOS Universal (Intel/Apple Silicon)
@@ -102,3 +102,5 @@
 - 安装器新增本地对话浏览器, 清理工具新增 OpenCode, OpenClaw 支持
 - 侧边栏与 Manager 的代码块字号改为跟随面板自定义字号, 并在未自定义时回退到编辑器字号
 - 同步 Manager/侧边栏入口 CSP 白名单与上游保持一致, 修复最新版 Antigravity 下图标/字体渲染异常
+- 安装器与脚本新增识别 `Antigravity IDE` 在 Windows/macOS/Linux 下的安装路径和数据目录, 并兼容新版缺少 legacy extension 目录的结构
+- 侧边栏/Manager 内容扫描兼容新版 DOM 结构, 避免误绑定输入框与控制区, 选区复制可从 KaTeX/MathJax 渲染结果还原 LaTeX
