@@ -278,17 +278,17 @@ fn install_patch_internal(
         .join("electron-browser")
         .join("workbench");
 
-    if !extensions_dir.exists() {
-        return Err(patch_text(locale, "patchBackend.errors.invalidInstallDir"));
-    }
-
     if !workbench_dir.exists() {
         return Err(patch_text(locale, "patchBackend.errors.managerDirMissing"));
     }
 
-    if let Some(dir) =
-        first_unwritable_dir(&[&extensions_dir, &workbench_dir, resources_root], locale)?
-    {
+    let sidebar_variant = detect_sidebar_patch_variant(resources_root);
+    let mut writable_checks = vec![workbench_dir.as_path(), resources_root];
+    if extensions_dir.exists() {
+        writable_checks.push(extensions_dir.as_path());
+    }
+
+    if let Some(dir) = first_unwritable_dir(&writable_checks, locale)? {
         return handle_privileged_or_error(
             PatchMode::Install,
             resources_root,
@@ -298,8 +298,6 @@ fn install_patch_internal(
             locale,
         );
     }
-
-    let sidebar_variant = detect_sidebar_patch_variant(resources_root);
 
     // 根据 enabled 状态处理侧边栏补丁
     if features.enabled {
@@ -389,11 +387,16 @@ fn uninstall_patch_internal(resources_root: &Path, locale: Option<&str>) -> Patc
         .join("electron-browser")
         .join("workbench");
 
-    if !extensions_dir.exists() {
-        return Err(patch_text(locale, "patchBackend.errors.invalidInstallDir"));
+    if !workbench_dir.exists() {
+        return Err(patch_text(locale, "patchBackend.errors.managerDirMissing"));
     }
 
-    if let Some(dir) = first_unwritable_dir(&[&extensions_dir, &workbench_dir], locale)? {
+    let mut writable_checks = vec![workbench_dir.as_path()];
+    if extensions_dir.exists() {
+        writable_checks.push(extensions_dir.as_path());
+    }
+
+    if let Some(dir) = first_unwritable_dir(&writable_checks, locale)? {
         return handle_privileged_or_error(
             PatchMode::Uninstall,
             resources_root,
@@ -686,6 +689,14 @@ pub fn read_manager_patch_config(
 
 /// 备份旧版侧边栏相关文件
 fn backup_legacy_sidebar_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
+    fs::create_dir_all(extensions_dir).map_err(|e| {
+        patch_with(
+            locale,
+            "patchBackend.errors.createDirFailed",
+            &[("detail", e.to_string())],
+        )
+    })?;
+
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");
     if cascade_panel.exists() && !cascade_backup.exists() {
@@ -1015,6 +1026,10 @@ fn write_manager_config_file(
 
 /// 恢复旧版侧边栏文件 (禁用补丁时调用)
 fn restore_legacy_sidebar_files(extensions_dir: &Path, locale: Option<&str>) -> PatchResult<()> {
+    if !extensions_dir.exists() {
+        return Ok(());
+    }
+
     // 恢复 cascade-panel.html
     let cascade_panel = extensions_dir.join("cascade-panel.html");
     let cascade_backup = extensions_dir.join("cascade-panel.html.bak");

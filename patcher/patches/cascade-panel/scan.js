@@ -13,7 +13,11 @@
  */
 
 import { CONTENT_SELECTOR } from './constants.js';
-import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';
+import {
+    ensureContentCopyButton,
+    addFeedbackCopyButtons,
+    bindMathSelectionCopyHandler,
+} from './copy.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
@@ -182,6 +186,9 @@ const initClassic = () => {
 export const start = (userConfig = {}) => {
     // 合并用户配置
     config = { ...config, ...userConfig };
+    if (config.math) {
+        bindMathSelectionCopyHandler();
+    }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {

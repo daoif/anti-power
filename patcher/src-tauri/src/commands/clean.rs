@@ -698,12 +698,21 @@ select count(*) from session;
 /// Windows: Antigravity 数据目录定位
 #[cfg(target_os = "windows")]
 fn resolve_antigravity_data_dir() -> Option<std::path::PathBuf> {
-    dirs::config_dir()
-        .map(|dir| dir.join("Antigravity"))
-        .or_else(|| {
-            std::env::var_os("APPDATA")
-                .map(|value| std::path::PathBuf::from(value).join("Antigravity"))
-        })
+    let base =
+        dirs::config_dir().or_else(|| std::env::var_os("APPDATA").map(std::path::PathBuf::from))?;
+    let candidates = [
+        base.join("Antigravity IDE"),
+        base.join("antigravity-ide"),
+        base.join("Antigravity"),
+        base.join(".antigravity-ide").join("antigravity-ide"),
+        base.join(".antigravity-ide"),
+    ];
+
+    candidates
+        .iter()
+        .find(|candidate| candidate.exists())
+        .cloned()
+        .or_else(|| Some(candidates[0].clone()))
 }
 
 #[cfg(target_os = "windows")]

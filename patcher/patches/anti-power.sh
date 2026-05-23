@@ -5,8 +5,8 @@
 # 2. sudo ./anti-power.sh
 #
 # 本脚本支持 macOS 和 Linux：
-# - macOS: /Applications/Antigravity.app/Contents/Resources/app
-# - Linux: /usr/share/antigravity/resources/app
+# - macOS: /Applications/Antigravity IDE.app/Contents/Resources/app 或 /Applications/Antigravity.app/Contents/Resources/app
+# - Linux: /usr/share/antigravity-ide/resources/app 或 /usr/share/antigravity/resources/app
 
 # 确保脚本在错误时停止
 set -e
@@ -50,13 +50,47 @@ OS_TYPE=$(uname -s)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES_DIR="$SCRIPT_DIR"
 
+first_existing_dir() {
+    local candidate
+    for candidate in "$@"; do
+        if [ -d "$candidate" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # 根据操作系统设置路径 (可被参数覆盖)
 if [ -z "$APP_PATH" ]; then
     if [ "$OS_TYPE" = "Darwin" ]; then
-        APP_PATH="/Applications/Antigravity.app/Contents/Resources/app"
+        APP_PATH="$(first_existing_dir \
+            "/Applications/Antigravity IDE.app/Contents/Resources/app" \
+            "/Applications/Antigravity.app/Contents/Resources/app" \
+            "$HOME/Applications/Antigravity IDE.app/Contents/Resources/app" \
+            "$HOME/Applications/Antigravity.app/Contents/Resources/app" \
+            || true)"
+        [ -z "$APP_PATH" ] && APP_PATH="/Applications/Antigravity IDE.app/Contents/Resources/app"
         echo "检测到 macOS 系统"
     elif [ "$OS_TYPE" = "Linux" ]; then
-        APP_PATH="/usr/share/antigravity/resources/app"
+        APP_PATH="$(first_existing_dir \
+            "/usr/share/antigravity-ide/resources/app" \
+            "/usr/share/Antigravity IDE/resources/app" \
+            "/usr/share/antigravity/resources/app" \
+            "/usr/share/Antigravity/resources/app" \
+            "/usr/local/share/antigravity-ide/resources/app" \
+            "/usr/local/share/Antigravity IDE/resources/app" \
+            "/usr/local/share/antigravity/resources/app" \
+            "/opt/antigravity-ide/resources/app" \
+            "/opt/Antigravity IDE/resources/app" \
+            "/opt/antigravity/resources/app" \
+            "/opt/Antigravity/resources/app" \
+            "/usr/lib/antigravity-ide/resources/app" \
+            "/usr/lib/antigravity/resources/app" \
+            "/usr/lib64/antigravity-ide/resources/app" \
+            "/usr/lib64/antigravity/resources/app" \
+            || true)"
+        [ -z "$APP_PATH" ] && APP_PATH="/usr/share/antigravity-ide/resources/app"
         echo "检测到 Linux 系统"
     else
         echo "错误: 不支持的操作系统 $OS_TYPE"

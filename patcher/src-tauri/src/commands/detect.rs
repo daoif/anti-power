@@ -132,9 +132,11 @@ fn try_registry() -> Option<String> {
     // 尝试 HKEY_LOCAL_MACHINE
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
 
-    // Antigravity 可能的注册表路径
+    // Antigravity / Antigravity IDE 可能的注册表路径
     let paths = [
+        r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity IDE",
         r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity",
+        r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity IDE",
         r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Antigravity",
     ];
 
@@ -166,8 +168,13 @@ fn try_registry() -> Option<String> {
 #[cfg(target_os = "windows")]
 fn try_common_paths_windows() -> Option<String> {
     let literal_paths = [
+        r"C:\Program Files\Antigravity IDE",
         r"C:\Program Files\Antigravity",
+        r"C:\Program Files (x86)\Antigravity IDE",
+        r"C:\Program Files (x86)\Antigravity",
+        r"D:\Program Files\Antigravity IDE",
         r"D:\Program Files\Antigravity",
+        r"E:\Program Files\Antigravity IDE",
         r"E:\Program Files\Antigravity",
     ];
 
@@ -179,6 +186,11 @@ fn try_common_paths_windows() -> Option<String> {
 
     // 检查用户本地目录
     if let Some(local_data) = dirs::data_local_dir() {
+        let user_path = local_data.join("Programs").join("Antigravity IDE");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
+        }
+
         let user_path = local_data.join("Programs").join("Antigravity");
         if let Some(normalized) = normalize_path(&user_path) {
             return Some(normalized);
@@ -192,6 +204,8 @@ fn try_common_paths_windows() -> Option<String> {
 #[cfg(target_os = "macos")]
 fn detect_macos() -> Option<String> {
     let standard_paths = [
+        "/Applications/Antigravity IDE.app",
+        "/Applications/Antigravity IDE.app/Contents",
         "/Applications/Antigravity.app",
         "/Applications/Antigravity.app/Contents",
     ];
@@ -204,6 +218,19 @@ fn detect_macos() -> Option<String> {
 
     // 检查用户 Applications 目录
     if let Some(home) = dirs::home_dir() {
+        let user_app = home.join("Applications").join("Antigravity IDE.app");
+        if let Some(normalized) = normalize_path(&user_app) {
+            return Some(normalized);
+        }
+
+        let user_app_contents = home
+            .join("Applications")
+            .join("Antigravity IDE.app")
+            .join("Contents");
+        if let Some(normalized) = normalize_path(&user_app_contents) {
+            return Some(normalized);
+        }
+
         let user_app = home.join("Applications").join("Antigravity.app");
         if let Some(normalized) = normalize_path(&user_app) {
             return Some(normalized);
@@ -225,12 +252,20 @@ fn detect_macos() -> Option<String> {
 #[cfg(target_os = "linux")]
 fn detect_linux() -> Option<String> {
     let standard_paths = [
+        "/usr/share/antigravity-ide",
+        "/usr/share/Antigravity IDE",
         "/usr/share/antigravity",
         "/usr/share/Antigravity",
+        "/usr/local/share/antigravity-ide",
+        "/usr/local/share/Antigravity IDE",
         "/usr/local/share/antigravity",
+        "/opt/antigravity-ide",
+        "/opt/Antigravity IDE",
         "/opt/antigravity",
         "/opt/Antigravity",
+        "/usr/lib/antigravity-ide",
         "/usr/lib/antigravity",
+        "/usr/lib64/antigravity-ide",
         "/usr/lib64/antigravity",
     ];
 
@@ -241,6 +276,16 @@ fn detect_linux() -> Option<String> {
     }
 
     if let Some(data_dir) = dirs::data_dir() {
+        let user_path = data_dir.join("antigravity-ide");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
+        }
+
+        let user_path = data_dir.join("Antigravity IDE");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
+        }
+
         let user_path = data_dir.join("antigravity");
         if let Some(normalized) = normalize_path(&user_path) {
             return Some(normalized);
@@ -248,6 +293,16 @@ fn detect_linux() -> Option<String> {
     }
 
     if let Some(local_data) = dirs::data_local_dir() {
+        let user_path = local_data.join("antigravity-ide");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
+        }
+
+        let user_path = local_data.join("Antigravity IDE");
+        if let Some(normalized) = normalize_path(&user_path) {
+            return Some(normalized);
+        }
+
         let user_path = local_data.join("antigravity");
         if let Some(normalized) = normalize_path(&user_path) {
             return Some(normalized);

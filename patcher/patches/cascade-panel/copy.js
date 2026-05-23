@@ -12,12 +12,203 @@
  * - 支持配置化（智能感应、按钮位置、按钮样式）
  */
 
-import { BOUND_ATTR, BUTTON_CLASS, BOTTOM_BUTTON_CLASS } from './constants.js';
+import { BOUND_ATTR, BUTTON_CLASS, BOTTOM_BUTTON_CLASS, COPY_BTN_CLASS } from './constants.js';
 import { CHECK_ICON_SVG, COPY_ICON_SVG } from './icons.js';
 import { extractFormattedContent } from './extract.js';
 import { captureRawText, isEditable, writeClipboard } from './utils.js';
 
 const copyTimers = new WeakMap();
+let mathSelectionCopyBound = false;
+
+const extractLatexFromMath = (mathEl) => {
+    const annotation = mathEl.querySelector('annotation[encoding="application/x-tex"]');
+    if (annotation) {
+        const latex = annotation.textContent;
+        const isDisplay = mathEl.closest('.katex-display') !== null;
+        return isDisplay ? `$$${latex}$$` : `$${latex}$`;
+    }
+
+    if (mathEl.tagName === 'MJX-CONTAINER') {
+        const ariaLabel = mathEl.getAttribute('aria-label');
+        if (ariaLabel) {
+            const isDisplay = mathEl.getAttribute('display') === 'true' ||
+                mathEl.classList.contains('MathJax_Display');
+            return isDisplay ? `$$${ariaLabel}$$` : `$${ariaLabel}$`;
+        }
+    }
+
+    return null;
+};
+
+const getElementForNode = (node) => {
+    if (!node) return null;
+    if (node.nodeType === Node.ELEMENT_NODE) return node;
+    if (node.nodeType === Node.DOCUMENT_NODE) return node.body || document.body;
+    return node.parentElement || null;
+};
+
+const isEditableSelection = (node) => {
+    const el = getElementForNode(node);
+    return !!el?.closest?.('[contenteditable="true"], textarea, input');
+};
+
+const rangeIntersectsNode = (range, node) => {
+    try {
+        return range.intersectsNode(node);
+    } catch {
+        return false;
+    }
+};
+
+const getMathElementForNode = (node) => {
+    const el = getElementForNode(node);
+    if (!el?.closest) return null;
+    if (el.matches?.('.katex, mjx-container')) return el;
+    return el.closest('.katex, mjx-container');
+};
+
+const getMathCopyBoundaryNode = (mathEl) => {
+    if (!mathEl?.closest) return mathEl;
+    return mathEl.closest('.katex-display, .katex-inline-wrapper, .katex-display-wrapper') || mathEl;
+};
+
+const collectIntersectingMathElements = (range) => {
+    const containerEl = getElementForNode(range.commonAncestorContainer);
+    if (!containerEl) return [];
+
+    const mathElements = new Set();
+    const ancestorMath = getMathElementForNode(range.commonAncestorContainer);
+    if (ancestorMath && rangeIntersectsNode(range, ancestorMath)) {
+        mathElements.add(ancestorMath);
+    }
+
+    if (containerEl.matches?.('.katex, mjx-container') && rangeIntersectsNode(range, containerEl)) {
+        mathElements.add(containerEl);
+    }
+
+    containerEl.querySelectorAll?.('.katex, mjx-container').forEach((mathEl) => {
+        if (rangeIntersectsNode(range, mathEl)) {
+            mathElements.add(mathEl);
+        }
+    });
+
+    return [...mathElements];
+};
+
+const isBoundaryInsideNode = (boundaryContainer, node) => {
+    const boundaryEl = getElementForNode(boundaryContainer);
+    return !!boundaryEl && (boundaryEl === node || node.contains(boundaryEl));
+};
+
+const expandRangeToWholeMath = (range, mathElements) => {
+    const expanded = range.cloneRange();
+
+    mathElements.forEach((mathEl) => {
+        const boundaryNode = getMathCopyBoundaryNode(mathEl);
+        if (!boundaryNode) return;
+        if (isBoundaryInsideNode(range.startContainer, boundaryNode)) {
+            expanded.setStartBefore(boundaryNode);
+        }
+        if (isBoundaryInsideNode(range.endContainer, boundaryNode)) {
+            expanded.setEndAfter(boundaryNode);
+        }
+    });
+
+    return expanded;
+};
+
+const stripPatchControls = (root) => {
+    root.querySelectorAll?.(
+        `.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .${COPY_BTN_CLASS}, .custom-copy-btn`
+    ).forEach((el) => el.remove());
+};
+
+const replaceRenderedMathWithLatex = (root) => {
+    root.querySelectorAll?.('.katex, mjx-container').forEach((mathEl) => {
+        const latex = extractLatexFromMath(mathEl);
+        if (latex) {
+            mathEl.replaceWith(document.createTextNode(latex));
+        }
+    });
+};
+
+const normalizeSelectionText = (text) => {
+    return (text || '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+};
+
+const extractTextFromSelectedFragment = (fragment) => {
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-99999px';
+    container.style.top = '0';
+    container.style.opacity = '0';
+    container.style.pointerEvents = 'none';
+    container.style.whiteSpace = 'pre-wrap';
+    container.appendChild(fragment);
+
+    stripPatchControls(container);
+    replaceRenderedMathWithLatex(container);
+
+    if (!document.body) {
+        return normalizeSelectionText(container.textContent || '');
+    }
+
+    document.body.appendChild(container);
+    const text = container.innerText || container.textContent || '';
+    container.remove();
+    return normalizeSelectionText(text);
+};
+
+const extractSelectionTextWithLatex = (selection) => {
+    const parts = [];
+    let containsMath = false;
+
+    for (let i = 0; i < selection.rangeCount; i += 1) {
+        const range = selection.getRangeAt(i);
+        if (range.collapsed) continue;
+
+        const mathElements = collectIntersectingMathElements(range);
+        if (mathElements.length === 0) continue;
+
+        containsMath = true;
+        const expandedRange = expandRangeToWholeMath(range, mathElements);
+        const text = extractTextFromSelectedFragment(expandedRange.cloneContents());
+        if (text) parts.push(text);
+    }
+
+    if (!containsMath) return '';
+    return normalizeSelectionText(parts.join('\n'));
+};
+
+export const bindMathSelectionCopyHandler = () => {
+    if (mathSelectionCopyBound) return;
+    mathSelectionCopyBound = true;
+
+    document.addEventListener('copy', (event) => {
+        if (!event.clipboardData) return;
+
+        const selection = document.getSelection();
+        if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+
+        for (let i = 0; i < selection.rangeCount; i += 1) {
+            if (isEditableSelection(selection.getRangeAt(i).commonAncestorContainer)) {
+                return;
+            }
+        }
+
+        const text = extractSelectionTextWithLatex(selection);
+        if (!text) return;
+
+        event.clipboardData.setData('text/plain', text);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }, true);
+};
 
 /**
  * 获取配置

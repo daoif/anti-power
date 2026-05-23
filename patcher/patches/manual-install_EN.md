@@ -40,7 +40,7 @@ This document is mainly for the patch zip package (`anti-power-patches.zip`):
 ## Windows (Manual Installation)
 
 1. Close all Antigravity windows
-2. Go to install paths:
+2. Go to install paths (newer builds are commonly under `Antigravity IDE`, older builds under `Antigravity`):
    - `...\resources\app\extensions\antigravity\`
    - `...\resources\app\out\vs\code\electron-browser\workbench\`
 3. Choose sidebar entry by `ideVersion` in `product.json`:
@@ -90,10 +90,11 @@ This document is mainly for the patch zip package (`anti-power-patches.zip`):
 ## macOS (Manual Installation)
 
 1. Close all Antigravity windows
-2. In Applications, right-click Antigravity and choose Show Package Contents
+2. In Applications, right-click Antigravity IDE (or older Antigravity) and choose Show Package Contents
 3. Go to:
-   - `Antigravity.app/Contents/Resources/app/extensions/antigravity/`
-   - `Antigravity.app/Contents/Resources/app/out/vs/code/electron-browser/workbench/`
+   - `Antigravity IDE.app/Contents/Resources/app/extensions/antigravity/`
+   - `Antigravity IDE.app/Contents/Resources/app/out/vs/code/electron-browser/workbench/`
+   - Older builds may still use `Antigravity.app/Contents/Resources/app/...`
 4. Choose sidebar entry by `ideVersion` in `product.json`:
    - If `< 1.18.3`:
      - Backup `cascade-panel.html` -> `cascade-panel.html.bak`

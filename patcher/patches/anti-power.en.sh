@@ -5,8 +5,8 @@
 # 2. sudo ./anti-power.en.sh
 #
 # This script supports macOS and Linux:
-# - macOS: /Applications/Antigravity.app/Contents/Resources/app
-# - Linux: /usr/share/antigravity/resources/app
+# - macOS: /Applications/Antigravity IDE.app/Contents/Resources/app or /Applications/Antigravity.app/Contents/Resources/app
+# - Linux: /usr/share/antigravity-ide/resources/app or /usr/share/antigravity/resources/app
 
 # Exit on error
 set -e
@@ -50,13 +50,47 @@ OS_TYPE=$(uname -s)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCHES_DIR="$SCRIPT_DIR"
 
+first_existing_dir() {
+    local candidate
+    for candidate in "$@"; do
+        if [ -d "$candidate" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Set default path by OS (can be overridden by args)
 if [ -z "$APP_PATH" ]; then
     if [ "$OS_TYPE" = "Darwin" ]; then
-        APP_PATH="/Applications/Antigravity.app/Contents/Resources/app"
+        APP_PATH="$(first_existing_dir \
+            "/Applications/Antigravity IDE.app/Contents/Resources/app" \
+            "/Applications/Antigravity.app/Contents/Resources/app" \
+            "$HOME/Applications/Antigravity IDE.app/Contents/Resources/app" \
+            "$HOME/Applications/Antigravity.app/Contents/Resources/app" \
+            || true)"
+        [ -z "$APP_PATH" ] && APP_PATH="/Applications/Antigravity IDE.app/Contents/Resources/app"
         echo "Detected macOS system"
     elif [ "$OS_TYPE" = "Linux" ]; then
-        APP_PATH="/usr/share/antigravity/resources/app"
+        APP_PATH="$(first_existing_dir \
+            "/usr/share/antigravity-ide/resources/app" \
+            "/usr/share/Antigravity IDE/resources/app" \
+            "/usr/share/antigravity/resources/app" \
+            "/usr/share/Antigravity/resources/app" \
+            "/usr/local/share/antigravity-ide/resources/app" \
+            "/usr/local/share/Antigravity IDE/resources/app" \
+            "/usr/local/share/antigravity/resources/app" \
+            "/opt/antigravity-ide/resources/app" \
+            "/opt/Antigravity IDE/resources/app" \
+            "/opt/antigravity/resources/app" \
+            "/opt/Antigravity/resources/app" \
+            "/usr/lib/antigravity-ide/resources/app" \
+            "/usr/lib/antigravity/resources/app" \
+            "/usr/lib64/antigravity-ide/resources/app" \
+            "/usr/lib64/antigravity/resources/app" \
+            || true)"
+        [ -z "$APP_PATH" ] && APP_PATH="/usr/share/antigravity-ide/resources/app"
         echo "Detected Linux system"
     else
         echo "Error: Unsupported OS $OS_TYPE"

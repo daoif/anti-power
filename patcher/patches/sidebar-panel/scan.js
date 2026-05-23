@@ -12,8 +12,13 @@ import {
     PANEL_SELECTOR,
     CONTENT_SELECTOR,
     SECTION_SELECTOR,
+    STRUCTURED_CONTENT_SELECTOR,
 } from './constants.js';
-import { ensureContentCopyButton, addFeedbackCopyButtons } from './copy.js';
+import {
+    ensureContentCopyButton,
+    addFeedbackCopyButtons,
+    bindMathSelectionCopyHandler,
+} from './copy.js';
 import { renderMath } from './math.js';
 import { scanMermaid } from './mermaid.js';
 
@@ -32,6 +37,145 @@ let feedbackTimer = null;
 let rootCheckTimer = null;
 let pendingNodes = new Set();
 let scheduled = false;
+
+const MIN_CONTENT_TEXT_LENGTH = 8;
+const EDITABLE_SELECTOR = [
+    'textarea',
+    'input',
+    '[contenteditable="true"]',
+    '[contenteditable="plaintext-only"]',
+    '[role="textbox"]',
+    '[data-lexical-editor="true"]',
+    '.ProseMirror',
+    '.cm-editor',
+    '.monaco-editor',
+].join(',');
+const CONTROL_SELECTOR = [
+    'button',
+    '[role="button"]',
+    '[data-tooltip-id]',
+    '[aria-label*="copy" i]',
+    '[aria-label*="like" i]',
+    '[aria-label*="dislike" i]',
+    '[aria-label*="thumb" i]',
+].join(',');
+
+const isElementVisible = (node) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return false;
+    const rect = node.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+};
+
+const isEditableArea = (node) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return false;
+    return !!(
+        node.matches?.(EDITABLE_SELECTOR) ||
+        node.closest?.(EDITABLE_SELECTOR) ||
+        node.querySelector?.(EDITABLE_SELECTOR)
+    );
+};
+
+const isPatchOrControlArea = (node) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return true;
+    return !!(
+        node.closest?.('.sidebar-copy-btn, .sidebar-mermaid-container') ||
+        node.matches?.(CONTROL_SELECTOR) ||
+        node.closest?.(CONTROL_SELECTOR)
+    );
+};
+
+const containsNativeControls = (node) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return false;
+    return !!node.querySelector?.(CONTROL_SELECTOR);
+};
+
+const isEligibleContentNode = (node, { allowControls = false } = {}) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return false;
+    if (isEditableArea(node) || isPatchOrControlArea(node)) return false;
+    if (!allowControls && containsNativeControls(node)) return false;
+    return true;
+};
+
+const hasRenderableContent = (node) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return false;
+    if (!isEligibleContentNode(node, { allowControls: true })) {
+        return false;
+    }
+
+    if (node.matches?.(STRUCTURED_CONTENT_SELECTOR) || node.querySelector?.(STRUCTURED_CONTENT_SELECTOR)) {
+        return true;
+    }
+
+    const text = (node.innerText || node.textContent || '').trim();
+    return text.length >= MIN_CONTENT_TEXT_LENGTH && /[\s\n]|[`*_#$|\\]/.test(text);
+};
+
+const resolveContentCandidate = (node) => {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
+
+    const explicit = node.matches?.(CONTENT_SELECTOR)
+        ? node
+        : node.closest?.(CONTENT_SELECTOR);
+    if (
+        explicit &&
+        explicit.closest?.(PANEL_SELECTOR) &&
+        isEligibleContentNode(explicit, { allowControls: true })
+    ) {
+        return explicit;
+    }
+
+    const structured = node.matches?.(STRUCTURED_CONTENT_SELECTOR)
+        ? node
+        : node.closest?.(STRUCTURED_CONTENT_SELECTOR);
+    if (!structured || !structured.closest?.(PANEL_SELECTOR)) return null;
+
+    const codeBlock = structured.closest('pre, .code-block, [class*="language-"]');
+    if (
+        codeBlock &&
+        codeBlock.closest?.(PANEL_SELECTOR) &&
+        isEligibleContentNode(codeBlock, { allowControls: true }) &&
+        hasRenderableContent(codeBlock)
+    ) {
+        return codeBlock;
+    }
+
+    const section = structured.closest(SECTION_SELECTOR);
+    if (section && isEligibleContentNode(section) && hasRenderableContent(section)) return section;
+
+    const container = structured.closest('article, section, li, p, blockquote, table, ol, ul, pre, div');
+    if (
+        container &&
+        container.closest?.(PANEL_SELECTOR) &&
+        isEligibleContentNode(container) &&
+        hasRenderableContent(container)
+    ) {
+        return container;
+    }
+
+    return isEligibleContentNode(structured) && hasRenderableContent(structured) ? structured : null;
+};
+
+const collectContentNodes = (root) => {
+    const nodes = new Set();
+
+    const addCandidate = (node) => {
+        const candidate = resolveContentCandidate(node);
+        if (candidate && isElementVisible(candidate)) {
+            nodes.add(candidate);
+        }
+    };
+
+    if (root.matches?.(CONTENT_SELECTOR) || hasRenderableContent(root)) {
+        addCandidate(root);
+    }
+
+    root.querySelectorAll(CONTENT_SELECTOR).forEach(addCandidate);
+    root.querySelectorAll(STRUCTURED_CONTENT_SELECTOR).forEach(addCandidate);
+
+    return [...nodes].filter((node, _, all) => (
+        !all.some((other) => other !== node && other.contains(node))
+    ));
+};
 
 /**
  * 清理当前侧边栏监听
@@ -62,11 +206,7 @@ const cleanupActiveWatchers = () => {
 const scanClassic = (root) => {
     if (!root || !root.isConnected) return;
 
-    const contentNodes = [];
-    if (root.matches?.(CONTENT_SELECTOR)) {
-        contentNodes.push(root);
-    }
-    contentNodes.push(...root.querySelectorAll(CONTENT_SELECTOR));
+    const contentNodes = collectContentNodes(root);
 
     contentNodes.forEach((node) => {
         if (config.copyButton) {
@@ -101,7 +241,7 @@ const resolveScanRoot = (target) => {
         return null;
     }
 
-    const contentRoot = current.closest(CONTENT_SELECTOR);
+    const contentRoot = resolveContentCandidate(current);
     if (contentRoot) return contentRoot;
 
     const sectionRoot = current.closest(SECTION_SELECTOR);
@@ -229,6 +369,9 @@ const init = () => {
  */
 export const start = (userConfig = {}) => {
     config = { ...config, ...userConfig };
+    if (config.math) {
+        bindMathSelectionCopyHandler();
+    }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });

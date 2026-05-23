@@ -5,8 +5,8 @@
 # 2. sudo ./anti-clean.en.sh
 #
 # This script supports macOS and Linux:
-# - macOS: $HOME/Library/Application Support/Antigravity
-# - Linux: ${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity
+# - macOS: $HOME/Library/Application Support/Antigravity IDE or Antigravity
+# - Linux: ${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity IDE, antigravity-ide, or Antigravity
 
 # Exit on error
 set -e
@@ -158,6 +158,30 @@ clean_openclaw_session_dirs() {
     fi
 }
 
+clean_antigravity_gemini_cache() {
+    local base
+    for base in "$HOME/.gemini/antigravity-ide" "$HOME/.gemini/antigravity"; do
+        clean_dir_contents "$base/annotations"
+        clean_dir_contents "$base/brain"
+        clean_dir_contents "$base/browser_recordings"
+        clean_dir_contents "$base/code_tracker/active"
+        clean_dir_contents "$base/code_tracker/history"
+        clean_dir_contents "$base/conversations"
+        clean_dir_contents "$base/implicit"
+    done
+}
+
+first_existing_dir() {
+    local candidate
+    for candidate in "$@"; do
+        if [ -d "$candidate" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
 if [ "$FORCE" -ne 1 ]; then
     if [ "$TARGET_ANTIGRAVITY" -eq 1 ]; then
         check_running "Antigravity" "antigravity"
@@ -188,10 +212,23 @@ if [ "$TARGET_ANTIGRAVITY" -eq 1 ]; then
     # Default data directory
     if [ -z "$DATA_DIR" ]; then
         if [ "$OS_TYPE" = "Darwin" ]; then
-            DATA_DIR="$HOME/Library/Application Support/Antigravity"
+            DATA_DIR="$(first_existing_dir \
+                "$HOME/Library/Application Support/Antigravity IDE" \
+                "$HOME/Library/Application Support/Antigravity" \
+                "$HOME/.antigravity-ide/antigravity-ide" \
+                "$HOME/.antigravity-ide" \
+                || true)"
+            [ -z "$DATA_DIR" ] && DATA_DIR="$HOME/Library/Application Support/Antigravity IDE"
             echo "Detected macOS system"
         elif [ "$OS_TYPE" = "Linux" ]; then
-            DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity"
+            DATA_DIR="$(first_existing_dir \
+                "${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity IDE" \
+                "${XDG_CONFIG_HOME:-$HOME/.config}/antigravity-ide" \
+                "${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity" \
+                "$HOME/.antigravity-ide/antigravity-ide" \
+                "$HOME/.antigravity-ide" \
+                || true)"
+            [ -z "$DATA_DIR" ] && DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/Antigravity IDE"
             echo "Detected Linux system"
         else
             echo "Error: Unsupported OS $OS_TYPE"
@@ -223,13 +260,7 @@ if [ "$TARGET_ANTIGRAVITY" -eq 1 ]; then
     clean_db "$DB_DIR/state.vscdb.backup"
 
     echo -e "\n[Antigravity] Cleaning conversation cache..."
-    clean_dir_contents "$HOME/.gemini/antigravity/annotations"
-    clean_dir_contents "$HOME/.gemini/antigravity/brain"
-    clean_dir_contents "$HOME/.gemini/antigravity/browser_recordings"
-    clean_dir_contents "$HOME/.gemini/antigravity/code_tracker/active"
-    clean_dir_contents "$HOME/.gemini/antigravity/code_tracker/history"
-    clean_dir_contents "$HOME/.gemini/antigravity/conversations"
-    clean_dir_contents "$HOME/.gemini/antigravity/implicit"
+    clean_antigravity_gemini_cache
 fi
 
 if [ "$TARGET_GEMINI" -eq 1 ]; then

@@ -33,6 +33,26 @@ const SKIP_TAGS = new Set(['STYLE', 'SCRIPT', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
 
 // 支持转换为 Markdown 的内联标签
 const INLINE_MARKDOWN_TAGS = new Set(['STRONG', 'B', 'EM', 'I', 'DEL', 'S', 'STRIKE', 'A']);
+const EDITABLE_SELECTOR = [
+    'textarea',
+    'input',
+    '[contenteditable="true"]',
+    '[contenteditable="plaintext-only"]',
+    '[role="textbox"]',
+    '[data-lexical-editor="true"]',
+    '.ProseMirror',
+    '.cm-editor',
+    '.monaco-editor',
+].join(',');
+const CONTROL_SELECTOR = [
+    'button',
+    '[role="button"]',
+    '[data-tooltip-id]',
+    '[aria-label*="copy" i]',
+    '[aria-label*="like" i]',
+    '[aria-label*="dislike" i]',
+    '[aria-label*="thumb" i]',
+].join(',');
 
 /**
  * 获取类名字符串
@@ -48,6 +68,25 @@ const getClassString = (el) => {
     if (typeof className === 'string') return className;
     if (className && typeof className.baseVal === 'string') return className.baseVal;
     return '';
+};
+
+const shouldSkipCopyBinding = (el) => {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return true;
+    if (
+        el.matches?.(EDITABLE_SELECTOR) ||
+        el.closest?.(EDITABLE_SELECTOR) ||
+        el.querySelector?.(EDITABLE_SELECTOR)
+    ) {
+        return true;
+    }
+    if (
+        el.matches?.(CONTROL_SELECTOR) ||
+        el.closest?.(CONTROL_SELECTOR) ||
+        el.querySelector?.(CONTROL_SELECTOR)
+    ) {
+        return true;
+    }
+    return false;
 };
 
 /**
@@ -74,6 +113,178 @@ const extractLatexFromMath = (mathEl) => {
     }
 
     return null;
+};
+
+let mathSelectionCopyBound = false;
+
+const getElementForNode = (node) => {
+    if (!node) return null;
+    if (node.nodeType === Node.ELEMENT_NODE) return node;
+    if (node.nodeType === Node.DOCUMENT_NODE) return node.body || document.body;
+    return node.parentElement || null;
+};
+
+const isEditableSelection = (node) => {
+    const el = getElementForNode(node);
+    return !!el?.closest?.('[contenteditable="true"], textarea, input');
+};
+
+const rangeIntersectsNode = (range, node) => {
+    try {
+        return range.intersectsNode(node);
+    } catch {
+        return false;
+    }
+};
+
+const getMathElementForNode = (node) => {
+    const el = getElementForNode(node);
+    if (!el?.closest) return null;
+    if (el.matches?.('.katex, mjx-container')) return el;
+    return el.closest('.katex, mjx-container');
+};
+
+const getMathCopyBoundaryNode = (mathEl) => {
+    if (!mathEl?.closest) return mathEl;
+    return mathEl.closest('.katex-display-wrapper, .katex-display, .katex-inline-wrapper') || mathEl;
+};
+
+const collectIntersectingMathElements = (range) => {
+    const containerEl = getElementForNode(range.commonAncestorContainer);
+    if (!containerEl) return [];
+
+    const mathElements = new Set();
+    const ancestorMath = getMathElementForNode(range.commonAncestorContainer);
+    if (ancestorMath && rangeIntersectsNode(range, ancestorMath)) {
+        mathElements.add(ancestorMath);
+    }
+
+    if (containerEl.matches?.('.katex, mjx-container') && rangeIntersectsNode(range, containerEl)) {
+        mathElements.add(containerEl);
+    }
+
+    containerEl.querySelectorAll?.('.katex, mjx-container').forEach((mathEl) => {
+        if (rangeIntersectsNode(range, mathEl)) {
+            mathElements.add(mathEl);
+        }
+    });
+
+    return [...mathElements];
+};
+
+const isBoundaryInsideNode = (boundaryContainer, node) => {
+    const boundaryEl = getElementForNode(boundaryContainer);
+    return !!boundaryEl && (boundaryEl === node || node.contains(boundaryEl));
+};
+
+const expandRangeToWholeMath = (range, mathElements) => {
+    const expanded = range.cloneRange();
+
+    mathElements.forEach((mathEl) => {
+        const boundaryNode = getMathCopyBoundaryNode(mathEl);
+        if (!boundaryNode) return;
+        if (isBoundaryInsideNode(range.startContainer, boundaryNode)) {
+            expanded.setStartBefore(boundaryNode);
+        }
+        if (isBoundaryInsideNode(range.endContainer, boundaryNode)) {
+            expanded.setEndAfter(boundaryNode);
+        }
+    });
+
+    return expanded;
+};
+
+const stripPatchControls = (root) => {
+    root.querySelectorAll?.(
+        `.${BUTTON_CLASS}, .${BOTTOM_BUTTON_CLASS}, .${COPY_BTN_CLASS}, .sidebar-feedback-copy`
+    ).forEach((el) => el.remove());
+};
+
+const replaceRenderedMathWithLatex = (root) => {
+    root.querySelectorAll?.('.katex, mjx-container').forEach((mathEl) => {
+        const latex = extractLatexFromMath(mathEl);
+        if (latex) {
+            mathEl.replaceWith(document.createTextNode(latex));
+        }
+    });
+};
+
+const normalizeSelectionText = (text) => {
+    return (text || '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+};
+
+const extractTextFromSelectedFragment = (fragment) => {
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-99999px';
+    container.style.top = '0';
+    container.style.opacity = '0';
+    container.style.pointerEvents = 'none';
+    container.style.whiteSpace = 'pre-wrap';
+    container.appendChild(fragment);
+
+    stripPatchControls(container);
+    replaceRenderedMathWithLatex(container);
+
+    if (!document.body) {
+        return normalizeSelectionText(container.textContent || '');
+    }
+
+    document.body.appendChild(container);
+    const text = container.innerText || container.textContent || '';
+    container.remove();
+    return normalizeSelectionText(text);
+};
+
+const extractSelectionTextWithLatex = (selection) => {
+    const parts = [];
+    let containsMath = false;
+
+    for (let i = 0; i < selection.rangeCount; i += 1) {
+        const range = selection.getRangeAt(i);
+        if (range.collapsed) continue;
+
+        const mathElements = collectIntersectingMathElements(range);
+        if (mathElements.length === 0) continue;
+
+        containsMath = true;
+        const expandedRange = expandRangeToWholeMath(range, mathElements);
+        const text = extractTextFromSelectedFragment(expandedRange.cloneContents());
+        if (text) parts.push(text);
+    }
+
+    if (!containsMath) return '';
+    return normalizeSelectionText(parts.join('\n'));
+};
+
+export const bindMathSelectionCopyHandler = () => {
+    if (mathSelectionCopyBound) return;
+    mathSelectionCopyBound = true;
+
+    document.addEventListener('copy', (event) => {
+        if (!event.clipboardData) return;
+
+        const selection = document.getSelection();
+        if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+
+        for (let i = 0; i < selection.rangeCount; i += 1) {
+            if (isEditableSelection(selection.getRangeAt(i).commonAncestorContainer)) {
+                return;
+            }
+        }
+
+        const text = extractSelectionTextWithLatex(selection);
+        if (!text) return;
+
+        event.clipboardData.setData('text/plain', text);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }, true);
 };
 
 /**
@@ -739,7 +950,13 @@ const bindSmartHover = (contentEl, topBtn, bottomBtn) => {
  * @returns {void}
  */
 export const ensureContentCopyButton = (contentEl) => {
-    if (!contentEl || contentEl.getAttribute(BOUND_ATTR) === '1') return;
+    if (
+        !contentEl ||
+        contentEl.getAttribute(BOUND_ATTR) === '1' ||
+        shouldSkipCopyBinding(contentEl)
+    ) {
+        return;
+    }
 
     if (contentEl[RAW_TEXT_PROP] === undefined) {
         const raw = contentEl.innerText !== undefined
