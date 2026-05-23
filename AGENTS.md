@@ -87,7 +87,7 @@ English | [中文](AGENTS_ZH.md)
   - Solution: Use elevated PowerShell `Set-Content -Encoding UTF8` to write directly, or write ASCII first then append in segments.
 - Writing to `patcher/patches/` or cleaning `tests/` may get `Access denied` in sandbox, need elevated commands for write/delete.
 
-## Recent Changes (v2.3.1 - v3.3.2)
+## Recent Changes (v2.3.1 - v4.0.0)
 
 - Cross-platform support (macOS/Linux) + path normalization/detection; Unix privileged install flow (sudo/pkexec)
 - macOS Universal Build artifacts in release pipeline
@@ -102,3 +102,5 @@ English | [中文](AGENTS_ZH.md)
 - Installer adds a Session Viewer for local conversation records, and the clean tool now includes OpenCode and OpenClaw
 - Sidebar and Manager code block font sizes now follow the panel custom font size, with editor font size as the fallback when no custom size is set
 - Synced Manager/Sidebar entry CSP allowlists to upstream to fix abnormal icon/font rendering on the latest Antigravity
+- Installer and scripts now detect `Antigravity IDE` app/data paths across Windows/macOS/Linux and tolerate modern builds without the legacy extension directory
+- Sidebar/Manager content scanning supports newer DOM structures, avoids controls/editors, and selection copy restores LaTeX from rendered KaTeX/MathJax

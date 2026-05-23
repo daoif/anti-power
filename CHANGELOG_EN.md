@@ -6,6 +6,26 @@ This document records changes for each Anti-Power version.
 
 ---
 
+## v4.0.0 (2026-05-23)
+
+### New Features
+- Added detection for new `Antigravity IDE` install and data directory names across Windows/macOS/Linux and script install/cleanup flows
+- Updated supported version to `Antigravity IDE v2.0.6`; Antigravity was renamed to Antigravity IDE starting from 2.0
+
+### Improvements
+- Improved Sidebar/Manager message content discovery for newer DOM structures and reduced accidental binding inside inputs, buttons, and control areas
+- Copying selections that include KaTeX/MathJax formulas now restores LaTeX source consistently in the legacy Sidebar, modern Sidebar, and Manager
+- Cleanup now also covers `.gemini/antigravity-ide` conversation cache directories
+
+### Fixes
+- Fixed overly strict install validation when newer IDE builds no longer include the legacy `extensions/antigravity` directory
+
+### Documentation
+- Synced README/Changelog/Release Notes to v4.0.0
+- Updated the supported Antigravity IDE version in README to v2.0.6
+
+---
+
 ## v3.3.2 (2026-03-13)
 
 ### Fixes

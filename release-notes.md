@@ -1,24 +1,46 @@
-# Release Notes / 发布说明 (v3.3.2)
+# Release Notes / 发布说明 (v4.0.0)
+
+## 新功能
+
+- 新增对新版 `Antigravity IDE` 安装路径与数据目录命名的识别, 覆盖 Windows/macOS/Linux 与脚本安装/清理流程
+- 支持版本更新至 `Antigravity IDE v2.0.6`; Antigravity 从 2.0 起更名为 Antigravity IDE
+
+## 优化
+
+- 优化 Sidebar/Manager 内容扫描, 兼容新版 DOM 结构并减少对输入框, 按钮等控制区的误绑定
+- 复制包含 KaTeX/MathJax 公式的选区时自动还原 LaTeX 源码, 旧版侧边栏, 新版侧边栏和 Manager 一致生效
+- 清理工具同步覆盖 `.gemini/antigravity-ide` 对话缓存目录
 
 ## 修复
 
-- 修复最新 Antigravity + 最新插件激活后 Manager 显示异常 (图标文字化, 布局异常), 同步 `workbench-jetski-agent.html` 入口模板的 CSP/Trusted Types 与上游保持一致
-- 同步新版侧边栏 `workbench.html` 入口模板 CSP 白名单, 避免同类字体/图标资源策略变更导致的异常
+- 修复新版 IDE 缺少 legacy `extensions/antigravity` 目录时安装校验过严的问题
 
 ## 文档
 
-- README/Changelog/Release Notes 同步至 v3.3.2
+- README/Changelog/Release Notes 同步至 v4.0.0
+- README 支持的 Antigravity IDE 版本更新至 v2.0.6
 
 ---
 
+## New Features
+
+- Added detection for new `Antigravity IDE` install and data directory names across Windows/macOS/Linux and script install/cleanup flows
+- Updated supported version to `Antigravity IDE v2.0.6`; Antigravity was renamed to Antigravity IDE starting from 2.0
+
+## Improvements
+
+- Improved Sidebar/Manager content discovery for newer DOM structures and reduced accidental binding inside inputs, buttons, and control areas
+- Copying selections that include KaTeX/MathJax formulas now restores LaTeX source consistently in the legacy Sidebar, modern Sidebar, and Manager
+- Cleanup now also covers `.gemini/antigravity-ide` conversation cache directories
+
 ## Fixes
 
-- Fixed abnormal Manager UI rendering on the latest Antigravity (icons showing raw ligature names and layout issues) by syncing the patched `workbench-jetski-agent.html` CSP/Trusted Types allowlists to upstream
-- Synced modern Sidebar `workbench.html` CSP allowlists to upstream to prevent similar font/icon resource regressions
+- Fixed overly strict install validation when newer IDE builds no longer include the legacy `extensions/antigravity` directory
 
 ## Documentation
 
-- Synced README/Changelog/Release Notes to v3.3.2.
+- Synced README/Changelog/Release Notes to v4.0.0.
+- Updated the supported Antigravity IDE version in README to v2.0.6.
 
 ---
 

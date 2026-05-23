@@ -6,6 +6,26 @@
 
 ---
 
+## v4.0.0 (2026-05-23)
+
+### 新功能
+- 新增对新版 `Antigravity IDE` 安装路径与数据目录命名的识别, 覆盖 Windows/macOS/Linux 和脚本安装/清理流程
+- 支持版本更新至 `Antigravity IDE v2.0.6`; Antigravity 从 2.0 起更名为 Antigravity IDE
+
+### 优化
+- 优化 Sidebar/Manager 的消息内容识别, 兼容新版 DOM 结构并减少对输入框, 按钮等控制区的误绑定
+- 复制包含 KaTeX/MathJax 公式的选区时自动还原 LaTeX 源码, 旧版侧边栏, 新版侧边栏和 Manager 一致生效
+- 清理工具同步覆盖 `.gemini/antigravity-ide` 对话缓存目录
+
+### 修复
+- 修复新版 IDE 缺少 legacy `extensions/antigravity` 目录时安装校验过严的问题
+
+### 文档
+- README/Changelog/Release Notes 同步至 v4.0.0
+- README 支持的 Antigravity IDE 版本更新至 v2.0.6
+
+---
+
 ## v3.3.2 (2026-03-13)
 
 ### 修复
