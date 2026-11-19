@@ -1,17 +1,15 @@
 [package]
 name = "Anti-Power"
-version = "4.0.0"
-description = "A Tauri App"
-authors = ["you"]
+version = "5.0.0"
+description = "Local session manager for the Antigravity App and Antigravity CLI"
+license = "MIT"
+repository = "https://github.com/mikessslxxx/anti-power"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+rust-version = "1.95"
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "patcher_lib"
+# Windows needs a lib name that differs from the bin name, see https://github.com/rust-lang/cargo/issues/8519
+name = "anti_power_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -22,8 +20,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-dirs = "5"
-
-[target.'cfg(windows)'.dependencies]
-winreg = "0.52"
+serde_json = { version = "1", features = ["preserve_order"] }
+rusqlite = { version = "0.43", features = ["bundled"] }
+sysinfo = { version = "0.40", default-features = false, features = ["system"] }
+tempfile = "3"

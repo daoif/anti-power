@@ -1,140 +1,196 @@
 <template>
-  <div v-if="show" class="sv-overlay" @click.self="$emit('close')">
-    <div class="sv-modal">
-      <div class="sv-header">
-        <h2 class="sv-title">{{ $t('sessionViewer.title') }}</h2>
-        <div class="sv-header-actions">
-          <select v-model="filterProvider" class="sv-filter-select">
-            <option value="">{{ $t('sessionViewer.filterAll') }}</option>
-            <option v-for="p in providerIds" :key="p" :value="p">
-              {{ $t(`sessionViewer.providers.${p}`) }}
-            </option>
-          </select>
-          <button class="sv-close-btn" @click="$emit('close')">×</button>
-        </div>
-      </div>
-
-      <div class="sv-body">
-        <div class="sv-list-pane">
-          <div class="sv-search">
-            <input
-              v-model="searchQuery"
-              type="text"
-              :placeholder="$t('sessionViewer.searchPlaceholder')"
-              class="sv-search-input"
-            />
-          </div>
-          <div class="sv-list-meta">
-            <span class="sv-count">{{ $t('sessionViewer.sessionCount', { count: filteredSessions.length }) }}</span>
-            <label v-if="filteredSessions.length > 0" class="sv-select-all" @click.stop>
-              <input type="checkbox" :checked="isAllChecked" @change="toggleAllChecked" />
-              <span>{{ $t('sessionViewer.selectAll') }}</span>
-            </label>
-          </div>
-          <div v-if="isScanning" class="sv-empty">{{ $t('sessionViewer.scanning') }}</div>
-          <div v-else-if="filteredSessions.length === 0" class="sv-empty">{{ $t('sessionViewer.noSessions') }}</div>
-          <div v-else class="sv-list">
-            <button
-              v-for="s in filteredSessions"
-              :key="s.sourcePath"
-              :class="['sv-item', { active: selectedSession?.sourcePath === s.sourcePath, checked: checkedSessions.has(s.sourcePath) }]"
-              @click="selectSession(s)"
-            >
-              <input
-                type="checkbox"
-                class="sv-item-checkbox"
-                :checked="checkedSessions.has(s.sourcePath)"
-                @click.stop
-                @change="toggleCheck(s.sourcePath)"
-              />
-              <span :class="['sv-provider-badge', `sv-provider-${s.providerId}`]">
-                {{ providerShort(s.providerId) }}
-              </span>
-              <div class="sv-item-info">
-                <div class="sv-item-title">{{ s.title || s.sessionId.slice(0, 12) }}</div>
-                <div class="sv-item-time">{{ formatRelativeTime(s.lastActiveAt) }}</div>
-              </div>
-            </button>
-          </div>
-          <div v-if="checkedCount > 0" class="sv-batch-bar">
-            <span class="sv-batch-count">{{ $t('sessionViewer.selectedCount', { count: checkedCount }) }}</span>
-            <button class="sv-batch-delete-btn" :disabled="isDeleting" @click="batchDelete">
-              {{ isDeleting ? '...' : $t('sessionViewer.batchDelete') }}
-            </button>
-          </div>
-        </div>
-
-        <div class="sv-msg-pane">
-          <template v-if="!selectedSession">
-            <div class="sv-empty-msg">{{ $t('sessionViewer.noMessages') }}</div>
-          </template>
-          <template v-else>
-            <div class="sv-msg-header">
-              <div class="sv-msg-title-row">
-                <span :class="['sv-provider-badge', `sv-provider-${selectedSession.providerId}`]">
-                  {{ $t(`sessionViewer.providers.${selectedSession.providerId}`) }}
-                </span>
-                <span class="sv-msg-session-title">{{ selectedSession.title || selectedSession.sessionId.slice(0, 12) }}</span>
-                <button
-                  class="sv-delete-btn"
-                  :disabled="isDeleting"
-                  :title="$t('sessionViewer.deleteSession')"
-                  @click="deleteSession"
-                >
-                  {{ isDeleting ? '...' : '🗑' }}
-                </button>
-              </div>
-              <div class="sv-msg-meta">
-                <span v-if="selectedSession.projectDir" class="sv-meta-item" :title="selectedSession.projectDir">
-                  {{ $t('sessionViewer.projectDir') }}: {{ pathBasename(selectedSession.projectDir) }}
-                </span>
-                <span v-if="selectedSession.lastActiveAt" class="sv-meta-item">
-                  {{ new Date(selectedSession.lastActiveAt).toLocaleString() }}
-                </span>
-                <span v-if="messages.length" class="sv-meta-item">
-                  {{ $t('sessionViewer.messageCount', { count: messages.length }) }}
-                </span>
-              </div>
-            </div>
-            <div v-if="isLoadingMessages" class="sv-empty-msg">{{ $t('sessionViewer.loadingMessages') }}</div>
-            <div v-else class="sv-messages">
-              <div
-                v-for="(msg, idx) in messages"
-                :key="idx"
-                :class="['sv-message', `sv-role-${msg.role}`]"
-              >
-                <div class="sv-message-head">
-                  <span :class="['sv-role-label', `sv-role-color-${msg.role}`]">
-                    {{ $t(`sessionViewer.roles.${msg.role}`, msg.role) }}
-                  </span>
-                  <span v-if="msg.ts" class="sv-message-time">{{ new Date(msg.ts).toLocaleTimeString() }}</span>
-                  <button class="sv-copy-btn" @click="copyText(msg.content)" :title="$t('sessionViewer.copyMessage')">
-                    {{ copiedIdx === idx ? '✓' : '⎘' }}
-                  </button>
-                </div>
-                <div class="sv-message-body">{{ msg.content }}</div>
-              </div>
-            </div>
-          </template>
-        </div>
+  <section class="sv-panel" aria-labelledby="sv-title">
+    <div class="sv-header">
+      <h1 id="sv-title" class="sv-title">{{ $t('sessionViewer.title') }}</h1>
+      <div class="sv-header-actions">
+        <select
+          v-model="filterProvider"
+          class="sv-filter-select"
+          :aria-label="$t('sessionViewer.filterLabel')"
+          :disabled="deletionPending"
+        >
+          <option value="">{{ $t('sessionViewer.filterAll') }}</option>
+          <option v-for="provider in providerIds" :key="provider" :value="provider">
+            {{ $t('sessionViewer.providers.' + provider) }}
+          </option>
+        </select>
+        <button class="sv-refresh-btn" :disabled="actionsBusy" @click="scanSessions">
+          {{ $t('sessionViewer.refresh') }}
+        </button>
       </div>
     </div>
-  </div>
+
+    <div v-if="scanError" class="sv-feedback sv-error" role="alert">
+      {{ $t('sessionViewer.scanFailed', { error: scanError }) }}
+    </div>
+    <div v-if="scanWarnings.length" class="sv-feedback sv-error" role="alert">
+      <div>{{ $t('sessionViewer.recoveryPending') }}</div>
+      <ul>
+        <li v-for="warning in scanWarnings" :key="warning">{{ warning }}</li>
+      </ul>
+    </div>
+    <div v-if="confirmationError" class="sv-feedback sv-error" role="alert">
+      {{ $t('sessionViewer.confirmFailed', { error: confirmationError }) }}
+    </div>
+    <div v-if="deleteResult" class="sv-feedback" :class="{ 'sv-error': deleteResult.failures.length }">
+      <div role="status">
+        {{ $t('sessionViewer.deleteResult', { deleted: deleteResult.deleted, failed: deleteResult.failures.length }) }}
+      </div>
+      <ul v-if="deleteResult.failures.length">
+        <li v-for="failure in deleteResult.failures" :key="failure.key" :title="failure.sourcePath">
+          {{ $t('sessionViewer.deleteFailed', { name: failure.name, error: failure.error }) }}
+        </li>
+      </ul>
+    </div>
+
+    <div class="sv-body">
+      <div class="sv-list-pane" :aria-busy="isScanning">
+        <div class="sv-search">
+          <input
+            v-model="searchQuery"
+            type="search"
+            :placeholder="$t('sessionViewer.searchPlaceholder')"
+            :aria-label="$t('sessionViewer.searchLabel')"
+            :disabled="deletionPending"
+            class="sv-search-input"
+          />
+        </div>
+        <div class="sv-list-meta">
+          <span class="sv-count">{{ $t('sessionViewer.sessionCount', { count: filteredSessions.length }) }}</span>
+          <label v-if="filteredSessions.length" class="sv-select-all">
+            <input type="checkbox" :checked="isAllChecked" :disabled="actionsBusy" @change="toggleAllChecked" />
+            <span>{{ $t('sessionViewer.selectAll') }}</span>
+          </label>
+        </div>
+        <div v-if="isScanning" class="sv-empty" role="status">{{ $t('sessionViewer.scanning') }}</div>
+        <div v-else-if="!filteredSessions.length" class="sv-empty">
+          <template v-if="!scanError || sessions.length">
+            {{ $t(sessions.length ? 'sessionViewer.noMatches' : 'sessionViewer.noSessions') }}
+          </template>
+        </div>
+        <ul v-else class="sv-list">
+          <li
+            v-for="session in filteredSessions"
+            :key="sessionKey(session)"
+            class="sv-item"
+            :class="{ active: selectedKey === sessionKey(session), checked: checkedSessions.has(sessionKey(session)) }"
+          >
+            <input
+              type="checkbox"
+              class="sv-item-checkbox"
+              :aria-label="$t('sessionViewer.selectSession', { name: sessionName(session) })"
+              :checked="checkedSessions.has(sessionKey(session))"
+              :disabled="actionsBusy"
+              @change="toggleCheck(sessionKey(session))"
+            />
+            <button
+              class="sv-item-open"
+              :aria-current="selectedKey === sessionKey(session) ? 'true' : undefined"
+              :title="session.sourcePath"
+              :disabled="deletionPending"
+              @click="selectSession(session)"
+            >
+              <span
+                :class="['sv-provider-badge', 'sv-provider-' + session.providerId]"
+                :title="$t('sessionViewer.providers.' + session.providerId)"
+              >
+                {{ $t('sessionViewer.providersShort.' + session.providerId) }}
+              </span>
+              <span class="sv-item-info">
+                <span class="sv-item-title" :title="sessionName(session)">{{ sessionName(session) }}</span>
+                <span v-if="session.lastActiveAt || session.indexOnly" class="sv-item-time">
+                  <template v-if="session.lastActiveAt">{{ formatRelativeTime(session.lastActiveAt) }}</template>
+                  <span v-if="session.indexOnly" class="sv-index-only">{{ $t('sessionViewer.indexOnly') }}</span>
+                </span>
+              </span>
+            </button>
+          </li>
+        </ul>
+        <div v-if="checkedCount" class="sv-batch-bar">
+          <span class="sv-batch-count">{{ $t('sessionViewer.selectedCount', { count: checkedCount }) }}</span>
+          <button class="sv-batch-delete-btn" :disabled="actionsBusy" @click="batchDelete">
+            {{ $t(isDeleting ? 'sessionViewer.deleting' : 'sessionViewer.batchDelete') }}
+          </button>
+        </div>
+      </div>
+
+      <div class="sv-msg-pane" :aria-busy="isLoadingMessages">
+        <div v-if="!selectedSession" class="sv-empty-msg">
+          {{ $t('sessionViewer.selectToView') }}
+        </div>
+        <template v-else>
+          <div class="sv-msg-header">
+            <div class="sv-msg-title-row">
+              <span :class="['sv-provider-badge', 'sv-provider-' + selectedSession.providerId]">
+                {{ $t('sessionViewer.providers.' + selectedSession.providerId) }}
+              </span>
+              <h2 class="sv-msg-session-title">{{ sessionName(selectedSession) }}</h2>
+              <button class="sv-delete-btn" :disabled="actionsBusy" @click="deleteSelectedSession">
+                {{ $t(isDeleting ? 'sessionViewer.deleting' : 'sessionViewer.deleteSession') }}
+              </button>
+            </div>
+            <div class="sv-msg-meta">
+              <span class="sv-meta-item sv-session-id">
+                {{ $t('sessionViewer.sessionId', { id: selectedSession.sessionId }) }}
+              </span>
+              <span v-if="selectedSession.projectDir" class="sv-meta-item" :title="selectedSession.projectDir">
+                {{ $t('sessionViewer.projectDir') }}: {{ pathBasename(selectedSession.projectDir) }}
+              </span>
+              <span v-if="selectedSession.lastActiveAt" class="sv-meta-item">
+                {{ new Date(selectedSession.lastActiveAt).toLocaleString() }}
+              </span>
+              <span v-if="messages.length" class="sv-meta-item">
+                {{ $t('sessionViewer.messageCount', { count: messages.length }) }}
+              </span>
+            </div>
+          </div>
+          <div class="sv-source-path" :title="selectedSession.sourcePath">
+            {{ $t('sessionViewer.sourcePath', { path: selectedSession.sourcePath }) }}
+          </div>
+          <div v-if="isLoadingMessages" class="sv-empty-msg" role="status">
+            {{ $t('sessionViewer.loadingMessages') }}
+          </div>
+          <div v-else-if="messageError" class="sv-empty-msg sv-error" role="alert">
+            {{ $t('sessionViewer.loadFailed', { error: messageError }) }}
+          </div>
+          <div v-else-if="!messages.length" class="sv-empty-msg" role="status">
+            {{ $t(selectedSession.indexOnly ? 'sessionViewer.indexOnlyHint' : 'sessionViewer.noMessages') }}
+          </div>
+          <div v-else :key="sessionKey(selectedSession)" class="sv-messages">
+            <div
+              v-for="(msg, idx) in messages"
+              :key="idx"
+              :class="['sv-message', 'sv-role-' + msg.role]"
+            >
+              <div class="sv-message-head">
+                <span :class="['sv-role-label', 'sv-role-color-' + msg.role]">
+                  {{ $t('sessionViewer.roles.' + msg.role, msg.role) }}
+                </span>
+                <span v-if="msg.ts" class="sv-message-time">{{ new Date(msg.ts).toLocaleTimeString() }}</span>
+                <button
+                  class="sv-copy-btn"
+                  :title="$t(copiedIdx === idx ? 'sessionViewer.copied' : 'sessionViewer.copyMessage')"
+                  @click="copyText(msg.content, idx)"
+                >
+                  {{ copiedIdx === idx ? '✓' : '⎘' }}
+                </button>
+              </div>
+              <div class="sv-message-body">{{ msg.content }}</div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
-
-const props = defineProps<{
-  show: boolean;
-}>();
-
-defineEmits(['close']);
 
 /**
  * Metadata for a local session before its messages are loaded
@@ -145,9 +201,9 @@ interface SessionMeta {
   title: string | null;
   summary: string | null;
   projectDir: string | null;
-  createdAt: number | null;
   lastActiveAt: number | null;
   sourcePath: string;
+  indexOnly: boolean;
 }
 
 /**
@@ -159,94 +215,126 @@ interface SessionMessage {
   ts: number | null;
 }
 
-const providerIds = ['claude', 'codex', 'gemini', 'opencode', 'openclaw'];
+interface DeleteResult {
+  deleted: number;
+  failures: { key: string; name: string; sourcePath: string; error: string }[];
+}
 
+const providerIds = ['antigravity', 'agy'];
 const sessions = ref<SessionMeta[]>([]);
 const messages = ref<SessionMessage[]>([]);
 const selectedSession = ref<SessionMeta | null>(null);
-const isScanning = ref(false);
-const isLoadingMessages = ref(false);
+const checkedSessions = ref(new Set<string>());
 const filterProvider = ref('');
 const searchQuery = ref('');
-const copiedIdx = ref<number | null>(null);
+const isScanning = ref(false);
+const isLoadingMessages = ref(false);
+const deletionPending = ref(false);
 const isDeleting = ref(false);
-const checkedSessions = ref(new Set<string>());
+const scanError = ref('');
+const scanWarnings = ref<string[]>([]);
+const messageError = ref('');
+const confirmationError = ref('');
+const deleteResult = ref<DeleteResult | null>(null);
+const copiedIdx = ref<number | null>(null);
+let detailRequest = 0;
+let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
+function sessionKey(session: SessionMeta): string {
+  return JSON.stringify([session.providerId, session.sourcePath]);
+}
+
+function sessionName(session: SessionMeta): string {
+  return session.title || session.sessionId.slice(0, 12);
+}
+
+const selectedKey = computed(() => selectedSession.value ? sessionKey(selectedSession.value) : null);
 const checkedCount = computed(() => checkedSessions.value.size);
+const actionsBusy = computed(() => isScanning.value || deletionPending.value);
+
+const filteredSessions = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  const matchesId = query && sessions.value.some(session => session.sessionId.toLowerCase() === query);
+  return sessions.value.filter(session => {
+    if (filterProvider.value && session.providerId !== filterProvider.value) return false;
+    if (!query) return true;
+    if (matchesId) return session.sessionId.toLowerCase() === query;
+    return [session.title, session.summary, session.projectDir, session.sessionId]
+      .some(value => value?.toLowerCase().includes(query));
+  });
+});
 
 const isAllChecked = computed(() =>
   filteredSessions.value.length > 0 &&
-  filteredSessions.value.every(s => checkedSessions.value.has(s.sourcePath))
+  filteredSessions.value.every(session => checkedSessions.value.has(sessionKey(session))),
 );
 
-const filteredSessions = computed(() => {
-  let list = sessions.value;
-
-  if (filterProvider.value) {
-    list = list.filter(s => s.providerId === filterProvider.value);
+watch([filterProvider, searchQuery], () => {
+  checkedSessions.value.clear();
+  if (selectedKey.value && !filteredSessions.value.some(session => sessionKey(session) === selectedKey.value)) {
+    void selectSession(null);
   }
+}, { flush: 'sync' });
 
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.trim().toLowerCase();
-    list = list.filter(s =>
-      (s.title && s.title.toLowerCase().includes(q)) ||
-      (s.summary && s.summary.toLowerCase().includes(q)) ||
-      (s.projectDir && s.projectDir.toLowerCase().includes(q)) ||
-      s.sessionId.toLowerCase().includes(q)
-    );
-  }
-  return list;
+onMounted(() => void scanSessions());
+onUnmounted(() => {
+  detailRequest++;
+  clearTimeout(copyTimer);
 });
 
-// Rescan when the viewer opens and clear selections and messages on close
-watch(
-  () => props.show,
-  async (newVal) => {
-    if (newVal) {
-      await loadSessions();
-    } else {
-      selectedSession.value = null;
-      messages.value = [];
-      checkedSessions.value = new Set();
-    }
-  },
-);
+function errorMessage(error: unknown): string {
+  if (typeof error === 'string' && error) return error;
+  if (error && typeof error === 'object' && 'message' in error &&
+      typeof error.message === 'string' && error.message) {
+    return error.message;
+  }
+  return t('app.error.unknown');
+}
 
-/**
- * Scan session files for all supported providers
- */
-async function loadSessions() {
+async function scanSessions() {
+  if (isScanning.value) return;
   isScanning.value = true;
+  scanError.value = '';
   try {
-    sessions.value = await invoke<SessionMeta[]>('scan_sessions', {
-      providers: providerIds,
-    });
-  } catch (e) {
-    console.error('scan_sessions failed:', e);
-    sessions.value = [];
+    const result = await invoke<{ sessions: SessionMeta[]; warnings: string[] }>('scan_sessions');
+    sessions.value = result.sessions;
+    scanWarnings.value = result.warnings;
+
+    const byKey = new Map(sessions.value.map(session => [sessionKey(session), session]));
+    for (const key of checkedSessions.value) {
+      if (!byKey.has(key)) checkedSessions.value.delete(key);
+    }
+    if (selectedKey.value) {
+      void selectSession(byKey.get(selectedKey.value) ?? null);
+    }
+  } catch (error) {
+    scanError.value = errorMessage(error);
   } finally {
     isScanning.value = false;
   }
 }
 
-/**
- * Load messages for the selected local session
- * @param session - Provider and source path for the selection
- */
-async function selectSession(session: SessionMeta) {
+async function selectSession(session: SessionMeta | null) {
+  // Only the most recent detail request can update the pane
+  const request = ++detailRequest;
   selectedSession.value = session;
-  isLoadingMessages.value = true;
   messages.value = [];
+  messageError.value = '';
+  copiedIdx.value = null;
+  clearTimeout(copyTimer);
+  isLoadingMessages.value = session !== null;
+  if (!session) return;
+
   try {
-    messages.value = await invoke<SessionMessage[]>('load_session_messages', {
+    const loaded = await invoke<SessionMessage[]>('load_session_messages', {
       providerId: session.providerId,
       sourcePath: session.sourcePath,
     });
-  } catch (e) {
-    console.error('load_session_messages failed:', e);
-    messages.value = [];
+    if (request === detailRequest) messages.value = loaded;
+  } catch (error) {
+    if (request === detailRequest) messageError.value = errorMessage(error);
   } finally {
-    isLoadingMessages.value = false;
+    if (request === detailRequest) isLoadingMessages.value = false;
   }
 }
 
@@ -279,23 +367,6 @@ function formatRelativeTime(ts: number | null | undefined): string {
 }
 
 /**
- * Use a short badge label for each provider
- * @param id - Session provider ID
- * @returns Provider abbreviation or the first two letters of its ID in capitals
- */
-function providerShort(id: string): string {
-  const map: Record<string, string> = {
-    claude: 'CC',
-    codex: 'CX',
-    gemini: 'GM',
-    opencode: 'OC',
-    openclaw: 'OW',
-  };
-
-  return map[id] || id.slice(0, 2).toUpperCase();
-}
-
-/**
  * Handle both Windows and Unix path separators
  * @param p - Session file or directory path
  * @returns Final path component, or the original path if empty
@@ -305,16 +376,15 @@ function pathBasename(p: string): string {
   return parts[parts.length - 1] || p;
 }
 
-/**
- * Update the copied indicator only after a successful clipboard write
- * @param text - Message to copy
- */
-async function copyText(text: string) {
+async function copyText(text: string, index: number) {
+  const request = detailRequest;
   try {
     await navigator.clipboard.writeText(text);
-    const idx = messages.value.findIndex(m => m.content === text);
-    copiedIdx.value = idx;
-    setTimeout(() => {
+    if (request !== detailRequest) return;
+
+    copiedIdx.value = index;
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => {
       copiedIdx.value = null;
     }, 1500);
   } catch {
@@ -322,148 +392,118 @@ async function copyText(text: string) {
   }
 }
 
-/**
- * Confirm deletion before removing the selected session
- */
-async function deleteSession() {
-  if (!selectedSession.value || isDeleting.value) return;
+function toggleCheck(key: string) {
+  if (checkedSessions.value.has(key)) {
+    checkedSessions.value.delete(key);
+  } else {
+    checkedSessions.value.add(key);
+  }
+}
 
+function toggleAllChecked() {
+  checkedSessions.value = isAllChecked.value
+    ? new Set()
+    : new Set(filteredSessions.value.map(sessionKey));
+}
+
+function deleteSelectedSession() {
+  if (!selectedSession.value) return;
   const session = selectedSession.value;
-  const displayName = session.title || session.sessionId.slice(0, 12);
-
-  const confirmed = await ask(
-    t('sessionViewer.deleteConfirmMessage', { name: displayName }),
-    { title: t('sessionViewer.deleteConfirmTitle'), kind: 'warning' }
+  const hasOtherSources = sessions.value.some(other =>
+    other.sessionId === session.sessionId && other.sourcePath !== session.sourcePath,
   );
-  if (!confirmed) return;
+  const message = t('sessionViewer.deleteConfirmMessage', {
+    name: sessionName(session),
+    path: session.sourcePath,
+  });
+  const scope = hasOtherSources
+    ? [message, t('sessionViewer.deleteOtherSources')].join('\n\n')
+    : message;
+  void deleteSessions([session], scope);
+}
 
-  isDeleting.value = true;
+function batchDelete() {
+  const selected = filteredSessions.value.filter(session => checkedSessions.value.has(sessionKey(session)));
+  if (!selected.length) return;
+  void deleteSessions(selected, t('sessionViewer.batchDeleteConfirmMessage', { count: selected.length }));
+}
+
+async function deleteSessions(targets: SessionMeta[], message: string) {
+  if (actionsBusy.value) return;
+  deletionPending.value = true;
+  confirmationError.value = '';
   try {
-    await invoke('delete_session', {
-      providerId: session.providerId,
-      sourcePath: session.sourcePath,
-      sessionId: session.sessionId,
+    let confirmed: boolean;
+    try {
+      confirmed = await ask(message, {
+        title: t('sessionViewer.deleteConfirmTitle'),
+        kind: 'warning',
+        okLabel: t('sessionViewer.confirmDelete'),
+        cancelLabel: t('sessionViewer.cancel'),
+      });
+    } catch (error) {
+      confirmationError.value = errorMessage(error);
+      return;
+    }
+    if (!confirmed) return;
+
+    isDeleting.value = true;
+    deleteResult.value = null;
+    const deleted = new Set<string>();
+    const failures: DeleteResult['failures'] = [];
+    // The backend cleans each store in one pass and reports an error per session
+    let errors: (string | null)[];
+    try {
+      errors = await invoke<(string | null)[]>('delete_sessions', {
+        sessions: targets.map(({ providerId, sourcePath, sessionId }) => ({ providerId, sourcePath, sessionId })),
+      });
+    } catch (error) {
+      errors = targets.map(() => errorMessage(error));
+    }
+    targets.forEach((session, index) => {
+      const key = sessionKey(session);
+      const error = errors[index];
+      if (error) {
+        failures.push({ key, name: sessionName(session), sourcePath: session.sourcePath, error });
+      } else {
+        deleted.add(key);
+      }
     });
-    sessions.value = sessions.value.filter(s => s.sourcePath !== session.sourcePath);
-    selectedSession.value = null;
-    messages.value = [];
-  } catch (e) {
-    console.error('delete_session failed:', e);
+
+    sessions.value = sessions.value.filter(session => !deleted.has(sessionKey(session)));
+    for (const key of deleted) checkedSessions.value.delete(key);
+    if (selectedKey.value && deleted.has(selectedKey.value)) void selectSession(null);
+
+    deleteResult.value = { deleted: deleted.size, failures };
+    await scanSessions();
   } finally {
     isDeleting.value = false;
+    deletionPending.value = false;
   }
-}
-
-/**
- * Use the source path as the checkbox key
- * @param sourcePath - Session file path
- */
-function toggleCheck(sourcePath: string) {
-  const next = new Set(checkedSessions.value);
-
-  if (next.has(sourcePath)) {
-    next.delete(sourcePath);
-  } else {
-    next.add(sourcePath);
-  }
-
-  checkedSessions.value = next;
-}
-
-/**
- * Limit select all to the current filter
- */
-function toggleAllChecked() {
-  if (isAllChecked.value) {
-    checkedSessions.value = new Set();
-  } else {
-    checkedSessions.value = new Set(filteredSessions.value.map(s => s.sourcePath));
-  }
-}
-
-/**
- * Confirm before deleting the checked session files
- */
-async function batchDelete() {
-  if (checkedCount.value === 0 || isDeleting.value) return;
-
-  const confirmed = await ask(
-    t('sessionViewer.batchDeleteConfirmMessage', { count: checkedCount.value }),
-    { title: t('sessionViewer.batchDeleteConfirmTitle'), kind: 'warning' }
-  );
-  if (!confirmed) return;
-
-  isDeleting.value = true;
-  const toDelete = sessions.value.filter(s => checkedSessions.value.has(s.sourcePath));
-  const failed: string[] = [];
-
-  for (const session of toDelete) {
-    try {
-      await invoke('delete_session', {
-        providerId: session.providerId,
-        sourcePath: session.sourcePath,
-        sessionId: session.sessionId,
-      });
-    } catch (e) {
-      console.error('delete_session failed:', session.sourcePath, e);
-      failed.push(session.sourcePath);
-    }
-  }
-
-  // Keep failed sessions available for another delete attempt
-  const failedSet = new Set(failed);
-  sessions.value = sessions.value.filter(
-    s => !checkedSessions.value.has(s.sourcePath) || failedSet.has(s.sourcePath),
-  );
-
-  // Clear the detail pane if its session was deleted
-  if (
-    selectedSession.value &&
-    checkedSessions.value.has(selectedSession.value.sourcePath) &&
-    !failedSet.has(selectedSession.value.sourcePath)
-  ) {
-    selectedSession.value = null;
-    messages.value = [];
-  }
-
-  checkedSessions.value = new Set(failed);
-  isDeleting.value = false;
 }
 </script>
 
 <style scoped>
-.sv-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px) saturate(150%);
-  -webkit-backdrop-filter: blur(8px) saturate(150%);
+.sv-panel {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.sv-modal {
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   background: var(--ag-surface);
   border: 1px solid var(--ag-border);
   border-radius: var(--radius-xl);
-  width: 90vw;
-  height: 85vh;
-  max-width: 1200px;
-  display: flex;
-  flex-direction: column;
   box-shadow: var(--ag-shadow-xl);
-  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
 }
 
 .sv-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 20px;
+  padding: 12px 16px;
+  gap: 8px 12px;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--ag-border);
   flex-shrink: 0;
 }
@@ -481,52 +521,91 @@ async function batchDelete() {
   gap: 10px;
 }
 
-.sv-filter-select {
-  background: var(--ag-surface-2);
+.sv-filter-select,
+.sv-refresh-btn {
+  height: 30px;
+  background-color: var(--ag-surface-2);
   border: 1px solid var(--ag-border);
   border-radius: var(--radius-sm);
   color: var(--ag-text);
   font-size: 12px;
-  padding: 5px 8px;
+  line-height: 1;
+  padding: 0 10px;
   cursor: pointer;
   outline: none;
 }
 
-.sv-filter-select:focus {
+/* Drop the native control so the filter matches the button beside it */
+.sv-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ag-text-tertiary) 50%),
+    linear-gradient(135deg, var(--ag-text-tertiary) 50%, transparent 50%);
+  background-position: right 14px center, right 9px center;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.sv-filter-select:focus,
+.sv-filter-select:hover:not(:disabled),
+.sv-refresh-btn:hover:not(:disabled) {
   border-color: var(--ag-accent);
 }
 
-.sv-close-btn {
-  background: none;
-  border: none;
-  color: var(--ag-text-tertiary);
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.sv-refresh-btn:hover:not(:disabled) {
+  color: var(--ag-text-strong);
 }
 
-.sv-close-btn:hover {
-  color: var(--ag-text);
-  background: rgba(255, 255, 255, 0.08);
+.sv-panel button:focus-visible,
+.sv-panel input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--ag-accent);
+  outline-offset: -2px;
+}
+
+.sv-panel button:disabled,
+.sv-panel input:disabled,
+.sv-panel select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sv-feedback {
+  flex-shrink: 0;
+  max-height: 20%;
+  overflow: auto;
+  border-bottom: 1px solid var(--ag-border);
+  background: var(--ag-success-subtle);
+  color: var(--ag-text-strong);
+  font-size: 12px;
+  padding: 8px 16px;
+  overflow-wrap: anywhere;
+}
+
+.sv-feedback ul {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 4px 0 0;
+}
+
+.sv-error {
+  background: var(--ag-error-subtle);
+  color: var(--ag-text-strong);
 }
 
 .sv-body {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .sv-list-pane {
-  width: 300px;
-  min-width: 240px;
+  width: 42%;
+  max-width: 320px;
+  min-width: 225px;
+  min-height: 0;
   border-right: 1px solid var(--ag-border);
   display: flex;
   flex-direction: column;
@@ -595,20 +674,31 @@ async function batchDelete() {
 .sv-list {
   flex: 1;
   overflow-y: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 .sv-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  padding: 10px 12px;
-  border: none;
+  padding-left: 12px;
   border-bottom: 1px solid var(--ag-border);
+  transition: background var(--transition-fast);
+}
+
+.sv-item-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 10px 0;
+  border: none;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background var(--transition-fast);
   color: var(--ag-text);
 }
 
@@ -628,7 +718,7 @@ async function batchDelete() {
 
 .sv-item.active {
   background: var(--ag-accent-subtle, rgba(51, 118, 205, 0.1));
-  border-left: 3px solid var(--ag-accent);
+  box-shadow: inset 3px 0 0 var(--ag-accent);
 }
 
 .sv-item-info {
@@ -637,6 +727,7 @@ async function batchDelete() {
 }
 
 .sv-item-title {
+  display: block;
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -646,9 +737,23 @@ async function batchDelete() {
 }
 
 .sv-item-time {
+  display: block;
   font-size: 11px;
   color: var(--ag-text-tertiary);
   margin-top: 2px;
+}
+
+.sv-index-only {
+  white-space: nowrap;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--ag-warning-subtle);
+  color: var(--ag-warning);
+}
+
+.sv-item-time:has(> .sv-index-only:first-child) .sv-index-only {
+  margin-left: 0;
 }
 
 .sv-provider-badge {
@@ -657,15 +762,15 @@ async function batchDelete() {
   padding: 3px 6px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 
-.sv-provider-claude { background: rgba(204, 120, 50, 0.15); color: #cc7832; }
-.sv-provider-codex { background: rgba(16, 163, 127, 0.15); color: #10a37f; }
-.sv-provider-gemini { background: rgba(66, 133, 244, 0.15); color: #4285f4; }
-.sv-provider-opencode { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
-.sv-provider-openclaw { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+.sv-item .sv-provider-badge {
+  min-width: 34px;
+  text-align: center;
+}
+
+.sv-provider-antigravity { background: var(--ag-accent-subtle); color: var(--ag-accent); }
+.sv-provider-agy { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
 
 .sv-msg-pane {
   flex: 1;
@@ -673,6 +778,7 @@ async function batchDelete() {
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
 }
 
 .sv-empty-msg {
@@ -680,8 +786,15 @@ async function batchDelete() {
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  padding: 12px 16px;
+  overflow-wrap: anywhere;
   color: var(--ag-text-muted);
   font-size: 14px;
+}
+
+.sv-empty-msg.sv-error {
+  color: var(--ag-text-strong);
 }
 
 .sv-msg-header {
@@ -693,36 +806,19 @@ async function batchDelete() {
 .sv-msg-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
+  flex-wrap: wrap;
   margin-bottom: 6px;
 }
 
 .sv-msg-session-title {
+  flex: 1 1 100px;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
   font-size: 14px;
   font-weight: 600;
   color: var(--ag-text-strong);
-}
-
-.sv-delete-btn {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--ag-text-tertiary);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
-}
-
-.sv-delete-btn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.sv-delete-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .sv-msg-meta {
@@ -734,6 +830,24 @@ async function batchDelete() {
 .sv-meta-item {
   font-size: 11px;
   color: var(--ag-text-tertiary);
+}
+
+.sv-session-id {
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.sv-source-path {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--ag-border);
+  color: var(--ag-text-tertiary);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: text;
 }
 
 .sv-messages {
@@ -761,16 +875,6 @@ async function batchDelete() {
   border-left-color: var(--ag-accent);
 }
 
-.sv-role-system {
-  background: var(--ag-surface-2);
-  border-left-color: var(--ag-warning, #f59e0b);
-}
-
-.sv-role-tool {
-  background: var(--ag-surface-2);
-  border-left-color: #8b5cf6;
-}
-
 .sv-message-head {
   display: flex;
   align-items: center;
@@ -787,8 +891,6 @@ async function batchDelete() {
 
 .sv-role-color-user { color: #22c55e; }
 .sv-role-color-assistant { color: var(--ag-accent); }
-.sv-role-color-system { color: var(--ag-warning, #f59e0b); }
-.sv-role-color-tool { color: #8b5cf6; }
 
 .sv-message-time {
   font-size: 10px;
@@ -831,6 +933,8 @@ async function batchDelete() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   padding: 8px 12px;
   border-top: 1px solid var(--ag-border);
   background: var(--ag-surface-2);
@@ -843,11 +947,12 @@ async function batchDelete() {
   color: var(--ag-accent);
 }
 
+.sv-delete-btn,
 .sv-batch-delete-btn {
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--ag-error-subtle);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radius-sm);
-  color: #ef4444;
+  color: var(--ag-error);
   font-size: 12px;
   font-weight: 500;
   padding: 4px 12px;
@@ -855,35 +960,28 @@ async function batchDelete() {
   transition: all var(--transition-fast);
 }
 
+.sv-delete-btn:hover:not(:disabled),
 .sv-batch-delete-btn:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.5);
 }
 
-.sv-batch-delete-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@media (max-width: 700px) {
-  .sv-modal {
-    width: 98vw;
-    height: 95vh;
-  }
-
+@media (max-width: 620px) {
   .sv-body {
     flex-direction: column;
+    overflow-y: auto;
   }
 
   .sv-list-pane {
+    flex: 1 0 180px;
     width: 100%;
-    height: 40%;
+    max-width: none;
     border-right: none;
     border-bottom: 1px solid var(--ag-border);
   }
 
   .sv-msg-pane {
-    height: 60%;
+    flex: 1 0 170px;
   }
 }
 </style>

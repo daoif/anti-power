@@ -1,5 +1,5 @@
 /**
- * Vite settings for the Tauri installer
+ * Vite settings for the Tauri app
  */
 
 import { defineConfig } from "vite";

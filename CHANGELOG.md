@@ -4,6 +4,30 @@
 
 ---
 
+## v5.0.0 (2026-11-19)
+
+### 新功能
+- 项目转为 Antigravity App 和 Antigravity CLI (`agy`) 的本地会话管理工具, 支持查看, 搜索, 单条和批量删除
+- 按来源和会话 ID 清理会话正文, 日志, 注解, 占用锁, 摘要数据库, 全文索引 (删除后重建 FTS5, 压缩数据库并执行 WAL 检查点), protobuf 摘要索引, 最近会话, 摘要缓存和 Antigravity CLI 输入历史, 清理后 CC Switch 不再列出
+- 支持清理中断后的自动恢复: 重新打开应用或刷新列表时, 已提交的清理继续收尾, 未提交的清理自动还原
+- 列出并可清理只剩索引的残留记录, 包括只存在于 protobuf 摘要索引里的记录
+- 批量删除时每个存储目录只处理一遍, 单条失败不影响同批其他会话
+- 识别 CC Switch 的 Antigravity CLI 配置目录
+
+### 移除
+- 侧边栏和 Manager 补丁 (Markdown 复制, LaTeX, Mermaid, 表格配色), 补丁安装器和脚本. Google Antigravity 已内置相关能力, 需要补丁请使用 v4.0.0
+- Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的对话浏览和缓存清理
+
+### 依赖
+- 升级到 Tauri 2.12, Vite 8, TypeScript 6, vue-i18n 11, rusqlite 0.43, sysinfo 0.40
+- 移除 Tailwind CSS, 改用轻量基础样式重置
+- 需要 Node.js 22.12+ 和 Rust 1.95+
+
+### 文档
+- README / Changelog / Release Notes 同步至 v5.0.0, 已核对版本更新至 Antigravity App 2.33.0 与 Antigravity CLI 1.5.12 (macOS)
+
+---
+
 ## v4.0.0 (2026-05-23)
 
 ### 新功能

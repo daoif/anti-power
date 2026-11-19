@@ -4,6 +4,30 @@
 
 ---
 
+## v5.0.0 (2026-11-19)
+
+### New Features
+- Anti-Power is now a local session manager for the Antigravity App and the Antigravity CLI (`agy`): browse, search, and delete single or multiple sessions
+- Scoped cleanup removes conversation data, logs, annotations, presence lock, summary database rows, full-text index (with FTS5 rebuild, database compaction, and WAL checkpoint), protobuf summary index entries, recent-session/summary caches, and Antigravity CLI prompt history entries for one source and session ID, so CC Switch no longer lists the session
+- Automatic recovery for interrupted cleanups: reopening the app or refreshing the list finalizes committed deletions and restores uncommitted ones
+- Lists and cleans index-only leftovers, including records present only in the protobuf summary index
+- Batch deletion cleans each store in one pass, and one failed session does not block the rest of the batch
+- Detects CC Switch profile directories for the Antigravity CLI
+
+### Removed
+- Sidebar and Manager patches (Markdown copy, LaTeX, Mermaid, table colors), the patch installer, and the scripts. Google Antigravity now handles these natively; use v4.0.0 if you need the patches
+- Session browsing and cache cleanup for Claude Code, Codex, Gemini CLI, OpenCode, and OpenClaw
+
+### Dependencies
+- Upgraded to Tauri 2.12, Vite 8, TypeScript 6, vue-i18n 11, rusqlite 0.43, and sysinfo 0.40
+- Removed Tailwind CSS in favor of a minimal base style reset
+- Requires Node.js 22.12+ and Rust 1.95+
+
+### Documentation
+- Synced README / Changelog / Release Notes to v5.0.0; verified against Antigravity App 2.33.0 and Antigravity CLI 1.5.12 on macOS
+
+---
+
 ## v4.0.0 (2026-05-23)
 
 ### New Features

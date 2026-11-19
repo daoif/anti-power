@@ -17,10 +17,6 @@
         <p class="about-desc">
           {{ $t('aboutModal.desc') }}
         </p>
-        
-        <p class="about-qq">
-          {{ $t('aboutModal.qqGroup') }} <a href="#" @click.prevent="openQQGroup" class="qq-link">993975349</a>
-        </p>
 
         <div class="about-actions">
           <button 
@@ -45,7 +41,7 @@
             </button>
           </template>
           <template v-else-if="updateInfo.error">
-            <p class="update-error" style="color: var(--ag-error, #ef4444); font-size: 13px;">{{ $t(updateInfo.error) }}</p>
+            <p class="update-error">{{ $t(updateInfo.error) }}</p>
           </template>
           <template v-else>
             <p class="update-latest">{{ $t('aboutModal.latest') }}</p>
@@ -104,7 +100,7 @@ async function checkUpdate() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     
-    const res = await fetch(`https://api.github.com/repos/daoif/anti-power/releases/latest`, {
+    const res = await fetch(`https://api.github.com/repos/mikessslxxx/anti-power/releases/latest`, {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -133,14 +129,6 @@ async function checkUpdate() {
 async function openGitHub() {
   const { openUrl } = await import('@tauri-apps/plugin-opener');
   await openUrl(props.githubUrl);
-}
-
-/**
- * Open the QQ group in the system browser
- */
-async function openQQGroup() {
-  const { openUrl } = await import('@tauri-apps/plugin-opener');
-  await openUrl('https://qm.qq.com/q/AHUKoyLVKg');
 }
 </script>
 
@@ -262,40 +250,7 @@ async function openQQGroup() {
   font-size: 12px;
   color: var(--ag-text-secondary);
   line-height: 1.6;
-  margin: 0 0 12px;
-}
-
-.about-qq {
-  font-size: 12px;
-  color: var(--ag-text-tertiary);
   margin: 0 0 18px;
-}
-
-.qq-link {
-  color: var(--ag-accent);
-  text-decoration: none;
-  font-weight: 600;
-  transition: all var(--transition-fast);
-  position: relative;
-}
-
-.qq-link::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 0;
-  height: 1px;
-  background: var(--ag-accent);
-  transition: width var(--transition-fast);
-}
-
-.qq-link:hover {
-  color: var(--ag-accent-hover);
-}
-
-.qq-link:hover::after {
-  width: 100%;
 }
 
 .about-actions {
@@ -339,6 +294,11 @@ async function openQQGroup() {
   font-size: 13px;
   font-weight: 500;
   margin: 0 0 12px;
+}
+
+.update-error {
+  color: var(--ag-error);
+  font-size: 13px;
 }
 
 .update-latest {

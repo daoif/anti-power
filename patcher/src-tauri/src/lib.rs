@@ -1,16 +1,10 @@
-//! Anti-Power Patcher Rust backend
+//! Anti-Power Rust backend
 //!
-//! Find installations, apply and remove patches, and manage configuration
+//! Browse and clean local Antigravity App and Antigravity CLI sessions
 
 mod commands;
-mod embedded;
 
-use commands::{
-    check_patch_status, delete_session, detect_antigravity_path, detect_antigravity_version,
-    get_config, install_patch, load_session_messages, normalize_antigravity_path,
-    read_manager_patch_config, read_patch_config, run_anti_clean, save_config, scan_sessions,
-    uninstall_patch, update_config,
-};
+use commands::{delete_sessions, load_session_messages, scan_sessions};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -34,21 +28,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            detect_antigravity_path,
-            detect_antigravity_version,
-            normalize_antigravity_path,
-            install_patch,
-            uninstall_patch,
-            update_config,
-            check_patch_status,
-            read_patch_config,
-            read_manager_patch_config,
-            get_config,
-            save_config,
-            run_anti_clean,
             scan_sessions,
             load_session_messages,
-            delete_session
+            delete_sessions
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

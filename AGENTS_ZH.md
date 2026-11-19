@@ -1,106 +1,62 @@
-# AGENTS_ZH.md (Anti-Power 项目关键上下文)
+# AGENTS_ZH.md
 
 [English](AGENTS.md) | 中文
 
-> 目标: 让 AI 一眼理解本项目在做什么, 补丁如何落地, 关键入口在哪里.
-
 ## 项目定位
 
-- Anti-Power 是 Antigravity AI IDE 的增强补丁.
-- 主要增强侧边栏对话区域和 Manager 窗口: Mermaid 渲染, 数学公式渲染, 一键复制, 表格颜色修复, 字体大小控制等.
-- 侧边栏补丁支持新旧双入口, 按 `product.json.ideVersion` 自动切换:
-  - Legacy (< 1.18.3): `extensions/antigravity/cascade-panel.html` + `cascade-panel/`
-  - Modern (>= 1.18.3): `out/vs/code/electron-browser/workbench/workbench.html` + `sidebar-panel/`
-- 现已支持 Windows/macOS/Linux; 在 macOS/Linux 上可使用安装器产物或 `patcher/patches/anti-power.sh`, 也可走手动安装流程 (见 `README.md` / `patcher/patches/manual-install.md`).
-- 在 macOS/Linux 上, 安装器可能需要提权 (sudo/pkexec) 才能写入 `resources/app` 下的文件.
+Anti-Power 是一个桌面工具 (Tauri + Vue), 用来查看并清理 Antigravity App 和 Antigravity CLI (`agy`) 的本地会话, 不处理其他工具. 早期的 IDE 补丁 (Markdown 复制, LaTeX, Mermaid) 在 v4.0.0 之后已移除.
 
-## 补丁落地流程 (核心链路)
+用量和额度记录交给 [antigravity-usage-monitor](https://github.com/yuhuan-dev/antigravity-usage-monitor) 插件.
 
-1. 桌面安装器位于 `patcher/` (Tauri + Vue).
-2. Rust 后端负责: 检测安装路径, 安装/卸载, 更新配置 (`patcher/src-tauri/src/commands/*.rs`).
-3. 安装时会:
-   - 备份侧边栏与 Manager 入口文件为 `.bak` (按入口模式):
-     - 旧版侧边栏: `resources/app/extensions/antigravity/cascade-panel.html`
-     - 新版侧边栏: `resources/app/out/vs/code/electron-browser/workbench/workbench.html`
-     - Manager: `resources/app/out/vs/code/electron-browser/workbench/workbench-jetski-agent.html`
-   - 写入补丁文件与目录:
-     - 侧边栏 (旧版): `cascade-panel.html` + `cascade-panel/`
-     - 侧边栏 (新版): `workbench.html` + `sidebar-panel/`
-     - `workbench-jetski-agent.html` + `manager-panel/`
-   - 生成配置文件 (功能开关):
-     - 侧边栏配置路径按模式决定 (`cascade-panel/config.json` 或 `sidebar-panel/config.json`)
-     - `manager-panel/config.json`
-   - 如启用 Manager 补丁, 会从 `resources/app/product.json` 中移除相关 checksums, 避免出现"安装似乎损坏"提示.
-4. 补丁文件来源于 `patcher/patches/`, 嵌入清单由 `patcher/src-tauri/build.rs` 自动生成 (排除列表 `patcher/patches/.embed-exclude.txt`), `patcher/src-tauri/src/embedded.rs` 通过 `include!` 引入清单.
+## 目录
 
-## 关键目录 (修改点优先级)
+- `patcher/src-tauri/src/commands/`: Rust 后端
+  - `antigravity_store.rs`: 存储根目录, ID 校验, 不跟随符号链接的路径解析
+  - `antigravity_scan.rs`: 会话列表和消息读取
+  - `antigravity_clean.rs`: 会话清理
+  - `sessions.rs`: 三个 Tauri 命令 (`scan_sessions`, `load_session_messages`, `delete_sessions`)
+- `patcher/src/`: Vue 前端, 主界面是 `components/SessionViewer.vue`
+- `patcher/src/locales/`: `zh-CN` 和 `en-US` 文案
+- `.github/workflows/release.yml`: Windows, macOS, Linux 安装包构建
 
-- `patcher/patches/`: 注入到 Antigravity 的补丁源文件 (HTML/JS/CSS).
-- `patcher/src-tauri/`: 安装器后端逻辑 (路径检测, 备份/写入, 配置).
-- `patcher/src-tauri/src/commands/sessions.rs`: 对话浏览相关后端, 负责 Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的会话扫描/读取/删除.
-- `patcher/src/`: 安装器前端 UI (功能开关, 安装/卸载按钮).
-- `patcher/src/components/SessionViewer.vue`: 安装器中的对话浏览器界面.
-- `.github/workflows/`: 构建与发布流水线 (包含 macOS Universal 构建产物).
-- `docs/`: 开发, 发布, 结构, 已知问题与截图 (见 `docs/README.md`).
-- `docs/guides/developer-guide.md`: 完整的中文开发者文档, 包含 DOM 结构, 代码规范, 开发流程.
-- `tests/scripts/`: Playwright 脚本, 用于远程调试 Antigravity 的 Manager 窗口 DOM.
-- `patcher/patches/manual-install.md`: 随补丁压缩包提供的手动安装说明 (Windows/macOS/Linux).
-- `patcher/patches/workbench.html` + `patcher/patches/sidebar-panel/`: 新版侧边栏补丁入口与模块.
-- `patcher/patches/workbench-jetski-agent.html` + `patcher/patches/manager-panel/`: Manager 窗口补丁入口与模块.
+## 会话存储
 
-## Antigravity 内部 Hook 点
+| 来源 | 根目录 | 摘要索引 |
+|------|--------|----------|
+| Antigravity App (`antigravity`) | `~/.gemini/antigravity` | `agyhub_summaries_proto.pb` |
+| Antigravity CLI (`agy`) | `~/.gemini/antigravity-cli`, `~/.cc-switch/agy/<profile>/antigravity-cli` | `jetbox_summaries_proto.pb` |
 
-- 侧边栏 (旧版): `resources/app/extensions/antigravity/cascade-panel.html`
-- 侧边栏 (新版): `resources/app/out/vs/code/electron-browser/workbench/workbench.html`
-- Manager 窗口: `resources/app/out/vs/code/electron-browser/workbench/workbench-jetski-agent.html`
-- ~~注意: 修改 `workbench-jetski-agent.html` 会触发 "扩展已损坏" 提示~~ (v2.3.2+ 已修复)
+会话由来源和 UUID 共同确定. 在每个根目录下, 一个会话可能出现在 `conversations/`, `brain/`, `annotations/`, `presence/`, `conversation_summaries.db` (摘要, 全文索引, 父子关系), 摘要索引, `cache/last_conversations.json`, `cache/conversation_metadata.json` 和 `history.jsonl` (Antigravity CLI 的输入历史). 清理和保留的范围见 README.
 
-## 运行逻辑速览 (侧边栏补丁)
+最近在 macOS 上核对的版本是 Antigravity App 2.33.0 和 Antigravity CLI 1.5.12. Antigravity IDE (`~/.gemini/antigravity-ide`) 不在范围内.
 
-- 旧版入口: `patcher/patches/cascade-panel.html` -> `cascade-panel/cascade-panel.js`
-- 新版入口: `patcher/patches/workbench.html` -> `sidebar-panel/sidebar-panel.js`
-- 两套侧边栏模块都会读取 `config.json`, 按需加载模块并启动扫描.
-- `scan.js` 基于 DOM 监听与内容稳定性判断触发渲染与复制按钮注入.
+## 清理规则
 
-## 构建与发布 (安装器)
+- Antigravity App, Antigravity CLI 或 Antigravity IDE 运行时拒绝清理, 并指明需要退出哪一个.
+- 不跟随存储目录内的符号链接.
+- 先把待删文件移入 `.anti-power-clean-*`, 并在索引事务中记录提交. 清理中断后, 还原尚未提交的文件, 完成已提交的清理. 扫描时恢复失败只给出警告, 仍然列出会话.
+- 批量清理时每个存储目录只处理一遍: 一次事务, 一次全文索引重建, 一次 `VACUUM`. 整批失败时逐条重试, 但属于整个存储目录的错误不再重试.
+- 摘要索引格式无法识别时直接失败, 不做任何修改.
+- 子代理会话 (`nesting_depth > 0`) 随所属会话删除, fork 保留.
+- 其他工具能列出的会话这里也要能列出, 包括只剩索引的记录.
 
-- 在 `patcher/` 下:
-  - `npm run tauri:dev`
-  - `npm run tauri:build`
-- 发布前需同步版本号: `patcher/package.json`, `patcher/src-tauri/tauri.conf.json`, `patcher/src-tauri/Cargo.toml`, `patcher/src/App.vue`, `README.md` (详见 `docs/guides/release-guide.md`).
+## 构建和测试
 
-## 重要约束/风险
+在 `patcher/` 下执行:
 
-- 嵌入清单由 build.rs 自动生成, 新增/删除补丁文件时确认 `.embed-exclude.txt` 是否需要更新 (如 `config.json`, 文档).
-- 安装逻辑按模式使用白名单:
-  - 侧边栏旧版: `cascade-panel.html` + `cascade-panel/`
-  - 侧边栏新版: `workbench.html` + `sidebar-panel/`
-  - Manager: `workbench-jetski-agent.html` + `manager-panel/`
-- Manager 补丁会清理 `resources/app/product.json` 内的 checksums; 如未来补丁修改更多核心文件, 可能需要扩展 `patcher/src-tauri/src/commands/patch.rs` 中的清理列表.
-- Antigravity 官方更新会覆盖补丁, 需要重新安装.
-- 已知问题: 表格内含 `|` 的 LaTeX 公式渲染异常 (见 `docs/reference/known-issues.md`).
+```bash
+npm install
+npm run build          # 类型检查和前端构建
+npm run tauri:dev      # 运行应用
+cd src-tauri && cargo test && cargo clippy --all-targets
+```
 
-## 开发注意事项 (工具/环境)
+测试在临时目录里构造存储. 测试中不要对真实存储执行清理.
 
-- 文档统一使用英文标点符号 (中英文内容都使用英文标点), 避免中文标点导致工具处理异常.
-- `apply_patch` 在中文内容较长时可能触发 `byte index ... is not a char boundary`, 导致补丁失败.
-  - 解决: 使用提权 PowerShell `Set-Content -Encoding UTF8` 直接写入, 或先写 ASCII 再分段追加.
-- 写入 `patcher/patches/` 或清理 `tests/` 在沙箱下可能 `Access denied`, 需要使用提权命令执行写入/删除.
+## 约定
 
-## 近期变更 (v2.3.1 - v4.0.0)
-
-- macOS/Linux 跨平台支持 + 路径规范化与检测; Unix 提权安装流程 (sudo/pkexec)
-- 发布产物支持 macOS Universal (Intel/Apple Silicon)
-- Manager 补丁通过清理 `product.json` checksums 避免"安装似乎损坏"提示
-- 侧边栏补丁支持新旧入口分流, 并按 `ideVersion` 自动切换
-- KaTeX CSS/JS 并行加载; 复制按钮更多自定义与布局优化
-- Markdown 复制质量提升: 嵌套列表/代码块/内联格式与链接/段落和引用换行, SVG 过滤, 多余空行清理
-- LaTeX/Mermaid 渲染链路增强: 加载失败可重试, 流式更新可重渲染, 并清理 Mermaid 调试日志
-- Unix 提权安装与清理脚本改为唯一临时路径并自动回收, 卸载恢复后同步清理 `.bak` 备份残留
-- Windows 清理后端新增 `sqlite3` 可执行文件自动解析, 覆盖 PATH/Chocolatey/Git for Windows/Scoop/WinGet 常见安装来源, 降低 sqlite3 缺失导致的清理失败
-- 安装器启动路径恢复逻辑优化: 优先规范化已保存路径并刷新状态, 自动检测回退失败时保留已保存路径
-- 安装器新增本地对话浏览器, 清理工具新增 OpenCode, OpenClaw 支持
-- 侧边栏与 Manager 的代码块字号改为跟随面板自定义字号, 并在未自定义时回退到编辑器字号
-- 同步 Manager/侧边栏入口 CSP 白名单与上游保持一致, 修复最新版 Antigravity 下图标/字体渲染异常
-- 安装器与脚本新增识别 `Antigravity IDE` 在 Windows/macOS/Linux 下的安装路径和数据目录, 并兼容新版缺少 legacy extension 目录的结构
-- 侧边栏/Manager 内容扫描兼容新版 DOM 结构, 避免误绑定输入框与控制区, 选区复制可从 KaTeX/MathJax 渲染结果还原 LaTeX
+- 代码和文档保持精简.
+- 代码注释用英文, 注释符号后一个空格, 末尾不加句号.
+- 中英文文档统一使用英文标点.
+- 已发布的发布说明和更新日志条目保持原样.
+- `patcher/package.json`, `patcher/src-tauri/tauri.conf.json` 和 `patcher/src-tauri/Cargo.toml` 共用一个版本号 (见 `docs/guides/release-guide.md`).

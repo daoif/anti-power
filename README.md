@@ -5,131 +5,83 @@
 <h1 align="center">Anti-Power</h1>
 
 <p align="center">
-  <a href="https://github.com/daoif/anti-power/releases"><img src="https://img.shields.io/badge/版本-v4.0.0-blue.svg" alt="版本"></a>
-  <a href="https://antigravity.google/docs/ide-getting-started"><img src="https://img.shields.io/badge/支持_Antigravity_IDE-v2.0.6-green.svg" alt="Antigravity IDE"></a>
+  <a href="https://github.com/mikessslxxx/anti-power/releases"><img src="https://img.shields.io/badge/版本-v5.0.0-blue.svg" alt="版本"></a>
+  <img src="https://img.shields.io/badge/Antigravity_App-2.33.0-green.svg" alt="Antigravity App">
+  <img src="https://img.shields.io/badge/Antigravity_CLI-1.5.12-green.svg" alt="Antigravity CLI">
 </p>
 
 <p align="center">
   中文 | <a href="README_EN.md">English</a>
 </p>
 
-> 为 **Antigravity IDE** 的侧边栏和 Manager 提供 Markdown 复制, LaTeX 和 Mermaid 渲染, 以及深色主题下的表格配色修复.
-
-<p align="center">
-  <a href="https://qm.qq.com/q/AHUKoyLVKg">QQ 交流群: 993975349</a>
-</p>
+> 查看并清理 **Antigravity App** 和 **Antigravity CLI** (`agy`) 的本地会话.
 
 ## 功能
 
-| 功能 | 描述 |
+- 列出 Antigravity App (`~/.gemini/antigravity`) 和 Antigravity CLI (`~/.gemini/antigravity-cli`) 的会话, 也识别 CC Switch 的 `~/.cc-switch/agy/<profile>/antigravity-cli`
+- 按标题, 项目或会话 ID 搜索, 按来源筛选并查看消息
+- 单条或批量删除, 逐条显示结果
+- 标出只剩索引的残留记录 (其他工具删掉会话文件后留下的), 可照常删除
+
+已在 macOS 上用 Antigravity App 2.33.0 和 Antigravity CLI 1.5.12 核对. Windows 和 Linux 安装包尚未实测. 不支持 Antigravity IDE (`~/.gemini/antigravity-ide`).
+
+## 清理范围
+
+按来源和会话 ID 精确清理, 删除后 CC Switch 等工具刷新也不会再列出:
+
+| 位置 | 内容 |
 |------|------|
-| **Mermaid 渲染** | 自动渲染流程图, 时序图, 类图等, 支持深色主题 |
-| **数学公式渲染** | 支持 `$...$` 行内公式和 `$$...$$` 块级公式 |
-| **一键复制** | 用侧边栏或 Manager 的 Copy 按钮将回复复制为 Markdown |
-| **表格颜色修复** | 修复深色主题下表格文字不可见问题 |
-| **Manager 布局调节** | 调节对话宽度和字号，代码块随字号调整 |
-| **悬浮复制按钮** | 右上角悬停时显示，右下角始终显示 |
+| `conversations/<id>.db` 及 `-wal`, `-shm`, `-journal`, `<id>.pb` | 会话正文 |
+| `brain/<id>/` | 日志和产物 |
+| `annotations/<id>.pbtxt`, `presence/<id>.lock` | 注解和占用锁 |
+| `conversation_summaries.db` | 摘要, 全文索引, 父子关系 |
+| `agyhub_summaries_proto.pb`, `jetbox_summaries_proto.pb` | 摘要索引 |
+| `cache/last_conversations.json`, `cache/conversation_metadata.json` | 最近会话和摘要缓存 |
+| `history.jsonl` | Antigravity CLI 输入历史中属于该会话的条目 |
 
-### 回复复制
+- 子代理会话随所属会话一起删除, `/fork` 出的会话独立保留.
+- 同一 ID 可能同时出现在 Antigravity App 和 Antigravity CLI 中, 两边分别显示; 若要一并清除, 需分别勾选.
+- 不清理运行日志 (`log/`), 插件数据 (`sidecar_data/`) 和 Antigravity App 的窗口布局状态, 它们由各自应用管理. Usage Monitor 的缓存可能保留会话标题.
+- 清理后会压缩 `conversation_summaries.db`, 库内不留已删记录的片段; 若此时有其他工具正在读取该库, 压缩会被跳过, 片段会留到下次清理. 被删除的文件本身不做磁盘级擦除.
 
-- 代码块自动带语言标识, 例如 \`\`\`python
-- 自动将表格转为 Markdown
-- 跳过中间思考过程，只复制最终回复
-- 公式和 Mermaid 图表还原为源码
+删除前须退出 Antigravity App 和 Antigravity CLI; Antigravity IDE 运行时同样会拒绝清理. 删除无法撤销.
 
-### 安装器
+如果清理中途退出, 关闭上述客户端后重新打开 Anti-Power 或刷新列表: 已提交的清理会继续收尾, 尚未提交的清理会还原; 无法恢复时列表上方会给出提示.
 
-- 切换中文和英文界面
-- 切换深色和浅色主题
-- 自动查找 IDE 安装目录
-- 使用**对话浏览器**查看和批量删除 Claude Code、Codex、Gemini CLI、OpenCode 和 OpenClaw 的本地对话
-- 清理 Windows、macOS 和 Linux 上 Antigravity、Gemini CLI、Codex、Claude Code、OpenCode 和 OpenClaw 的对话缓存
+## 用量和额度
 
-## 效果截图
-
-[效果截图](docs/reference/screenshots.md)
-
-## 安装
-
-<details>
-<summary>展开查看 (Windows, macOS, Linux)</summary>
-
-### Windows
-
-1. 前往 Releases 页面下载 `anti-power-windows.exe`
-2. 双击运行, 无需安装
-3. 安装器自动检测 Antigravity 安装路径
-4. 选择需要的功能, 点击 "安装补丁"
-5. 重启 Antigravity 或重新打开 Manager 窗口以加载补丁
-
-如需手动安装, 下载 Release 中的补丁压缩包 (`anti-power-patches.zip`), 并参考 [manual-install.md](patcher/patches/manual-install.md).
-
-### macOS
-
-1. 下载 `anti-power-macos-universal.dmg` (Intel/Apple Silicon)
-2. 打开 DMG，将 `Anti-Power.app` 拖到“应用程序”（Applications）文件夹
-3. 运行 `Anti-Power.app`, 按提示安装补丁
-
-#### macOS 提示 "已损坏" 时
-
-首次打开时若提示 "已损坏" 或 "无法打开", 可尝试以下临时方案.
+推荐直接使用 [antigravity-usage-monitor](https://github.com/yuhuan-dev/antigravity-usage-monitor), 它以 Antigravity 插件的形式安装:
 
 ```bash
-# 清除隔离属性 (请按实际安装路径调整)
-xattr -cr /Applications/Anti-Power.app
+git clone https://github.com/yuhuan-dev/antigravity-usage-monitor.git ~/.gemini/config/plugins/usage-monitor
 ```
 
-也可以右键点击应用，选择 "打开"。
+然后在 Antigravity App 的 **Customizations → Installed** 中启用 `usage-monitor`.
 
-### Linux
+## 安装和运行
 
-1. 下载 `anti-power-linux.AppImage`
-2. 赋予执行权限并运行, 按提示安装补丁
+在 [Releases](https://github.com/mikessslxxx/anti-power/releases) 下载对应平台的安装包:
+
+- **Windows**: `anti-power-windows.exe`
+- **macOS (Universal)**: `anti-power-macos-universal.dmg` (未签名, 首次打开若提示 "已损坏", 运行 `xattr -cr /Applications/Anti-Power.app`)
+- **Linux**: `anti-power-linux.AppImage`
+
+从源码运行需要 Node.js 22.12+ 和 Rust 1.95+:
 
 ```bash
-chmod +x ./anti-power-linux.AppImage
-./anti-power-linux.AppImage
+cd patcher
+npm install
+npm run tauri:dev
 ```
 
-### macOS 和 Linux 脚本安装
+## 旧版补丁
 
-安装器无法使用或需要命令行安装、批量安装时，从 Release 下载并解压 `anti-power-patches.zip`，再运行 `anti-power.sh`。
-
-> 在终端中以**管理员权限**运行脚本.
-
-```bash
-# 在补丁包解压目录执行
-chmod +x ./anti-power.sh
-sudo ./anti-power.sh
-```
-
-如需手动安装, 请参考 [manual-install.md](patcher/patches/manual-install.md).
-
-</details>
-
-## 使用说明
-
-- **更新覆盖**: Antigravity 更新可能覆盖补丁. 若被覆盖, 请重新安装.
-- **版本兼容**: 使用前请核对当前 Antigravity 版本是否与支持版本一致.
-- **备份文件**: 替换前先备份原文件, 以便恢复.
+Google Antigravity 已内置 LaTeX 和 Mermaid 渲染, 补丁功能已移除. [v4.0.0](https://github.com/mikessslxxx/anti-power/releases/tag/v4.0.0) 是最后一个包含补丁的版本, 支持到 Antigravity IDE v2.0.6.
 
 ## 文档
 
-- [文档索引与项目结构](docs/README.md)
-- 已知问题: [known-issues.md](docs/reference/known-issues.md)
-- 开发者文档: [developer-guide.md](docs/guides/developer-guide.md) | [English](docs/guides/developer-guide_EN.md)
+- 更新日志: [CHANGELOG.md](CHANGELOG.md)
 - 发布指南: [release-guide.md](docs/guides/release-guide.md)
-
-## 版本与兼容性
-
-当前版本: **v4.0.0** | 支持 Antigravity IDE: **v2.0.6**
-
-完整更新日志请查看 [CHANGELOG.md](CHANGELOG.md).
-
-## 表格颜色修复参考
-
-- **视频教程**: [Antigravity 完美深色主题修改指南](https://www.bilibili.com/video/BV1vTrgBXEA1)
-- **图文教程**: [表格文字看不清的终极解决方案](https://dpit.lib00.com/zh/content/1192/antigravity-perfect-dark-theme-modification-guide-fix-invisible-table-text)
 
 ## 贡献
 
@@ -137,7 +89,7 @@ sudo ./anti-power.sh
 
 ## 致谢
 
-- [@mikessslxxx](https://github.com/mikessslxxx)
+- [@daoif](https://github.com/daoif) (原作者)
 - [@syanle](https://github.com/syanle)
 - [@Sophomoresty](https://github.com/Sophomoresty)
 - [@Wusir7355608](https://github.com/Wusir7355608)

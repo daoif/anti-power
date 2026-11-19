@@ -1,23 +1,9 @@
-# 测试依赖
-tests/node_modules/
-tests/package-lock.json
+.DS_Store
 
-# Playwright 临时输出文件
-tests/temp/
-
-# Playwright 测试产物
-tests/test-results/
-tests/playwright-report/
-
-# Patcher 前端
+# Frontend
 patcher/node_modules/
 patcher/dist/
 
-# Patcher Tauri (Rust)
+# Tauri
 patcher/src-tauri/target/
 patcher/src-tauri/gen/
-
-# 构建产物
-anti-power-patches.zip
-
-.DS_Store

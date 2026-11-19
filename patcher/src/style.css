@@ -1,4 +1,66 @@
-@import "tailwindcss";
+/* Base reset, kept in a layer so component styles always win */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+
+  html {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  ul {
+    list-style: none;
+  }
+
+  img,
+  svg,
+  canvas {
+    display: block;
+    vertical-align: middle;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+
+  button {
+    appearance: button;
+  }
+
+  ::placeholder {
+    opacity: 1;
+    color: color-mix(in oklab, currentcolor 50%, transparent);
+  }
+
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+}
 
 /* Antigravity-inspired base styles */
 
@@ -180,10 +242,6 @@
 /*
  * Base styles
  */
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   padding: 0;
@@ -195,12 +253,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-}
-
-.card,
-.actions-card,
-.clean-area {
-  box-shadow: var(--ag-shadow-card);
 }
 
 button,
@@ -315,63 +367,6 @@ input[type="checkbox"]:disabled {
 }
 
 /*
- * Radio buttons
- */
-input[type="radio"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--ag-accent);
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: var(--ag-surface-2);
-  border: 1.5px solid var(--ag-border);
-  border-radius: 50%;
-  position: relative;
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
-}
-
-input[type="radio"]:hover:not(:disabled) {
-  border-color: var(--ag-accent);
-  background-color: var(--ag-accent-subtle);
-}
-
-input[type="radio"]:checked {
-  background-color: var(--ag-surface-2);
-  border-color: var(--ag-accent);
-  box-shadow: 0 0 0 1px var(--ag-accent-subtle);
-}
-
-input[type="radio"]:checked::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 7px;
-  height: 7px;
-  background: var(--ag-accent);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: radioFill 0.15s ease-out;
-}
-
-/*
- * Number inputs
- */
-input[type="number"] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  appearance: none;
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/*
  * Text selection
  */
 ::selection {
@@ -406,28 +401,6 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 }
 
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.6;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
-}
-
 @keyframes checkmark {
   from {
     transform: rotate(45deg) scale(0);
@@ -437,46 +410,4 @@ input[type="number"]::-webkit-inner-spin-button {
     transform: rotate(45deg) scale(1);
     opacity: 1;
   }
-}
-
-@keyframes radioFill {
-  from {
-    transform: translate(-50%, -50%) scale(0);
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(51, 118, 205, 0);
-  }
-  50% {
-    box-shadow: 0 0 12px 2px rgba(51, 118, 205, 0.15);
-  }
-}
-
-@keyframes card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Animation utility classes */
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-pulse {
-  animation: pulse 2s ease-in-out infinite;
 }

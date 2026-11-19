@@ -1,143 +1,46 @@
-# Anti-Power Patcher 发布指南
+# Anti-Power 发布指南
 
 ## 版本号同步
 
-| 文件 | 路径 |
+| 文件 | 位置 |
 |------|------|
-| package.json | `patcher/package.json` -> `version` |
-| Tauri 配置 | `patcher/src-tauri/tauri.conf.json` -> `version` |
-| Cargo 配置 | `patcher/src-tauri/Cargo.toml` -> `version` |
-| 前端显示 | `patcher/src/App.vue` -> `APP_VERSION` |
-| README 版本徽章 | `README.md` -> 顶部版本号徽章 |
-| README_EN 版本徽章 | `README_EN.md` -> 顶部版本号徽章 |
-| README 支持版本说明 | `README.md` / `README_EN.md` -> 支持的 Antigravity 版本 |
-| 更新日志 | `CHANGELOG.md` / `CHANGELOG_EN.md` -> 添加新版本记录 |
-| Release 说明 | `release-notes.md` -> 更新发布说明 |
+| `patcher/package.json` | `version` (界面显示的版本号取自这里) |
+| `patcher/src-tauri/tauri.conf.json` | `version` |
+| `patcher/src-tauri/Cargo.toml` | `version` |
+| `README.md`, `README_EN.md` | 版本徽章, 已核对的 Antigravity App 和 Antigravity CLI 版本 |
+| `CHANGELOG.md`, `CHANGELOG_EN.md` | 新版本记录 |
+| `release-notes.md` | 本次发布说明 |
 
----
+改完版本号后在 `patcher/` 运行 `npm install`, 在 `patcher/src-tauri/` 运行 `cargo check`, 让两个 lock 文件同步.
 
-## 发布流程 (GitHub Actions 自动化)
+## 发布流程
 
-### 1. 更新版本号
+1. 按上表同步版本号, 在 `release-notes.md` 写好发布说明.
+2. 提交并推送标签:
 
-按上表同步版本号和支持版本说明.
-
-### 2. 编写发布说明
-
-在 `release-notes.md` 中填写本次发布说明。
-
-```markdown
-## 新功能
-- 功能描述
-
-## 修复
-- 修复描述
-
-## 致谢
-- 感谢 @mikessslxxx
-
-## 安装
-- **Windows**: 下载 `anti-power-windows.exe`
-- **macOS (Universal)**: 下载 `anti-power-macos-universal.dmg`
-- **Linux**: 下载 `anti-power-linux.AppImage`
-- **手动安装**: 下载 `anti-power-patches.zip`
-```
-
-### 3. 提交并打 Tag
-
-```powershell
-# 提交代码
-git add -A
-git commit -m "release: vX.Y.Z"
-
-# 创建标签并推送
+```bash
+git commit -am "release: vX.Y.Z"
 git tag vX.Y.Z
-git push origin master
-git push origin vX.Y.Z
+git push origin master vX.Y.Z
 ```
 
-### 4. 等待 CI 自动构建
+3. 标签会触发 GitHub Actions, 在 Windows, macOS, Linux 上构建并创建 Release, 说明取自 `release-notes.md`. 进度见仓库的 **Actions** 页面.
 
-推送标签会触发 GitHub Actions。
-1. 在 Windows, macOS, Linux 三平台并行编译
-2. 生成补丁压缩包
-3. 创建 GitHub Release 并上传所有产物
+产物: `anti-power-windows.exe`, `anti-power-macos-universal.dmg`, `anti-power-linux.AppImage`.
 
-在仓库的 **Actions** 页面查看构建进度。
+macOS 构建未签名, 首次打开若提示 "已损坏", 运行 `xattr -cr /Applications/Anti-Power.app`.
 
-### 5. 完善 Release 说明 (可选)
+## 本地构建
 
-CI 创建的 Release 使用 `release-notes.md` 的内容.
-如需修改, 可在 GitHub Release 页面直接编辑.
-
----
-
-## 手动构建 (本地调试用)
-
-在本地构建安装器。
-
-```powershell
+```bash
 cd patcher
 npm run tauri:build
 ```
 
-产物位置: `patcher/src-tauri/target/release/anti-power.exe`
-
-### 编译选项
-
-修改 `tauri.conf.json` 中的 `bundle.targets`:
-
-| 值 | 说明 |
-|----|------|
-| `[]` | 仅生成单体 exe |
-| `["nsis"]` | 生成 Windows 安装包 |
-| `"all"` | 生成所有格式 |
-
----
-
-## 手动生成补丁压缩包
-
-```powershell
-# 以项目根目录执行
-Compress-Archive -Path patcher\patches\* -DestinationPath anti-power-patches.zip -Force
-```
-
----
+产物在 `patcher/src-tauri/target/release/`. `tauri.conf.json` 的 `bundle.targets` 为 `[]` 时只生成可执行文件, 用 `--bundles dmg` 等参数生成安装包.
 
 ## 版本号规范
 
 - **Major**: 不兼容的重大变更
 - **Minor**: 新增功能
-- **Patch**: Bug 修复
-
----
-
-## 故障排除
-
-### CI 构建失败
-
-1. 查看 Actions 页面的错误日志
-2. 常见问题:
-   - 依赖安装失败: 检查 `package.json` 和 `Cargo.toml`
-   - 签名问题: macOS 构建可能需要配置签名证书 (当前跳过签名)
-
-### 手动发布
-
-如 CI 不可用, 参考旧版流程手动发布:
-
-```powershell
-# 1. 本地编译
-cd patcher
-npm run tauri:build
-
-# 2. 生成补丁包
-cd ..
-Compress-Archive -Path patcher\patches\* -DestinationPath anti-power-patches.zip -Force
-
-# 3. 使用 gh 发布
-gh release create vX.Y.Z `
-  "patcher/src-tauri/target/release/anti-power.exe" `
-  "anti-power-patches.zip" `
-  --title "vX.Y.Z" `
-  --notes-file release-notes.md
-```
+- **Patch**: 问题修复

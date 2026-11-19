@@ -1,28 +1,12 @@
-# Anti-Power Patcher
+# Anti-Power App
 
-安装器基于 Tauri、Vue 和 TypeScript，可检测 Antigravity 安装目录、安装或卸载补丁并写入配置。
+基于 Tauri, Vue 和 TypeScript 的桌面应用. 需要 Node.js 22.12+ 和 Rust 1.95+.
 
-## 运行与构建
-
-```powershell
+```bash
 npm install
-npm run tauri:dev
+npm run tauri:dev      # 运行
+npm run tauri:build    # 构建, 产物在 src-tauri/target/release/
 ```
 
-```powershell
-npm run tauri:build
-```
-
-产物输出在 `patcher/src-tauri/target/release/`.
-
-## 目录说明
-
-- `src/`: 安装器前端界面
-- `src-tauri/`: Tauri 后端命令与补丁安装逻辑
-- `patches/`: 补丁源文件与手动安装材料
-
-## 推荐 IDE
-
-- VS Code + Vue - Official
-- Tauri
-- rust-analyzer
+- `src/`: 前端界面
+- `src-tauri/`: Rust 后端 (会话扫描和清理)

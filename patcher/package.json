@@ -1,7 +1,8 @@
 {
-  "name": "patcher",
+  "name": "anti-power",
+  "description": "Local session manager for the Antigravity App and Antigravity CLI",
   "private": true,
-  "version": "4.0.0",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,21 +13,20 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.10.1",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
-    "@tauri-apps/plugin-opener": "^2",
-    "vue": "^3.5.13",
-    "vue-i18n": "^9.14.5"
+    "@tauri-apps/api": "^2.12.5",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
+    "@tauri-apps/plugin-opener": "^2.7.3",
+    "vue": "^3.5.45",
+    "vue-i18n": "^11.4.22"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
-    "@tauri-apps/cli": "^2",
-    "@vitejs/plugin-vue": "^5.2.1",
-    "autoprefixer": "^10.4.23",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.18",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.3",
-    "vue-tsc": "^2.1.10"
+    "@tauri-apps/cli": "^2.12.6",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.8",
+    "vue-tsc": "^3.3.14"
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }

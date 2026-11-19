@@ -1,4 +1,4 @@
-# Build installers and publish them with the patch ZIP
+# Build installers and publish them
 # Run on v* tags or manual dispatch
 
 name: Release
@@ -10,12 +10,13 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: '发布的版本号 (如 v2.3.3)'
+        description: 'Existing release tag, such as v5.0.0'
         required: true
         type: string
 
 env:
   CARGO_TERM_COLOR: always
+  RELEASE_TAG: ${{ inputs.tag_name || github.ref_name }}
 
 jobs:
   build:
@@ -28,7 +29,7 @@ jobs:
             rust_targets: x86_64-pc-windows-msvc
             bundle: nsis
             artifact_name: anti-power-windows
-            artifact_path: patcher/src-tauri/target/x86_64-pc-windows-msvc/release/anti-power.exe
+            artifact_path: patcher/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
           - platform: macos-15
             target: universal-apple-darwin
             rust_targets: x86_64-apple-darwin, aarch64-apple-darwin
@@ -43,15 +44,17 @@ jobs:
             artifact_path: patcher/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
 
     runs-on: ${{ matrix.platform }}
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           package-manager-cache: false
 
       - name: Setup Rust
@@ -83,34 +86,18 @@ jobs:
           path: ${{ matrix.artifact_path }}
           if-no-files-found: error
 
-  # Package patches independently of installer builds
-  package-patches:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Create patches zip
-        run: |
-          cd patcher/patches
-          zip -r ../../anti-power-patches.zip .
-
-      - name: Upload patches artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: anti-power-patches.zip
-          path: anti-power-patches.zip
-
-  # Publish the installers and patch ZIP together
+  # Publish the installers together
   release:
-    needs: [build, package-patches]
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
@@ -121,28 +108,17 @@ jobs:
         run: |
           mkdir -p release-files
           # Windows
-          cp artifacts/anti-power-windows/anti-power.exe release-files/anti-power-windows.exe
+          cp artifacts/anti-power-windows/*-setup.exe release-files/anti-power-windows.exe
           # macOS Universal
           cp artifacts/anti-power-macos-universal/*.dmg release-files/anti-power-macos-universal.dmg
           # Linux AppImage
           cp artifacts/anti-power-linux/*.AppImage release-files/anti-power-linux.AppImage
-          # Patches
-          cp artifacts/anti-power-patches.zip/anti-power-patches.zip release-files/
-
-      - name: Determine tag name
-        id: tag
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
           draft: false
           prerelease: false
@@ -150,6 +126,5 @@ jobs:
             release-files/anti-power-windows.exe
             release-files/anti-power-macos-universal.dmg
             release-files/anti-power-linux.AppImage
-            release-files/anti-power-patches.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,313 +1,78 @@
 {
     "app": {
         "error": {
-            "checkPatch": "检测补丁状态失败",
-            "clean": "清理失败",
-            "detect": "检测失败",
-            "install": "安装失败",
-            "normalizePath": "路径规范化失败",
-            "readVersion": "读取版本号失败",
-            "selectPath": "选择目录失败",
-            "uninstall": "卸载失败",
-            "unknown": "未知错误",
-            "updateConfig": "更新配置失败"
+            "unknown": "未知错误"
         },
-        "files": {
-            "cascadePanelLabel": "(侧边栏模块)",
-            "sidebarLegacyLabel": "(侧边栏模块 · 旧版入口)",
-            "sidebarModernLabel": "(侧边栏模块 · 新版入口)",
-            "sidebarLegacyCleanupLabel": "(旧版残留目录清理)",
-            "sidebarModernCleanupLabel": "(新版残留目录清理)",
-            "managerPanelLabel": "(Manager模块)"
-        },
-        "github": "GitHub",
         "title": "Anti-Power",
         "version": "版本 v{version}"
-    },
-    "actions": {
-        "browse": "浏览...",
-        "install": "安装补丁",
-        "reinstall": "重新安装",
-        "restore": "恢复原版",
-        "updateConfig": "更新配置"
-    },
-    "status": {
-        "ideVersion": "Antigravity v{version}",
-        "ideVersionUnknown": "Antigravity 版本未知",
-        "installed": "已安装",
-        "installedHint": "已检测到补丁，可直接更新配置，无需重装",
-        "notInstalled": "未安装",
-        "notInstalledHint": "请选择路径，配置选项后再安装"
-    },
-    "pathCard": {
-        "detectButton": "重新检测",
-        "detecting": "检测中...",
-        "error": {
-            "openDir": "打开目录失败"
-        },
-        "openDir": "打开目录",
-        "placeholder": "未检测到 Antigravity 安装目录",
-        "selectTitle": "选择 Antigravity 安装目录",
-        "targetLabelCascade": "侧边栏增强（自动匹配新旧入口）",
-        "targetLabelManager": "Manager 窗口增强",
-        "title": "安装目录",
-        "viewTarget": "查看目标路径"
-    },
-    "featureCard": {
-        "copyButton": {
-            "collapse": "收起选项",
-            "customPlaceholder": "自定义文字",
-            "desc": "在内容区域添加复制按钮",
-            "expand": "展开选项",
-            "showBottom": "显示底部按钮",
-            "smartHover": "智能感应（鼠标在按钮附近才显示）",
-            "styleChinese": "复制 📋",
-            "styleLabel": "按钮样式",
-            "title": "一键复制按钮"
-        },
-        "enablePatch": "启用补丁",
-        "fontSize": {
-            "desc": "调整侧边栏消息区域的整体字体大小",
-            "title": "侧边栏字体大小"
-        },
-        "math": {
-            "desc": "使用 KaTeX/MathJax 渲染 LaTeX 公式",
-            "title": "数学公式渲染"
-        },
-        "mermaid": {
-            "desc": "自动渲染 Mermaid 代码块为流程图",
-            "title": "Mermaid 流程图渲染"
-        },
-        "tableColor": {
-            "desc": "修复深色主题下表格文字不可见问题",
-            "title": "表格颜色修正"
-        },
-        "title": "侧边栏设置"
-    },
-    "managerCard": {
-        "fontSize": {
-            "desc": "自定义消息区域的字体大小 (px)",
-            "title": "Manager 字体大小"
-        },
-        "maxWidth": {
-            "desc": "设置消息区域最大宽度占比 (%)",
-            "title": "对话区域最大宽度"
-        },
-        "title": "Manager 窗口设置"
-    },
-    "cleanTool": {
-        "cleanCache": "清理对话",
-        "cleaning": "清理对话中...",
-        "confirmMessage": "将清理 {targets} 的对话与缓存，建议先关闭正在运行的应用。确定继续？",
-        "confirmMessageNoApp": "将清理 {targets} 的对话与缓存。确定继续？",
-        "confirmTitle": "清理确认",
-        "enableToggle": "启用清理",
-        "forceClean": "强制清理",
-        "forceConfirmMessage": "将强制清理（忽略运行中检测），可能影响正在运行的应用。将清理 {targets} 的对话与缓存。确定继续？",
-        "forceConfirmMessageNoApp": "将强制清理（忽略运行中检测）。将清理 {targets} 的对话与缓存。确定继续？",
-        "forceConfirmTitle": "强制清理",
-        "targetHint": "请至少选择一个清理范围",
-        "targetSeparator": "、",
-        "targetTitle": "清理范围",
-        "targets": {
-            "antigravity": "Antigravity",
-            "claude": "Claude Code",
-            "codex": "Codex 归档",
-            "gemini": "Gemini CLI",
-            "opencode": "OpenCode",
-            "openclaw": "OpenClaw"
-        },
-        "title": "对话清理工具"
-    },
-    "cleanBackend": {
-        "done": "完成！",
-        "errors": {
-            "antigravityDataDirNotFound": "无法确定 Antigravity 数据目录",
-            "backupFileFailed": "备份文件失败",
-            "dataDirNotFound": "找不到数据目录",
-            "executeScriptFailed": "执行脚本失败",
-            "homeDirNotFound": "无法确定用户目录",
-            "noTarget": "未选择清理目标",
-            "readDirEntryFailed": "读取目录项失败",
-            "readDirFailed": "读取目录失败",
-            "readFileTypeFailed": "读取文件类型失败",
-            "removeDirFailed": "删除目录失败",
-            "removeFileFailed": "删除文件失败",
-            "runningDetected": "错误: 检测到 {name} 正在运行，请先退出后再执行 (或使用 --force)",
-            "setScriptPermissionsFailed": "设置脚本权限失败",
-            "sqlite3ExecFailed": "执行 sqlite3 失败",
-            "sqlite3Missing": "错误: 未找到 sqlite3，请先安装后再运行",
-            "sqliteCleanFailed": "清理数据库失败",
-            "sqliteCountFailed": "读取数据库计数失败",
-            "tasklistExecFailed": "执行 tasklist 失败",
-            "unsupportedPlatform": "当前平台暂不支持该功能",
-            "writeTempScriptFailed": "写入临时脚本失败"
-        },
-        "labels": {
-            "cleanDirContents": "清理目录内容",
-            "deletedFile": "删除文件",
-            "skipDirMissing": "跳过: 目录不存在",
-            "skipFileMissing": "跳过: 文件不存在",
-            "skipNotDir": "跳过: 不是目录",
-            "skipNotFound": "跳过: 未找到"
-        },
-        "logs": {
-            "backup": "备份 {name} -> {backup}",
-            "cleanedDb": "清理 {name} (before={before}, after={after})"
-        },
-        "sections": {
-            "antigravity": {
-                "backupDb": "备份数据库...",
-                "cleanDb": "清理数据库..."
-            },
-            "codex": {
-                "cleanArchive": "清理归档对话..."
-            },
-            "shared": {
-                "cleanCache": "清理对话缓存..."
-            }
-        }
-    },
-    "configBackend": {
-        "errors": {
-            "createConfigDirFailed": "创建配置目录失败: {detail}",
-            "saveConfigFailed": "保存配置失败: {detail}",
-            "serializeConfigFailed": "序列化配置失败: {detail}"
-        }
-    },
-    "patchBackend": {
-        "errors": {
-            "allocateUniqueTempDirFailed": "无法分配唯一临时目录",
-            "backupCascadeFailed": "备份 cascade-panel.html 失败: {detail}",
-            "backupManagerEntryFailed": "备份 workbench-jetski-agent.html 失败: {detail}",
-            "cannotWriteDir": "无法写入目录: {detail}",
-            "cleanTempDirFailed": "清理临时目录失败: {detail}",
-            "createCascadeDirFailed": "创建 cascade-panel 目录失败: {detail}",
-            "createDirFailed": "创建目录失败: {detail}",
-            "createManagerDirFailed": "创建 manager-panel 目录失败: {detail}",
-            "createTempDirFailed": "创建临时目录失败: {detail}",
-            "executePkexecFailed": "执行 pkexec 失败: {detail}",
-            "invalidInstallDir": "无效的 Antigravity 安装目录",
-            "invokeTerminalFailed": "调用 Terminal 失败: {detail}",
-            "macosPermissionHint": "{message}。macOS 可能拦截了对应用包的修改，请在 系统设置 -> 隐私与安全性 -> App 管理 为 Anti-Power 授权，必要时再在“完全磁盘访问”中授权；或将 Antigravity.app 移动到 ~/Applications 后重试。资源路径: {path}",
-            "managerDirMissing": "Manager 窗口目录不存在",
-            "missingManagerConfig": "缺少 Manager 配置",
-            "missingSidebarConfig": "缺少侧边栏配置",
-            "notFound": "未找到 {name}",
-            "parseConfigFailed": "解析配置失败: {detail}",
-            "parseManagerConfigFailed": "解析 Manager 配置失败: {detail}",
-            "parseProductJsonFailed": "解析 product.json 失败: {detail}",
-            "patchNotInstalled": "补丁尚未安装，请先安装补丁",
-            "patchesDirNotFound": "未找到 patches 目录，请从项目根目录或 patcher 目录启动",
-            "permissionDeniedDir": "权限不足: 无法写入目录 {dir}. 请以管理员身份运行或将应用安装到可写位置。",
-            "pkexecNotFound": "未找到 pkexec，请安装 polkit 或使用 sudo 从终端运行应用",
-            "privilegedCanceledOrFailed": "管理员权限操作被取消或失败",
-            "privilegedScriptFailed": "管理员脚本执行失败: {message}",
-            "readConfigFailed": "读取配置失败: {detail}",
-            "readManagerConfigFailed": "读取 Manager 配置失败: {detail}",
-            "readPatchFileFailed": "读取补丁文件失败: {detail}",
-            "readProductJsonFailed": "读取 product.json 失败: {detail}",
-            "readScriptPermissionsFailed": "读取脚本权限失败: {detail}",
-            "readStatusFileFailed": "读取状态文件失败: {detail}",
-            "removeCascadeDirFailed": "删除 cascade-panel 目录失败: {detail}",
-            "removeManagerDirFailed": "删除 manager-panel 目录失败: {detail}",
-            "removeOldCascadeDirFailed": "删除旧 cascade-panel 目录失败: {detail}",
-            "removeOldManagerDirFailed": "删除旧 manager-panel 目录失败: {detail}",
-            "restoreCascadeFailed": "恢复 cascade-panel.html 失败: {detail}",
-            "restoreManagerEntryFailed": "恢复 workbench-jetski-agent.html 失败: {detail}",
-            "serializeProductJsonFailed": "序列化 product.json 失败: {detail}",
-            "setScriptPermissionsFailed": "设置脚本权限失败: {detail}",
-            "terminalCommandFailedCode": "终端命令执行失败，退出码 {code}",
-            "terminalNotFinished": "终端尚未完成，请在 Terminal 中完成授权后重试",
-            "unsupportedPrivilegedFlow": "当前平台不支持管理员权限补丁流程，请手动运行补丁脚本",
-            "writeConfigFailed": "写入配置文件失败: {detail}",
-            "writeFileFailed": "写入文件失败: {detail}",
-            "writeManagerConfigFailed": "写入 Manager 配置文件失败: {detail}",
-            "writeProductJsonFailed": "写入 product.json 失败: {detail}"
-        }
     },
     "aboutModal": {
         "checkFailed": "检查失败",
         "checkUpdate": "检查更新",
-        "checking": "检查中...",
+        "checking": "检查中…",
         "copyright": "© 2026 Anti-Power · MIT License",
-        "desc": "Antigravity AI IDE 增强补丁管理工具，让你的 AI 对话体验更上一层楼！",
+        "desc": "Antigravity App 和 Antigravity CLI 的本地会话管理工具。",
         "download": "前往下载",
         "error": {
             "checkUpdate": "检查更新失败"
         },
         "latest": "✓ 已是最新版本",
         "networkError": "网络错误",
-        "newVersion": "🎉 发现新版本: v{version}",
-        "qqGroup": "QQ 交流群:",
+        "newVersion": "发现新版本：v{version}",
         "repo": "GitHub 仓库",
         "title": "关于"
     },
-    "confirmModal": {
-        "added": "将添加的文件/目录",
-        "badgeAdded": "新增",
-        "badgeDeprecated": "清理",
-        "badgeModified": "覆盖",
-        "cancel": "取消",
-        "confirm": "确认安装",
-        "deprecated": "将删除的废弃文件",
-        "message": "即将安装 Anti-Power 补丁，请确认以下文件变更：",
-        "messageLegacy": "即将安装 Anti-Power 补丁（侧边栏旧版入口：cascade-panel.html），请确认以下文件变更：",
-        "messageModern": "即将安装 Anti-Power 补丁（侧边栏新版入口：workbench.html），请确认以下文件变更：",
-        "messageUnknown": "即将安装 Anti-Power 补丁（未识别到 Antigravity 版本，默认按旧版入口处理），请确认以下文件变更：",
-        "modified": "将修改的原始文件",
-        "note": "注意：",
-        "noteContent": "如果你对上述原始文件进行过自定义修改，这些修改将被覆盖。首次安装时会自动备份原文件（.bak）",
-        "title": "确认安装补丁"
-    },
-    "toast": {
-        "cleanFailed": "✗ 清理失败: {error}",
-        "cleanSuccess": "✓ 清理完成",
-        "configUpdated": "✓ 配置已更新",
-        "installFailed": "✗ 安装失败: {error}",
-        "installSuccess": "✓ 补丁安装成功",
-        "noPatchEnabled": "✗ 请至少启用一个补丁模块后再安装",
-        "restoreFailed": "✗ 恢复失败: {error}",
-        "restoreSuccess": "✓ 已恢复原版",
-        "updateFailed": "✗ 更新失败: {error}"
-    },
     "sessionViewer": {
-        "close": "关闭",
-        "copyMessage": "复制消息",
+        "batchDelete": "删除选中会话",
+        "batchDeleteConfirmMessage": "要从所选来源永久删除这 {count} 条本地会话记录及其已知正文、日志和索引吗？占用中的会话无法删除，此操作无法撤销。",
+        "cancel": "取消",
+        "confirmDelete": "永久删除",
+        "confirmFailed": "无法打开删除确认框：{error}",
         "copied": "已复制",
-        "deleteSession": "删除此对话",
-        "deleteConfirmTitle": "确认删除",
-        "deleteConfirmMessage": "确定要删除对话「{name}」吗？此操作无法撤销。",
-        "selectAll": "全选",
-        "selectedCount": "已选 {count} 项",
-        "batchDelete": "删除选中",
-        "batchDeleteConfirmTitle": "确认批量删除",
-        "batchDeleteConfirmMessage": "确定要删除选中的 {count} 个对话吗？此操作无法撤销。",
-        "filterAll": "全部",
-        "loadFailed": "加载失败: {error}",
-        "loadingMessages": "加载中...",
+        "copyMessage": "复制消息",
+        "deleteConfirmMessage": "要从以下本地来源永久删除会话「{name}」的已知正文、日志和索引吗？\n{path}\n\n占用中的会话无法删除，此操作无法撤销。",
+        "deleteConfirmTitle": "确认永久删除",
+        "deleteFailed": "{name}：{error}",
+        "deleteOtherSources": "其他来源也有相同会话 ID 的记录。若要让 CC Switch 刷新后不再显示此会话，请切到「全部来源」，按 ID 搜索并批量删除所有匹配记录。",
+        "deleteResult": "已删除 {deleted} 个，失败 {failed} 个",
+        "deleteSession": "删除会话",
+        "deleting": "正在删除…",
+        "filterAll": "全部来源",
+        "filterLabel": "会话来源",
+        "indexOnly": "仅索引",
+        "indexOnlyHint": "此来源只有该会话的索引，会话文件已不存在或保存在其他来源。删除后其他工具将不再从此来源列出它。",
+        "loadFailed": "无法读取消息：{error}",
+        "loadingMessages": "正在读取消息…",
         "messageCount": "{count} 条消息",
-        "noMessages": "选择一个对话以查看内容",
-        "noSessions": "未找到对话记录",
-        "openButton": "查看对话",
-        "projectDir": "项目目录",
+        "noMatches": "没有符合筛选条件的会话",
+        "noMessages": "此会话没有可查看的消息",
+        "noSessions": "未找到 Antigravity App 或 Antigravity CLI 会话",
+        "projectDir": "项目",
         "providers": {
-            "claude": "Claude Code",
-            "codex": "Codex",
-            "gemini": "Gemini CLI",
-            "opencode": "OpenCode",
-            "openclaw": "OpenClaw"
+            "antigravity": "Antigravity App",
+            "agy": "Antigravity CLI"
         },
+        "providersShort": {
+            "antigravity": "App",
+            "agy": "CLI"
+        },
+        "recoveryPending": "以下存储有未完成的清理，尚未恢复。若 Antigravity App 或 Antigravity CLI 仍在运行，请退出后刷新：",
+        "refresh": "刷新",
         "roles": {
             "assistant": "助手",
-            "system": "系统",
-            "tool": "工具",
             "user": "用户"
         },
-        "scanFailed": "扫描失败: {error}",
-        "scanning": "正在扫描...",
-        "searchPlaceholder": "搜索对话...",
-        "sessionCount": "{count} 个对话",
+        "scanFailed": "无法扫描会话：{error}",
+        "scanning": "正在扫描会话…",
+        "searchLabel": "搜索会话",
+        "searchPlaceholder": "搜索会话…",
+        "selectAll": "全选当前列表",
+        "selectSession": "选中 {name}",
+        "selectToView": "选择一个会话查看消息",
+        "selectedCount": "已选 {count} 个",
+        "sessionCount": "{count} 个会话",
+        "sessionId": "会话 ID：{id}",
+        "sourcePath": "来源：{path}",
         "timeAgo": {
             "daysAgo": "{n} 天前",
             "hoursAgo": "{n} 小时前",
@@ -316,7 +81,7 @@
             "monthsAgo": "{n} 个月前",
             "weeksAgo": "{n} 周前"
         },
-        "title": "对话浏览器"
+        "title": "会话管理"
     },
     "titleBar": {
         "about": "关于",
