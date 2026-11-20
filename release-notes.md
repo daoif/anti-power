@@ -1,47 +1,27 @@
-# Release Notes / 发布说明 (v5.0.0)
+# Release Notes / 发布说明 (v5.0.1)
 
 ## 新功能
 
-- 项目转为 Antigravity App 和 Antigravity CLI (`agy`) 的本地会话管理工具, 支持查看, 搜索, 单条和批量删除
-- 按来源和会话 ID 清理会话正文, 日志, 注解, 占用锁, 摘要数据库, 全文索引 (删除后重建 FTS5, 压缩数据库并执行 WAL 检查点), protobuf 摘要索引, 最近会话, 摘要缓存和 Antigravity CLI 输入历史, 清理后 CC Switch 不再列出
-- 支持清理中断后的自动恢复: 重新打开应用或刷新列表时, 已提交的清理继续收尾, 未提交的清理自动还原
-- 列出并可清理只剩索引的残留记录, 包括只存在于 protobuf 摘要索引里的记录
-- 批量删除时每个存储目录只处理一遍, 单条失败不影响同批其他会话
-- 识别 CC Switch 的 Antigravity CLI 配置目录 (`~/.cc-switch/agy/<profile>/antigravity-cli`)
-
-## 移除
-
-- 移除侧边栏和 Manager 补丁 (Markdown 复制, LaTeX, Mermaid, 表格配色), 补丁安装器和脚本. Google Antigravity 已内置相关能力, 需要旧版补丁请使用 [v4.0.0](https://github.com/mikessslxxx/anti-power/releases/tag/v4.0.0)
-- 移除 Claude Code, Codex, Gemini CLI, OpenCode, OpenClaw 的对话浏览和缓存清理
-
-## 依赖
-
-- 升级到 Tauri 2.12, Vite 8, TypeScript 6, vue-i18n 11, rusqlite 0.43, sysinfo 0.40
-- 移除 Tailwind CSS, 改用轻量基础样式重置
-- 源码构建需要 Node.js 22.12+ 和 Rust 1.95+
+- 删除会话时一并清理插件 `sidecar_data/` 下的事件, Usage Monitor 缓存条目和相关日志行, 与会话文件在同一可恢复清理中提交
+- 同步清理 Antigravity App `app_storage.json` 中的窗口布局和侧栏状态
+- 新增两个默认关闭的可选项, 勾选状态会被记住:
+  - **CC Switch 同步记录**: 删除 `~/.cc-switch/` 下的 `cc-switch.db` 及 `backups/*.db` 中的会话文件同步进度, 保留用量和费用历史 (需先退出 CC Switch)
+  - **Antigravity App 浏览器缓存**: 清空 `Cache/` 和 `Code Cache/`, 其中可能留有会话 ID, 会自动重建
+- 应用数据目录和 CC Switch 的清理若失败, 会话不会回滚, 结果中会列出未清理项
+- 只对之后删除的会话生效, 不处理以前删除留下的残留
 - 已核对版本: Antigravity App 2.33.0, Antigravity CLI 1.5.12 (macOS). Windows 和 Linux 安装包尚未实测
 
 ---
 
 ## New Features
 
-- Anti-Power is now a local session manager for the Antigravity App and the Antigravity CLI (`agy`): browse, search, and delete single or multiple sessions
-- Scoped cleanup removes conversation data, logs, annotations, presence lock, summary database rows, full-text index (with FTS5 rebuild, database compaction, and WAL checkpoint), protobuf summary index entries, recent-session/summary caches, and Antigravity CLI prompt history entries for one source and session ID, so CC Switch no longer lists the session
-- Automatic recovery for interrupted cleanups: reopening the app or refreshing the list finalizes committed deletions and restores uncommitted ones
-- Lists and cleans index-only leftovers, including records present only in the protobuf summary index
-- Batch deletion cleans each store in one pass, and one failed session does not block the rest of the batch
-- Detects CC Switch profile directories for the Antigravity CLI (`~/.cc-switch/agy/<profile>/antigravity-cli`)
-
-## Removed
-
-- Removed Sidebar and Manager patches (Markdown copy, LaTeX, Mermaid, table colors), the patch installer, and the scripts. Google Antigravity now handles these natively; use [v4.0.0](https://github.com/mikessslxxx/anti-power/releases/tag/v4.0.0) if you still need the patches
-- Removed session browsing and cache cleanup for Claude Code, Codex, Gemini CLI, OpenCode, and OpenClaw
-
-## Dependencies
-
-- Upgraded to Tauri 2.12, Vite 8, TypeScript 6, vue-i18n 11, rusqlite 0.43, and sysinfo 0.40
-- Removed Tailwind CSS in favor of a minimal base style reset
-- Building from source requires Node.js 22.12+ and Rust 1.95+
+- Deleting a session also removes its plugin `sidecar_data/` events, Usage Monitor cache entry, and matching log lines as part of the same recoverable cleanup
+- Also removes the session's window layout and side panel state from the Antigravity App's `app_storage.json`
+- Two new options, off by default and remembered:
+  - **CC Switch sync records**: removes session file sync progress from `cc-switch.db` and `backups/*.db` under `~/.cc-switch/`, keeping usage and cost history (quit CC Switch first)
+  - **Antigravity App browser cache**: empties `Cache/` and `Code Cache/`, which can hold session IDs and are rebuilt automatically
+- If app data or CC Switch cleanup fails, the session stays deleted and the result lists what was not cleaned
+- Applies to sessions deleted from now on; leftovers from earlier deletions are not cleaned
 - Verified against Antigravity App 2.33.0 and Antigravity CLI 1.5.12 on macOS. The Windows and Linux builds are untested
 
 ---

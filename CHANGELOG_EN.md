@@ -4,6 +4,18 @@
 
 ---
 
+## v5.0.1 (2026-11-20)
+
+### New Features
+- Deleting a session also removes its plugin `sidecar_data/` events, Usage Monitor cache entry, and matching log lines as part of the same recoverable cleanup
+- Also removes the session's window layout and side panel state from the Antigravity App's `app_storage.json`
+- Two new options, off by default and remembered:
+  - **CC Switch sync records**: removes session file sync progress from `cc-switch.db` and `backups/*.db` under `~/.cc-switch/`, keeping usage and cost history (quit CC Switch first)
+  - **Antigravity App browser cache**: empties `Cache/` and `Code Cache/`, which can hold session IDs and are rebuilt automatically
+- If app data or CC Switch cleanup fails, the session stays deleted and the result lists what was not cleaned
+
+---
+
 ## v5.0.0 (2026-11-19)
 
 ### New Features

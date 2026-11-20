@@ -40,6 +40,23 @@ pub struct SessionRef {
     pub session_id: String,
 }
 
+/// Optional cleanup beyond the session stores
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CleanOptions {
+    /// Remove session sync records from CC Switch and its backups
+    pub cc_switch: bool,
+    /// Empty the Antigravity App's Chromium caches
+    pub app_cache: bool,
+}
+
+/// Per-session deletion errors in order, plus post-commit cleanup warnings
+#[derive(Debug, Serialize)]
+pub struct DeleteReport {
+    pub errors: Vec<Option<String>>,
+    pub warnings: Vec<String>,
+}
+
 /// A single session message
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,8 +93,15 @@ pub fn load_session_messages(
     antigravity_scan::load_messages(&home_dir()?, &provider_id, Path::new(&source_path))
 }
 
-/// Delete sessions and return the error, if any, for each one in order
+/// Delete sessions and optional external data
 #[tauri::command(async)]
-pub fn delete_sessions(sessions: Vec<SessionRef>) -> Result<Vec<Option<String>>, String> {
-    Ok(antigravity_clean::delete(&home_dir()?, &sessions))
+pub fn delete_sessions(
+    sessions: Vec<SessionRef>,
+    options: Option<CleanOptions>,
+) -> Result<DeleteReport, String> {
+    Ok(antigravity_clean::delete(
+        &home_dir()?,
+        &sessions,
+        options.unwrap_or_default(),
+    ))
 }

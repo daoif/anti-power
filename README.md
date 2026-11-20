@@ -5,7 +5,7 @@
 <h1 align="center">Anti-Power</h1>
 
 <p align="center">
-  <a href="https://github.com/mikessslxxx/anti-power/releases"><img src="https://img.shields.io/badge/版本-v5.0.0-blue.svg" alt="版本"></a>
+  <a href="https://github.com/mikessslxxx/anti-power/releases"><img src="https://img.shields.io/badge/版本-v5.0.1-blue.svg" alt="版本"></a>
   <img src="https://img.shields.io/badge/Antigravity_App-2.33.0-green.svg" alt="Antigravity App">
   <img src="https://img.shields.io/badge/Antigravity_CLI-1.5.12-green.svg" alt="Antigravity CLI">
 </p>
@@ -38,11 +38,22 @@
 | `agyhub_summaries_proto.pb`, `jetbox_summaries_proto.pb` | 摘要索引 |
 | `cache/last_conversations.json`, `cache/conversation_metadata.json` | 最近会话和摘要缓存 |
 | `history.jsonl` | Antigravity CLI 输入历史中属于该会话的条目 |
+| `sidecar_data/<插件>/<面板>/events/*.json` | 插件 sidecar 事件 |
+| `sidecar_data/<插件>/<面板>/` 下的 `data/trajectory_usage_cache.json`, `logs/sidecar.log` | Usage Monitor 缓存条目和相关日志行 |
+| Antigravity App 数据目录的 `app_storage.json` | 窗口布局和侧栏状态 |
 
 - 子代理会话随所属会话一起删除, `/fork` 出的会话独立保留.
 - 同一 ID 可能同时出现在 Antigravity App 和 Antigravity CLI 中, 两边分别显示; 若要一并清除, 需分别勾选.
-- 不清理运行日志 (`log/`), 插件数据 (`sidecar_data/`) 和 Antigravity App 的窗口布局状态, 它们由各自应用管理. Usage Monitor 的缓存可能保留会话标题.
+- Antigravity App 数据目录在 macOS 上是 `~/Library/Application Support/Antigravity`, Windows 上是 `%APPDATA%\Antigravity`, Linux 上是 `~/.config/Antigravity`.
+- 不清理运行日志 (`log/`), 也不清理写到 `/tmp` 或项目目录里的文件.
 - 清理后会压缩 `conversation_summaries.db`, 库内不留已删记录的片段; 若此时有其他工具正在读取该库, 压缩会被跳过, 片段会留到下次清理. 被删除的文件本身不做磁盘级擦除.
+
+界面上方有两个默认关闭的可选项, 勾选状态会被记住:
+
+- **CC Switch 同步记录**: 从 `~/.cc-switch/` 下的 `cc-switch.db` 及 `backups/*.db` 中删除会话文件的同步进度 (`session_log_sync`), 并压缩数据库. 需先退出 CC Switch. 用量和费用历史 (`proxy_request_logs`, `session_usage_dedup`, `usage_daily_rollups`) 会保留; 它们只含会话 ID, 模型和 token 用量, 不含对话内容.
+- **Antigravity App 浏览器缓存**: 清空 Antigravity App 数据目录下的 `Cache/` 和 `Code Cache/`. 这两个目录无法按会话过滤, 可能留有会话 ID; Antigravity App 会自动重建, 下次启动稍慢.
+
+应用数据目录和 CC Switch 的清理在会话删除提交后执行; 若失败, 会话不会回滚, 结果中会列出未清理项.
 
 删除前须退出 Antigravity App 和 Antigravity CLI; Antigravity IDE 运行时同样会拒绝清理. 删除无法撤销.
 

@@ -7,6 +7,14 @@ pub(super) const CLI: &str = "agy";
 pub(super) const INDEX_DB: &str = "conversation_summaries.db";
 pub(super) const METADATA: &str = "cache/conversation_metadata.json";
 
+// Electron data folder of the Antigravity App, relative to the home directory
+#[cfg(target_os = "macos")]
+pub(super) const APP_DATA: &str = "Library/Application Support/Antigravity";
+#[cfg(windows)]
+pub(super) const APP_DATA: &str = "AppData/Roaming/Antigravity";
+#[cfg(not(any(target_os = "macos", windows)))]
+pub(super) const APP_DATA: &str = ".config/Antigravity";
+
 pub(super) fn roots(home: &Path, provider_id: &str) -> io::Result<Vec<PathBuf>> {
     let gemini = home.join(".gemini");
     match provider_id {

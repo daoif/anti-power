@@ -2,7 +2,7 @@
   "name": "anti-power",
   "description": "Local session manager for the Antigravity App and Antigravity CLI",
   "private": true,
-  "version": "5.0.0",
+  "version": "5.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",

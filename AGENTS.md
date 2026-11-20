@@ -14,6 +14,7 @@ Usage and quota tracking is left to the [antigravity-usage-monitor](https://gith
   - `antigravity_store.rs`: store roots, ID validation, symlink-safe path resolution
   - `antigravity_scan.rs`: session listing and message loading
   - `antigravity_clean.rs`: session cleanup
+  - `cleanup_extras.rs`: Antigravity App window state and caches, and CC Switch sync records
   - `sessions.rs`: the three Tauri commands (`scan_sessions`, `load_session_messages`, `delete_sessions`)
 - `patcher/src/`: Vue frontend; `components/SessionViewer.vue` is the main view
 - `patcher/src/locales/`: `zh-CN` and `en-US` strings
@@ -26,17 +27,18 @@ Usage and quota tracking is left to the [antigravity-usage-monitor](https://gith
 | Antigravity App (`antigravity`) | `~/.gemini/antigravity` | `agyhub_summaries_proto.pb` |
 | Antigravity CLI (`agy`) | `~/.gemini/antigravity-cli`, `~/.cc-switch/agy/<profile>/antigravity-cli` | `jetbox_summaries_proto.pb` |
 
-A session is identified by its source and UUID. Under each root, a session can appear in `conversations/`, `brain/`, `annotations/`, `presence/`, `conversation_summaries.db` (summaries, FTS, parents), the summary index, `cache/last_conversations.json`, `cache/conversation_metadata.json`, and `history.jsonl` (the Antigravity CLI prompt history). The README lists what cleanup removes and what it leaves.
+A session is identified by its source and UUID. Under each root, a session can appear in `conversations/`, `brain/`, `annotations/`, `presence/`, `conversation_summaries.db` (summaries, FTS, parents), the summary index, `cache/last_conversations.json`, `cache/conversation_metadata.json`, `history.jsonl` (the Antigravity CLI prompt history), and plugin `sidecar_data/`. Outside the stores, the Antigravity App keeps window state in `app_storage.json`, and CC Switch keeps sync progress in `~/.cc-switch/cc-switch.db` and its backups. The README lists what cleanup removes and what it leaves.
 
 Last checked on macOS against Antigravity App 2.33.0 and Antigravity CLI 1.5.12. Antigravity IDE (`~/.gemini/antigravity-ide`) is out of scope.
 
 ## Cleanup rules
 
-- Refuse to run while the Antigravity App, the Antigravity CLI, or Antigravity IDE is running, and name the one to quit.
+- Refuse to run while the Antigravity App, the Antigravity CLI, Antigravity IDE, or (when its option is on) CC Switch is running, and name the one to quit.
 - Never follow symlinks inside a store.
 - Stage files in `.anti-power-clean-*` and record the commit in the index transaction. After an interruption, restore uncommitted files and finish committed deletions. A scan reports a failed recovery as a warning and still lists sessions.
 - Clean each store in one pass for a batch: one transaction, one FTS rebuild, one `VACUUM`. When a batch fails, retry sessions one by one unless the failure is store-wide.
 - Fail without changes when a summary index has an unknown layout.
+- Clean data outside the stores after the stores commit, and report failures as warnings.
 - Nested agent runs (`nesting_depth > 0`) go with their parent. Forks stay.
 - A session listed by another tool must be listed here, including records with only index entries.
 

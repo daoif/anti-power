@@ -4,6 +4,18 @@
 
 ---
 
+## v5.0.1 (2026-11-20)
+
+### 新功能
+- 删除会话时一并清理插件 `sidecar_data/` 下的事件, Usage Monitor 缓存条目和相关日志行, 与会话文件在同一可恢复清理中提交
+- 同步清理 Antigravity App `app_storage.json` 中的窗口布局和侧栏状态
+- 新增两个默认关闭的可选项, 勾选状态会被记住:
+  - **CC Switch 同步记录**: 删除 `~/.cc-switch/` 下的 `cc-switch.db` 及 `backups/*.db` 中的会话文件同步进度, 保留用量和费用历史 (需先退出 CC Switch)
+  - **Antigravity App 浏览器缓存**: 清空 `Cache/` 和 `Code Cache/`, 其中可能留有会话 ID, 会自动重建
+- 应用数据目录和 CC Switch 的清理若失败, 会话不会回滚, 结果中会列出未清理项
+
+---
+
 ## v5.0.0 (2026-11-19)
 
 ### 新功能

@@ -5,7 +5,7 @@
 <h1 align="center">Anti-Power</h1>
 
 <p align="center">
-  <a href="https://github.com/mikessslxxx/anti-power/releases"><img src="https://img.shields.io/badge/Version-v5.0.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/mikessslxxx/anti-power/releases"><img src="https://img.shields.io/badge/Version-v5.0.1-blue.svg" alt="Version"></a>
   <img src="https://img.shields.io/badge/Antigravity_App-2.33.0-green.svg" alt="Antigravity App">
   <img src="https://img.shields.io/badge/Antigravity_CLI-1.5.12-green.svg" alt="Antigravity CLI">
 </p>
@@ -38,11 +38,22 @@ Each deletion is scoped to a single source and session ID. After cleanup, tools 
 | `agyhub_summaries_proto.pb`, `jetbox_summaries_proto.pb` | Summary index |
 | `cache/last_conversations.json`, `cache/conversation_metadata.json` | Recent sessions and cached summaries |
 | `history.jsonl` | Session entries in the Antigravity CLI prompt history |
+| `sidecar_data/<plugin>/<panel>/events/*.json` | Plugin sidecar events |
+| `data/trajectory_usage_cache.json`, `logs/sidecar.log` under `sidecar_data/<plugin>/<panel>/` | Usage Monitor cache entry and matching log lines |
+| `app_storage.json` in the Antigravity App data folder | Window layout and side panel state |
 
 - Subagent conversations are removed with their parent. Sessions created by `/fork` are kept.
 - The same ID can exist in both the Antigravity App and Antigravity CLI. Each is listed separately; select both to remove it from both.
-- Runtime logs (`log/`), plugin data (`sidecar_data/`), and the Antigravity App's window layout are left untouched and managed by their respective apps. Usage Monitor's cache may still retain session titles.
+- The Antigravity App data folder is `~/Library/Application Support/Antigravity` on macOS, `%APPDATA%\Antigravity` on Windows, and `~/.config/Antigravity` on Linux.
+- Runtime logs (`log/`) and files written to `/tmp` or project folders are left untouched.
 - After cleanup, `conversation_summaries.db` is compacted so that no fragments of removed rows remain inside it; if another tool is reading the database, compaction is skipped and fragments stay until the next cleanup. Deleted files themselves are not wiped at the disk level.
+
+Two options at the top of the window are off by default, and the choice is remembered:
+
+- **CC Switch sync records**: removes session file sync progress (`session_log_sync`) from `cc-switch.db` and `backups/*.db` under `~/.cc-switch/`, then compacts each database. Quit CC Switch first. Usage and cost history (`proxy_request_logs`, `session_usage_dedup`, `usage_daily_rollups`) is kept; it holds session IDs, models, and token usage, not conversation content.
+- **Antigravity App browser cache**: empties `Cache/` and `Code Cache/` in the Antigravity App data folder. They cannot be filtered by session and may hold session IDs; the Antigravity App rebuilds them, so the next launch is a little slower.
+
+App data and CC Switch cleanup runs after session deletion is committed; if it fails, the session stays deleted and the result lists what was not cleaned.
 
 Quit the Antigravity App and Antigravity CLI before deleting; cleanup is also refused while Antigravity IDE is running. Deletion cannot be undone.
 

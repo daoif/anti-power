@@ -20,6 +20,18 @@
       </div>
     </div>
 
+    <div class="sv-options">
+      <span>{{ $t('sessionViewer.cleanOptions') }}</span>
+      <label class="sv-select-all" :title="$t('sessionViewer.optionCcSwitchHint')">
+        <input v-model="cleanOptions.ccSwitch" type="checkbox" :disabled="actionsBusy" />
+        <span>{{ $t('sessionViewer.optionCcSwitch') }}</span>
+      </label>
+      <label class="sv-select-all" :title="$t('sessionViewer.optionAppCacheHint')">
+        <input v-model="cleanOptions.appCache" type="checkbox" :disabled="actionsBusy" />
+        <span>{{ $t('sessionViewer.optionAppCache') }}</span>
+      </label>
+    </div>
+
     <div v-if="scanError" class="sv-feedback sv-error" role="alert">
       {{ $t('sessionViewer.scanFailed', { error: scanError }) }}
     </div>
@@ -32,7 +44,11 @@
     <div v-if="confirmationError" class="sv-feedback sv-error" role="alert">
       {{ $t('sessionViewer.confirmFailed', { error: confirmationError }) }}
     </div>
-    <div v-if="deleteResult" class="sv-feedback" :class="{ 'sv-error': deleteResult.failures.length }">
+    <div
+      v-if="deleteResult"
+      class="sv-feedback"
+      :class="{ 'sv-error': deleteResult.failures.length || deleteResult.warnings.length }"
+    >
       <div role="status">
         {{ $t('sessionViewer.deleteResult', { deleted: deleteResult.deleted, failed: deleteResult.failures.length }) }}
       </div>
@@ -41,6 +57,12 @@
           {{ $t('sessionViewer.deleteFailed', { name: failure.name, error: failure.error }) }}
         </li>
       </ul>
+      <template v-if="deleteResult.warnings.length">
+        <div>{{ $t('sessionViewer.deleteWarnings') }}</div>
+        <ul>
+          <li v-for="warning in deleteResult.warnings" :key="warning">{{ warning }}</li>
+        </ul>
+      </template>
     </div>
 
     <div class="sv-body">
@@ -218,6 +240,26 @@ interface SessionMessage {
 interface DeleteResult {
   deleted: number;
   failures: { key: string; name: string; sourcePath: string; error: string }[];
+  warnings: string[];
+}
+
+interface CleanOptions {
+  ccSwitch: boolean;
+  appCache: boolean;
+}
+
+const CLEAN_OPTIONS_KEY = 'anti-power-clean-options';
+
+function loadCleanOptions(): CleanOptions {
+  const options: CleanOptions = { ccSwitch: false, appCache: false };
+  try {
+    const saved = JSON.parse(localStorage.getItem(CLEAN_OPTIONS_KEY) ?? '{}');
+    options.ccSwitch = saved?.ccSwitch === true;
+    options.appCache = saved?.appCache === true;
+  } catch {
+    // Keep defaults
+  }
+  return options;
 }
 
 const providerIds = ['antigravity', 'agy'];
@@ -237,6 +279,10 @@ const messageError = ref('');
 const confirmationError = ref('');
 const deleteResult = ref<DeleteResult | null>(null);
 const copiedIdx = ref<number | null>(null);
+const cleanOptions = ref(loadCleanOptions());
+watch(cleanOptions, options => {
+  localStorage.setItem(CLEAN_OPTIONS_KEY, JSON.stringify(options));
+}, { deep: true });
 let detailRequest = 0;
 let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -433,9 +479,14 @@ async function deleteSessions(targets: SessionMeta[], message: string) {
   deletionPending.value = true;
   confirmationError.value = '';
   try {
+    const options = { ...cleanOptions.value };
+    const extras = [
+      options.ccSwitch && t('sessionViewer.confirmCcSwitch'),
+      options.appCache && t('sessionViewer.confirmAppCache'),
+    ].filter(Boolean);
     let confirmed: boolean;
     try {
-      confirmed = await ask(message, {
+      confirmed = await ask([message, ...extras].join('\n\n'), {
         title: t('sessionViewer.deleteConfirmTitle'),
         kind: 'warning',
         okLabel: t('sessionViewer.confirmDelete'),
@@ -453,10 +504,12 @@ async function deleteSessions(targets: SessionMeta[], message: string) {
     const failures: DeleteResult['failures'] = [];
     // The backend cleans each store in one pass and reports an error per session
     let errors: (string | null)[];
+    let warnings: string[] = [];
     try {
-      errors = await invoke<(string | null)[]>('delete_sessions', {
+      ({ errors, warnings } = await invoke<{ errors: (string | null)[]; warnings: string[] }>('delete_sessions', {
         sessions: targets.map(({ providerId, sourcePath, sessionId }) => ({ providerId, sourcePath, sessionId })),
-      });
+        options,
+      }));
     } catch (error) {
       errors = targets.map(() => errorMessage(error));
     }
@@ -474,7 +527,7 @@ async function deleteSessions(targets: SessionMeta[], message: string) {
     for (const key of deleted) checkedSessions.value.delete(key);
     if (selectedKey.value && deleted.has(selectedKey.value)) void selectSession(null);
 
-    deleteResult.value = { deleted: deleted.size, failures };
+    deleteResult.value = { deleted: deleted.size, failures, warnings };
     await scanSessions();
   } finally {
     isDeleting.value = false;
@@ -569,6 +622,18 @@ async function deleteSessions(targets: SessionMeta[], message: string) {
 .sv-panel select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.sv-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--ag-border);
+  font-size: 11px;
+  color: var(--ag-text-tertiary);
+  flex-shrink: 0;
 }
 
 .sv-feedback {

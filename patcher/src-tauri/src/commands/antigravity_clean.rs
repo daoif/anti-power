@@ -1,13 +1,14 @@
 use super::antigravity_store::{
     checked_path, locate, roots, valid_id, DESKTOP, INDEX_DB, METADATA,
 };
-use super::sessions::SessionRef;
+use super::cleanup_extras::{self, Cleaned};
+use super::sessions::{CleanOptions, DeleteReport, SessionRef};
 use rusqlite::{Connection, OpenFlags, OptionalExtension, TransactionBehavior};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
 
@@ -21,6 +22,7 @@ const DESKTOP_INDEX: &str = "agyhub_summaries_proto.pb";
 const CLI_INDEX: &str = "jetbox_summaries_proto.pb";
 const RECENTS: &str = "cache/last_conversations.json";
 const HISTORY: &str = "history.jsonl";
+const SIDECAR: &str = "sidecar_data";
 type Filter = fn(&[u8], &BTreeSet<String>) -> Result<Option<Vec<u8>>>;
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -46,17 +48,27 @@ enum Client {
     Ide,
 }
 
-/// Delete sessions and return the error for each one that could not be removed
-pub(super) fn delete(home: &Path, sessions: &[SessionRef]) -> Vec<Option<String>> {
-    delete_with(home, sessions, require_clients_closed)
+/// Delete sessions and clean related external app data
+pub(super) fn delete(home: &Path, sessions: &[SessionRef], options: CleanOptions) -> DeleteReport {
+    let check_clients = || require_clients_closed(options.cc_switch);
+    let (errors, cleaned) = delete_with(home, sessions, check_clients);
+    let warnings = if cleaned.is_empty() {
+        Vec::new()
+    } else if let Err(error) = check_clients() {
+        vec![format!("Skipped cleaning related app data: {error}")]
+    } else {
+        cleanup_extras::run(home, &cleaned, options)
+    };
+    DeleteReport { errors, warnings }
 }
 
 fn delete_with(
     home: &Path,
     sessions: &[SessionRef],
     check_clients: impl Fn() -> Result<()>,
-) -> Vec<Option<String>> {
+) -> (Vec<Option<String>>, Vec<Cleaned>) {
     let mut results = vec![None; sessions.len()];
+    let mut cleaned = Vec::new();
     let mut stores = BTreeMap::<_, Vec<(usize, String)>>::new();
     for (i, session) in sessions.iter().enumerate() {
         match locate_store(home, session) {
@@ -71,26 +83,40 @@ fn delete_with(
         for (i, _) in stores.into_values().flatten() {
             results[i] = Some(error.to_string());
         }
-        return results;
+        return (results, cleaned);
     }
     for ((root, index), group) in stores {
         let ids: Vec<&str> = group.iter().map(|(_, id)| id.as_str()).collect();
-        let Err(error) = clean(&root, index, &ids, &check_clients) else {
-            continue;
-        };
-        // Retry sessions individually on failure, but skip retries for store-wide errors
-        let mut error = (group.len() == 1 || error.is::<StoreWide>()).then(|| error.to_string());
-        for (i, id) in &group {
-            results[*i] = error.clone().or_else(|| {
-                let retry = clean(&root, index, &[id], &check_clients).err()?;
-                if retry.is::<StoreWide>() {
-                    error = Some(retry.to_string());
+        let mut removed = BTreeSet::new();
+        match clean(&root, index, &ids, &check_clients) {
+            Ok(ids) => removed = ids,
+            Err(error) => {
+                // Retry sessions individually on failure, but skip retries for store-wide errors
+                let mut error =
+                    (group.len() == 1 || error.is::<StoreWide>()).then(|| error.to_string());
+                for (i, id) in &group {
+                    results[*i] = error.clone().or_else(|| {
+                        match clean(&root, index, &[id], &check_clients) {
+                            Ok(ids) => {
+                                removed.extend(ids);
+                                None
+                            }
+                            Err(retry) => {
+                                if retry.is::<StoreWide>() {
+                                    error = Some(retry.to_string());
+                                }
+                                Some(retry.to_string())
+                            }
+                        }
+                    });
                 }
-                Some(retry.to_string())
-            });
+            }
+        }
+        if !removed.is_empty() {
+            cleaned.push(Cleaned { root, ids: removed });
         }
     }
-    results
+    (results, cleaned)
 }
 
 fn locate_store(
@@ -116,7 +142,7 @@ pub(super) fn index_name(provider_id: &str) -> &'static str {
     }
 }
 
-fn require_clients_closed() -> Result<()> {
+fn require_clients_closed(cc_switch: bool) -> Result<()> {
     let mut system = System::new()?;
     system.refresh_processes_specifics(
         ProcessesToUpdate::All,
@@ -127,26 +153,37 @@ fn require_clients_closed() -> Result<()> {
         return Err("Could not verify that Google Antigravity clients are closed".into());
     }
     let mut running = [false; 2];
+    let mut cc_switch_running = false;
     for process in system.processes().values() {
         let name = process
             .exe()
             .and_then(Path::file_name)
             .unwrap_or_else(|| process.name());
+        let name = name.to_string_lossy();
         let path = process
             .exe()
             .map(|path| path.to_string_lossy())
             .unwrap_or_default();
-        if let Some(client) = client(&name.to_string_lossy(), &path) {
+        if let Some(client) = client(&name, &path) {
             running[client as usize] = true;
         }
+        cc_switch_running |= cc_switch && is_cc_switch(&name);
     }
     let quit = match running {
+        [false, false] if cc_switch_running => {
+            return Err("Quit CC Switch before cleaning its records".into());
+        }
         [false, false] => return Ok(()),
         [true, false] => "the Antigravity App and Antigravity CLI",
         [false, true] => "Antigravity IDE",
         [true, true] => "the Antigravity App, Antigravity CLI, and Antigravity IDE",
     };
     Err(format!("Quit {quit} before cleaning sessions").into())
+}
+
+fn is_cc_switch(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    matches!(name.trim_end_matches(".exe"), "cc-switch" | "cc switch")
 }
 
 // Antigravity IDE is out of scope, but it still blocks cleanup while it runs
@@ -174,7 +211,7 @@ fn clean(
     index: &str,
     ids: &[&str],
     check_clients: impl Fn() -> Result<()>,
-) -> Result<()> {
+) -> Result<BTreeSet<String>> {
     check_clients().map_err(store_wide)?;
     with_store_lock(root, |root| {
         let mut connection = open_index(root).map_err(store_wide)?;
@@ -195,7 +232,7 @@ pub(super) fn recover_pending(home: &Path, provider_id: &str) -> Vec<String> {
             if !root.is_dir() || recovery_dirs(&root)?.is_empty() {
                 return Ok(());
             }
-            require_clients_closed()?;
+            require_clients_closed(false)?;
             with_store_lock(&root, |root| {
                 let connection = open_index(root)?;
                 recover_locked(root, connection.as_ref())?;
@@ -210,7 +247,7 @@ pub(super) fn recover_pending(home: &Path, provider_id: &str) -> Vec<String> {
     warnings
 }
 
-fn with_store_lock(root: &Path, action: impl FnOnce(&Path) -> Result<()>) -> Result<()> {
+fn with_store_lock<T>(root: &Path, action: impl FnOnce(&Path) -> Result<T>) -> Result<T> {
     let lock = || -> Result<(PathBuf, File)> {
         if fs::symlink_metadata(root)?.file_type().is_symlink() {
             return Err("Cannot clean an Antigravity store through a symlink".into());
@@ -238,7 +275,7 @@ fn clean_locked(
     ids: &[&str],
     check_clients: impl Fn() -> Result<()>,
     connection: Option<&mut Connection>,
-) -> Result<()> {
+) -> Result<BTreeSet<String>> {
     let mut connection = connection;
     let tx = connection
         .as_mut()
@@ -247,7 +284,7 @@ fn clean_locked(
         .map_err(store_wide)?;
     let ids = related_ids(tx.as_deref(), ids)?;
     let presence = lock_presence(root, &ids)?;
-    let files = session_files(root, &ids)?;
+    let mut files = session_files(root, &ids)?;
     let mut replacements = Vec::new();
     if let Some(path) = checked_file(root, index)? {
         let original = fs::read(&path)?;
@@ -276,6 +313,7 @@ fn clean_locked(
             }
         }
     }
+    sidecar_changes(root, &ids, &mut files, &mut replacements)?;
     if let Some(tx) = &tx {
         remove_index_rows(tx, &ids)?;
     }
@@ -283,7 +321,7 @@ fn clean_locked(
     if files.is_empty() && replacements.is_empty() {
         tx.map(rusqlite::Transaction::commit).transpose()?;
         compact(connection.as_deref());
-        return Ok(());
+        return Ok(ids);
     }
 
     let stage = Stage::prepare(root, files, &replacements, tx.is_some())?;
@@ -298,7 +336,7 @@ fn clean_locked(
     match (result, recovery) {
         (Ok(()), Ok(())) => {
             compact(connection.as_deref());
-            Ok(())
+            Ok(ids)
         }
         (Err(error), Ok(())) => Err(error),
         (Ok(()), Err(error)) => Err(format!(
@@ -330,7 +368,7 @@ fn open_index(root: &Path) -> Result<Option<Connection>> {
     Ok(Some(conn))
 }
 
-fn has_column(conn: &Connection, table: &str, column: &str) -> rusqlite::Result<bool> {
+pub(super) fn has_column(conn: &Connection, table: &str, column: &str) -> rusqlite::Result<bool> {
     conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM pragma_table_info(?1) WHERE name = ?2)",
         [table, column],
@@ -531,6 +569,127 @@ fn filtered_history(bytes: &[u8], ids: &BTreeSet<String>) -> Result<Option<Vec<u
         }
     }
     Ok((result.len() != bytes.len()).then_some(result))
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum SidecarFile {
+    Event,
+    UsageCache,
+    Log,
+}
+
+// Plugin sidecars keep files under sidecar_data/<plugin>/<panel>/
+fn sidecar_file(relative: &Path) -> Option<SidecarFile> {
+    let parts: Vec<&str> = relative
+        .components()
+        .map(|part| match part {
+            Component::Normal(part) => part.to_str(),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    let [SIDECAR, _, _, folder, name] = parts[..] else {
+        return None;
+    };
+    match (folder, name) {
+        ("events", name) if name.ends_with(".json") => Some(SidecarFile::Event),
+        ("data", "trajectory_usage_cache.json") => Some(SidecarFile::UsageCache),
+        ("logs", "sidecar.log") => Some(SidecarFile::Log),
+        _ => None,
+    }
+}
+
+fn entries(dir: &Path, folders: bool) -> Result<Vec<PathBuf>> {
+    let mut paths = Vec::new();
+    if !fs::symlink_metadata(dir).is_ok_and(|metadata| metadata.is_dir()) {
+        return Ok(paths);
+    }
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        if if folders {
+            kind.is_dir()
+        } else {
+            kind.is_file()
+        } {
+            paths.push(entry.path());
+        }
+    }
+    paths.sort();
+    Ok(paths)
+}
+
+fn sidecar_changes(
+    root: &Path,
+    ids: &BTreeSet<String>,
+    files: &mut Vec<PathBuf>,
+    replacements: &mut Vec<Replacement>,
+) -> Result<()> {
+    for plugin in entries(&root.join(SIDECAR), true)? {
+        for panel in entries(&plugin, true)? {
+            for folder in ["events", "data", "logs"] {
+                for path in entries(&panel.join(folder), false)? {
+                    let Some(kind) = sidecar_file(path.strip_prefix(root)?) else {
+                        continue;
+                    };
+                    let original = fs::read(&path)?;
+                    let filtered = match kind {
+                        SidecarFile::Event => {
+                            if event_conversation(&original).is_some_and(|id| ids.contains(&id)) {
+                                files.push(path);
+                            }
+                            continue;
+                        }
+                        SidecarFile::UsageCache => filtered_keys(&original, ids)?,
+                        SidecarFile::Log => filtered_lines(&original, ids),
+                    };
+                    if let Some(filtered) = filtered {
+                        replacements.push(Replacement {
+                            path,
+                            original,
+                            filtered,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+// A sidecar event belongs to the conversation it was raised in; events from forks name the original as root
+fn event_conversation(bytes: &[u8]) -> Option<String> {
+    let event = serde_json::from_slice::<serde_json::Value>(bytes).ok()?;
+    let metadata = &event["payload"]["conversationMetadata"]["metadata"];
+    let nested = metadata["nestingDepth"].as_u64().unwrap_or(0) > 0;
+    let forked = metadata["parentConversationId"]
+        .as_str()
+        .is_some_and(|parent| !parent.is_empty());
+    if forked && !nested {
+        return None;
+    }
+    metadata["rootConversationId"].as_str().map(str::to_owned)
+}
+
+// Plugin caches in an unknown format are left alone instead of blocking cleanup
+fn filtered_keys(bytes: &[u8], ids: &BTreeSet<String>) -> Result<Option<Vec<u8>>> {
+    let Ok(mut value) = serde_json::from_slice::<serde_json::Map<_, _>>(bytes) else {
+        return Ok(None);
+    };
+    let count = value.len();
+    value.retain(|id, _| !ids.contains(id));
+    Ok((value.len() != count)
+        .then(|| serde_json::to_vec(&value))
+        .transpose()?)
+}
+
+fn filtered_lines(bytes: &[u8], ids: &BTreeSet<String>) -> Option<Vec<u8>> {
+    let mut result = Vec::with_capacity(bytes.len());
+    for line in bytes.split_inclusive(|byte| *byte == b'\n') {
+        if !mentions(line, ids) {
+            result.extend_from_slice(line);
+        }
+    }
+    (result.len() != bytes.len()).then_some(result)
 }
 
 // Filter summary entries while preserving unrelated protobuf fields byte for byte
@@ -745,6 +904,9 @@ struct PlannedFile {
 
 impl PlannedFile {
     fn validate(&self) -> bool {
+        if let Some(kind) = sidecar_file(&self.path) {
+            return self.replace == (kind != SidecarFile::Event);
+        }
         if self.replace {
             return [DESKTOP_INDEX, CLI_INDEX, RECENTS, METADATA, HISTORY]
                 .iter()
@@ -1380,13 +1542,13 @@ mod tests {
         };
 
         let sessions = [session(TARGET), session(FORK), session("invalid")];
-        let results = delete_with(home, &sessions, || Ok(()));
+        let (results, _) = delete_with(home, &sessions, || Ok(()));
         assert_eq!(results[0], None);
         assert!(results[1].as_deref().unwrap().contains("session directory"));
         assert!(results[2].is_some());
         assert_rows(&root, &[FORK]);
 
-        let results = delete_with(home, &sessions[1..2], || Err("client running".into()));
+        let (results, _) = delete_with(home, &sessions[1..2], || Err("client running".into()));
         assert_eq!(results, [Some("client running".to_owned())]);
     }
 
@@ -1405,16 +1567,100 @@ mod tests {
         });
 
         let checks = Cell::new(0);
-        let results = delete_with(home, &sessions, || {
+        let (results, cleaned) = delete_with(home, &sessions, || {
             checks.set(checks.get() + 1);
             Ok(())
         });
+        assert!(cleaned.is_empty());
         for error in results {
             assert!(error.unwrap().contains("summary index format"));
         }
         // One check for the batch and one for the only pass over the store
         assert_eq!(checks.get(), 2);
         assert_rows(&root, &[TARGET, FORK, NESTED]);
+    }
+
+    fn sidecar_event(root: &str, parent: &str, depth: u64) -> String {
+        serde_json::json!({"payload": {"conversationMetadata": {"metadata": {
+            "rootConversationId": root,
+            "parentConversationId": parent,
+            "nestingDepth": depth,
+        }}}})
+        .to_string()
+    }
+
+    #[test]
+    fn cleans_plugin_sidecar_data_for_the_session() {
+        let temp = store();
+        let root = temp.path();
+        let panel = root.join(SIDECAR).join("usage-monitor/panel");
+        for folder in ["events", "data", "logs"] {
+            fs::create_dir_all(panel.join(folder)).unwrap();
+        }
+        let events = panel.join("events");
+        fs::write(events.join("target.json"), sidecar_event(TARGET, "", 0)).unwrap();
+        fs::write(events.join("nested.json"), sidecar_event(TARGET, TARGET, 1)).unwrap();
+        fs::write(events.join("fork.json"), sidecar_event(TARGET, TARGET, 0)).unwrap();
+        fs::write(events.join("other.json"), sidecar_event(FORK, "", 0)).unwrap();
+        fs::write(events.join("unknown.json"), format!("not json {TARGET}")).unwrap();
+        let cache = panel.join("data/trajectory_usage_cache.json");
+        fs::write(
+            &cache,
+            format!(r#"{{"{TARGET}":{{"title":"Target"}},"{FORK}":{{}}}}"#),
+        )
+        .unwrap();
+        let log = panel.join("logs/sidecar.log");
+        fs::write(
+            &log,
+            format!("start\nloading {TARGET}\nloading {NESTED}\nloading {FORK}\n"),
+        )
+        .unwrap();
+
+        clean(root, DESKTOP_INDEX, &[TARGET], || Ok(())).unwrap();
+        let mut kept: Vec<_> = fs::read_dir(&events)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect();
+        kept.sort();
+        assert_eq!(kept, ["fork.json", "other.json", "unknown.json"]);
+        assert_eq!(
+            fs::read_to_string(cache).unwrap(),
+            format!(r#"{{"{FORK}":{{}}}}"#)
+        );
+        assert_eq!(
+            fs::read_to_string(log).unwrap(),
+            format!("start\nloading {FORK}\n")
+        );
+        assert!(recovery_dirs(root).unwrap().is_empty());
+    }
+
+    #[test]
+    fn recovery_plans_accept_only_known_sidecar_files() {
+        let planned = |path: &str, replace| {
+            PlannedFile {
+                path: PathBuf::from(path),
+                replace,
+            }
+            .validate()
+        };
+        assert!(planned("sidecar_data/swarm/board/events/1.json", false));
+        assert!(planned(
+            "sidecar_data/a/b/data/trajectory_usage_cache.json",
+            true
+        ));
+        assert!(planned("sidecar_data/a/b/logs/sidecar.log", true));
+        assert!(!planned("sidecar_data/a/b/events/1.json", true));
+        assert!(!planned("sidecar_data/a/b/logs/sidecar.log", false));
+        assert!(!planned("sidecar_data/a/../events/1.json", false));
+        assert!(!planned("sidecar_data/a/b/data/settings.json", true));
+    }
+
+    #[test]
+    fn recognizes_cc_switch() {
+        assert!(
+            is_cc_switch("cc-switch") && is_cc_switch("CC Switch") && is_cc_switch("cc-switch.exe")
+        );
+        assert!(!is_cc_switch("cc-switch-helper"));
     }
 
     #[test]
